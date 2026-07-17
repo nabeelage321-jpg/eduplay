@@ -34,12 +34,13 @@ export async function POST(request: NextRequest) {
     `
 
     // Use Postgres RPC to execute raw SQL
-    const { error: sqlError } = await supabase
-      .rpc('exec', { sql: sql })
-      .catch(() => {
-        // If exec RPC doesn't exist, try another approach
-        return { error: { message: 'RPC not available' } }
-      })
+    let sqlError: { message: string } | null = null;
+try {
+  const result = await supabase.rpc('exec', { sql: sql });
+  sqlError = result.error;
+} catch (err) {
+  sqlError = { message: 'RPC not available, try another approach' };
+}
 
     if (sqlError && !sqlError.message?.includes('already exists')) {
       // Table might already exist, try to check
