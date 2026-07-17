@@ -4,7 +4,7 @@
  * 5 subjects × 5 categories × 4 game types = 100 games
  */
 
-import { createServerClient } from './server'
+import { createServerClient } from '../server'
 
 interface GameContent {
   questions: Array<{
