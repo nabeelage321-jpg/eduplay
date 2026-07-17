@@ -1,0 +1,130 @@
+{
+  "app": {
+    "name": "EduPlay",
+    "tagline": "التعلم التفاعلي مُصمَّم للجميع"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "activities": "الأنشطة",
+    "create": "إنشاء",
+    "dashboard": "لوحة التحكم",
+    "login": "تسجيل الدخول",
+    "logout": "تسجيل الخروج",
+    "signup": "إنشاء حساب"
+  },
+  "onboarding": {
+    "welcome": "مرحباً بك في EduPlay",
+    "chooseRole": "أنا...",
+    "teacher": "معلم",
+    "student": "طالب",
+    "chooseTheme": "اختر مظهرك",
+    "ladies": "نسائي",
+    "gents": "رجالي",
+    "kids": "أطفال",
+    "continue": "متابعة",
+    "back": "رجوع",
+    "finish": "ابدأ التعلم!"
+  },
+  "home": {
+    "hero": {
+      "title": "اجعل التعلم ممتعاً",
+      "subtitle": "أنشئ وشارك واستمتع بأنشطة تعليمية تفاعلية",
+      "cta": "ابدأ مجاناً",
+      "ctaSecondary": "اكتشف الأنشطة"
+    },
+    "stats": {
+      "activities": "نشاط",
+      "teachers": "معلم",
+      "students": "طالب",
+      "countries": "دولة"
+    },
+    "features": {
+      "title": "لماذا EduPlay؟",
+      "ai": "توليد بالذكاء الاصطناعي",
+      "aiDesc": "أنشئ أنشطة في ثوانٍ",
+      "multilingual": "متعدد اللغات",
+      "multilingualDesc": "11 لغة مع دعم كامل للعربية",
+      "live": "ألعاب مباشرة",
+      "liveDesc": "تحدَّ طلابك مباشرةً"
+    }
+  },
+  "activities": {
+    "title": "الأنشطة",
+    "search": "ابحث عن الأنشطة...",
+    "filter": "تصفية",
+    "noResults": "لا توجد أنشطة",
+    "playCount": "{count} لعب",
+    "play": "العب",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "share": "مشاركة",
+    "types": {
+      "quiz": "اختبار",
+      "matchup": "مطابقة",
+      "anagram": "أنجرام",
+      "crossword": "كلمات متقاطعة",
+      "wordsearch": "بحث كلمات",
+      "flashcards": "بطاقات تعليمية",
+      "truefalse": "صح أم خطأ"
+    }
+  },
+  "create": {
+    "title": "إنشاء نشاط",
+    "chooseType": "اختر نوع النشاط",
+    "addTitle": "عنوان النشاط",
+    "addItems": "أضف الأسئلة",
+    "question": "سؤال",
+    "answer": "إجابة",
+    "addMore": "إضافة المزيد",
+    "publish": "نشر",
+    "saveDraft": "حفظ مسودة",
+    "aiGenerate": "توليد بالذكاء الاصطناعي",
+    "aiPrompt": "صِف ما تريد تدريسه...",
+    "generating": "جارٍ التوليد..."
+  },
+  "game": {
+    "join": "انضم",
+    "enterCode": "أدخل رمز الغرفة",
+    "nickname": "اللقب",
+    "start": "ابدأ",
+    "waiting": "في انتظار اللاعبين...",
+    "players": "{count} لاعب",
+    "score": "النتيجة",
+    "rank": "الترتيب",
+    "correct": "صحيح!",
+    "wrong": "خطأ!",
+    "timeUp": "انتهى الوقت!",
+    "gameOver": "انتهت اللعبة",
+    "leaderboard": "لوحة المتصدرين",
+    "playAgain": "العب مجدداً"
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "overview": "نظرة عامة",
+    "myActivities": "أنشطتي",
+    "analytics": "التحليلات",
+    "students": "الطلاب",
+    "reports": "التقارير",
+    "settings": "الإعدادات"
+  },
+  "errors": {
+    "notFound": "الصفحة غير موجودة",
+    "serverError": "خطأ في الخادم",
+    "tryAgain": "حاول مجدداً",
+    "goHome": "الصفحة الرئيسية"
+  },
+  "common": {
+    "loading": "جارٍ التحميل...",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "close": "إغلاق",
+    "next": "التالي",
+    "previous": "السابق",
+    "submit": "إرسال",
+    "required": "مطلوب",
+    "optional": "اختياري",
+    "yes": "نعم",
+    "no": "لا"
+  }
+}

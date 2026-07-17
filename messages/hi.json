@@ -1,0 +1,130 @@
+{
+  "app": {
+    "name": "EduPlay",
+    "tagline": "इंटरैक्टिव लर्निंग, सबके लिए"
+  },
+  "nav": {
+    "home": "होम",
+    "activities": "गतिविधियाँ",
+    "create": "बनाएं",
+    "dashboard": "डैशबोर्ड",
+    "login": "लॉगिन",
+    "logout": "लॉगआउट",
+    "signup": "साइन अप"
+  },
+  "onboarding": {
+    "welcome": "EduPlay में आपका स्वागत है",
+    "chooseRole": "मैं हूँ...",
+    "teacher": "शिक्षक",
+    "student": "छात्र",
+    "chooseTheme": "थीम चुनें",
+    "ladies": "महिला",
+    "gents": "पुरुष",
+    "kids": "बच्चे",
+    "continue": "जारी रखें",
+    "back": "वापस",
+    "finish": "सीखना शुरू करें!"
+  },
+  "home": {
+    "hero": {
+      "title": "सीखना मज़ेदार बनाएं",
+      "subtitle": "इंटरैक्टिव लर्निंग गतिविधियाँ बनाएं, साझा करें और खेलें",
+      "cta": "मुफ्त शुरू करें",
+      "ctaSecondary": "गतिविधियाँ देखें"
+    },
+    "stats": {
+      "activities": "गतिविधियाँ",
+      "teachers": "शिक्षक",
+      "students": "छात्र",
+      "countries": "देश"
+    },
+    "features": {
+      "title": "EduPlay क्यों?",
+      "ai": "AI से बनाएं",
+      "aiDesc": "सेकंडों में गतिविधियाँ बनाएं",
+      "multilingual": "बहुभाषी",
+      "multilingualDesc": "11 भाषाओं में समर्थन",
+      "live": "लाइव गेम्स",
+      "liveDesc": "छात्रों को लाइव चुनौती दें"
+    }
+  },
+  "activities": {
+    "title": "गतिविधियाँ",
+    "search": "गतिविधियाँ खोजें...",
+    "filter": "फ़िल्टर",
+    "noResults": "कोई गतिविधि नहीं मिली",
+    "playCount": "{count} बार खेला",
+    "play": "खेलें",
+    "edit": "संपादित करें",
+    "delete": "हटाएं",
+    "share": "साझा करें",
+    "types": {
+      "quiz": "क्विज़",
+      "matchup": "मिलान",
+      "anagram": "एनाग्राम",
+      "crossword": "क्रॉसवर्ड",
+      "wordsearch": "शब्द खोज",
+      "flashcards": "फ्लैशकार्ड",
+      "truefalse": "सच या झूठ"
+    }
+  },
+  "create": {
+    "title": "गतिविधि बनाएं",
+    "chooseType": "गतिविधि का प्रकार चुनें",
+    "addTitle": "गतिविधि का शीर्षक",
+    "addItems": "प्रश्न जोड़ें",
+    "question": "प्रश्न",
+    "answer": "उत्तर",
+    "addMore": "और जोड़ें",
+    "publish": "प्रकाशित करें",
+    "saveDraft": "ड्राफ्ट सहेजें",
+    "aiGenerate": "AI से बनाएं",
+    "aiPrompt": "आप क्या पढ़ाना चाहते हैं...",
+    "generating": "बनाया जा रहा है..."
+  },
+  "game": {
+    "join": "जुड़ें",
+    "enterCode": "रूम कोड दर्ज करें",
+    "nickname": "उपनाम",
+    "start": "शुरू करें",
+    "waiting": "खिलाड़ियों का इंतज़ार...",
+    "players": "{count} खिलाड़ी",
+    "score": "स्कोर",
+    "rank": "रैंक",
+    "correct": "सही!",
+    "wrong": "गलत!",
+    "timeUp": "समय समाप्त!",
+    "gameOver": "खेल खत्म",
+    "leaderboard": "लीडरबोर्ड",
+    "playAgain": "फिर खेलें"
+  },
+  "dashboard": {
+    "title": "डैशबोर्ड",
+    "overview": "अवलोकन",
+    "myActivities": "मेरी गतिविधियाँ",
+    "analytics": "विश्लेषण",
+    "students": "छात्र",
+    "reports": "रिपोर्ट",
+    "settings": "सेटिंग्स"
+  },
+  "errors": {
+    "notFound": "पृष्ठ नहीं मिला",
+    "serverError": "सर्वर त्रुटि",
+    "tryAgain": "फिर कोशिश करें",
+    "goHome": "होम पर जाएं"
+  },
+  "common": {
+    "loading": "लोड हो रहा है...",
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "confirm": "पुष्टि करें",
+    "close": "बंद करें",
+    "next": "अगला",
+    "previous": "पिछला",
+    "submit": "सबमिट करें",
+    "required": "आवश्यक",
+    "optional": "वैकल्पिक",
+    "yes": "हाँ",
+    "no": "नहीं"
+  }
+}

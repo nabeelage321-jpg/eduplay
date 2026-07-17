@@ -1,0 +1,130 @@
+{
+  "app": {
+    "name": "EduPlay",
+    "tagline": "Pembelajaran interaktif untuk semua"
+  },
+  "nav": {
+    "home": "Beranda",
+    "activities": "Aktivitas",
+    "create": "Buat",
+    "dashboard": "Dasbor",
+    "login": "Masuk",
+    "logout": "Keluar",
+    "signup": "Daftar"
+  },
+  "onboarding": {
+    "welcome": "Selamat datang di EduPlay",
+    "chooseRole": "Saya adalah...",
+    "teacher": "Guru",
+    "student": "Siswa",
+    "chooseTheme": "Pilih tema",
+    "ladies": "Perempuan",
+    "gents": "Laki-laki",
+    "kids": "Anak-anak",
+    "continue": "Lanjutkan",
+    "back": "Kembali",
+    "finish": "Mulai belajar!"
+  },
+  "home": {
+    "hero": {
+      "title": "Jadikan belajar menyenangkan",
+      "subtitle": "Buat, bagikan, dan mainkan aktivitas pembelajaran interaktif",
+      "cta": "Mulai gratis",
+      "ctaSecondary": "Jelajahi aktivitas"
+    },
+    "stats": {
+      "activities": "aktivitas",
+      "teachers": "guru",
+      "students": "siswa",
+      "countries": "negara"
+    },
+    "features": {
+      "title": "Mengapa EduPlay?",
+      "ai": "Generasi AI",
+      "aiDesc": "Buat aktivitas dalam hitungan detik",
+      "multilingual": "Multibahasa",
+      "multilingualDesc": "Mendukung 11 bahasa",
+      "live": "Game langsung",
+      "liveDesc": "Tantang siswa secara langsung"
+    }
+  },
+  "activities": {
+    "title": "Aktivitas",
+    "search": "Cari aktivitas...",
+    "filter": "Filter",
+    "noResults": "Tidak ada aktivitas ditemukan",
+    "playCount": "{count} kali dimainkan",
+    "play": "Main",
+    "edit": "Edit",
+    "delete": "Hapus",
+    "share": "Bagikan",
+    "types": {
+      "quiz": "Kuis",
+      "matchup": "Pasangkan",
+      "anagram": "Anagram",
+      "crossword": "Teka-teki silang",
+      "wordsearch": "Mencari kata",
+      "flashcards": "Kartu belajar",
+      "truefalse": "Benar atau salah"
+    }
+  },
+  "create": {
+    "title": "Buat aktivitas",
+    "chooseType": "Pilih jenis aktivitas",
+    "addTitle": "Judul aktivitas",
+    "addItems": "Tambah pertanyaan",
+    "question": "Pertanyaan",
+    "answer": "Jawaban",
+    "addMore": "Tambah lagi",
+    "publish": "Terbitkan",
+    "saveDraft": "Simpan draf",
+    "aiGenerate": "Buat dengan AI",
+    "aiPrompt": "Jelaskan apa yang ingin Anda ajarkan...",
+    "generating": "Membuat..."
+  },
+  "game": {
+    "join": "Bergabung",
+    "enterCode": "Masukkan kode ruangan",
+    "nickname": "Nama panggilan",
+    "start": "Mulai",
+    "waiting": "Menunggu pemain...",
+    "players": "{count} pemain",
+    "score": "Skor",
+    "rank": "Peringkat",
+    "correct": "Benar!",
+    "wrong": "Salah!",
+    "timeUp": "Waktu habis!",
+    "gameOver": "Permainan selesai",
+    "leaderboard": "Papan peringkat",
+    "playAgain": "Main lagi"
+  },
+  "dashboard": {
+    "title": "Dasbor",
+    "overview": "Ringkasan",
+    "myActivities": "Aktivitas saya",
+    "analytics": "Analitik",
+    "students": "Siswa",
+    "reports": "Laporan",
+    "settings": "Pengaturan"
+  },
+  "errors": {
+    "notFound": "Halaman tidak ditemukan",
+    "serverError": "Kesalahan server",
+    "tryAgain": "Coba lagi",
+    "goHome": "Ke beranda"
+  },
+  "common": {
+    "loading": "Memuat...",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "confirm": "Konfirmasi",
+    "close": "Tutup",
+    "next": "Berikutnya",
+    "previous": "Sebelumnya",
+    "submit": "Kirim",
+    "required": "Wajib",
+    "optional": "Opsional",
+    "yes": "Ya",
+    "no": "Tidak"
+  }
+}

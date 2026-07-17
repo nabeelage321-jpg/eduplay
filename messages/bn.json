@@ -1,0 +1,130 @@
+{
+  "app": {
+    "name": "EduPlay",
+    "tagline": "সবার জন্য ইন্টারেক্টিভ শিক্ষা"
+  },
+  "nav": {
+    "home": "হোম",
+    "activities": "কার্যক্রম",
+    "create": "তৈরি করুন",
+    "dashboard": "ড্যাশবোর্ড",
+    "login": "লগইন",
+    "logout": "লগআউট",
+    "signup": "সাইন আপ"
+  },
+  "onboarding": {
+    "welcome": "EduPlay-এ আপনাকে স্বাগতম",
+    "chooseRole": "আমি...",
+    "teacher": "শিক্ষক",
+    "student": "শিক্ষার্থী",
+    "chooseTheme": "থিম বেছে নিন",
+    "ladies": "মহিলা",
+    "gents": "পুরুষ",
+    "kids": "শিশু",
+    "continue": "চালিয়ে যান",
+    "back": "পিছনে",
+    "finish": "শেখা শুরু করুন!"
+  },
+  "home": {
+    "hero": {
+      "title": "শেখাকে মজাদার করুন",
+      "subtitle": "ইন্টারেক্টিভ শিক্ষামূলক কার্যক্রম তৈরি, শেয়ার এবং খেলুন",
+      "cta": "বিনামূল্যে শুরু করুন",
+      "ctaSecondary": "কার্যক্রম দেখুন"
+    },
+    "stats": {
+      "activities": "কার্যক্রম",
+      "teachers": "শিক্ষক",
+      "students": "শিক্ষার্থী",
+      "countries": "দেশ"
+    },
+    "features": {
+      "title": "কেন EduPlay?",
+      "ai": "AI দিয়ে তৈরি",
+      "aiDesc": "সেকেন্ডে কার্যক্রম তৈরি করুন",
+      "multilingual": "বহুভাষিক",
+      "multilingualDesc": "১১টি ভাষায় সমর্থন",
+      "live": "লাইভ গেম",
+      "liveDesc": "শিক্ষার্থীদের সরাসরি চ্যালেঞ্জ করুন"
+    }
+  },
+  "activities": {
+    "title": "কার্যক্রম",
+    "search": "কার্যক্রম খুঁজুন...",
+    "filter": "ফিল্টার",
+    "noResults": "কোনো কার্যক্রম পাওয়া যায়নি",
+    "playCount": "{count} বার খেলা হয়েছে",
+    "play": "খেলুন",
+    "edit": "সম্পাদনা",
+    "delete": "মুছুন",
+    "share": "শেয়ার",
+    "types": {
+      "quiz": "কুইজ",
+      "matchup": "মিলান",
+      "anagram": "অ্যানাগ্রাম",
+      "crossword": "ক্রসওয়ার্ড",
+      "wordsearch": "শব্দ খোঁজা",
+      "flashcards": "ফ্ল্যাশকার্ড",
+      "truefalse": "সত্য বা মিথ্যা"
+    }
+  },
+  "create": {
+    "title": "কার্যক্রম তৈরি করুন",
+    "chooseType": "কার্যক্রমের ধরন বেছে নিন",
+    "addTitle": "কার্যক্রমের শিরোনাম",
+    "addItems": "প্রশ্ন যোগ করুন",
+    "question": "প্রশ্ন",
+    "answer": "উত্তর",
+    "addMore": "আরো যোগ করুন",
+    "publish": "প্রকাশ করুন",
+    "saveDraft": "খসড়া সংরক্ষণ",
+    "aiGenerate": "AI দিয়ে তৈরি করুন",
+    "aiPrompt": "আপনি কী শেখাতে চান তা বর্ণনা করুন...",
+    "generating": "তৈরি হচ্ছে..."
+  },
+  "game": {
+    "join": "যোগ দিন",
+    "enterCode": "রুম কোড দিন",
+    "nickname": "ডাকনাম",
+    "start": "শুরু করুন",
+    "waiting": "খেলোয়াড়দের অপেক্ষায়...",
+    "players": "{count} জন খেলোয়াড়",
+    "score": "স্কোর",
+    "rank": "র‍্যাংক",
+    "correct": "সঠিক!",
+    "wrong": "ভুল!",
+    "timeUp": "সময় শেষ!",
+    "gameOver": "খেলা শেষ",
+    "leaderboard": "লিডারবোর্ড",
+    "playAgain": "আবার খেলুন"
+  },
+  "dashboard": {
+    "title": "ড্যাশবোর্ড",
+    "overview": "সারসংক্ষেপ",
+    "myActivities": "আমার কার্যক্রম",
+    "analytics": "বিশ্লেষণ",
+    "students": "শিক্ষার্থী",
+    "reports": "রিপোর্ট",
+    "settings": "সেটিংস"
+  },
+  "errors": {
+    "notFound": "পেজ পাওয়া যায়নি",
+    "serverError": "সার্ভার ত্রুটি",
+    "tryAgain": "আবার চেষ্টা করুন",
+    "goHome": "হোমে যান"
+  },
+  "common": {
+    "loading": "লোড হচ্ছে...",
+    "save": "সংরক্ষণ",
+    "cancel": "বাতিল",
+    "confirm": "নিশ্চিত করুন",
+    "close": "বন্ধ করুন",
+    "next": "পরবর্তী",
+    "previous": "পূর্ববর্তী",
+    "submit": "জমা দিন",
+    "required": "আবশ্যক",
+    "optional": "ঐচ্ছিক",
+    "yes": "হ্যাঁ",
+    "no": "না"
+  }
+}

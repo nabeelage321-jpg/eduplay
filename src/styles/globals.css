@@ -1,0 +1,435 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Fredoka+One&family=Cairo:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   BASE LAYER
+   ============================================================ */
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    font-family: var(--font-body);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    min-height: 100vh;
+  }
+
+  /* RTL support */
+  [dir="rtl"] {
+    text-align: right;
+  }
+}
+
+/* ============================================================
+   THEME 1 — LADIES 🌸
+   Soft rose & mauve · Elegant · Primary female teacher audience
+   ============================================================ */
+[data-theme="ladies"] {
+  --color-primary:        #D63384;
+  --color-primary-light:  #F48FB1;
+  --color-primary-dark:   #880E4F;
+  --color-secondary:      #9C27B0;
+  --color-accent:         #FF80AB;
+  --color-background:     #FFF5F8;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #FCE4EC;
+  --color-text-primary:   #2D1B2E;
+  --color-text-secondary: #6B3A5C;
+  --color-text-muted:     #AD7FA0;
+  --color-border:         #F8BBD9;
+  --color-success:        #2E7D32;
+  --color-warning:        #F57C00;
+  --color-danger:         #C62828;
+  --radius:               12px;
+  --radius-sm:            8px;
+  --radius-lg:            20px;
+  --font-display:         'Nunito', system-ui, sans-serif;
+  --font-body:            'Nunito', system-ui, sans-serif;
+  --shadow:               0 4px 24px rgba(214, 51, 132, 0.12);
+  --shadow-card:          0 2px 12px rgba(214, 51, 132, 0.08);
+  --gradient-hero:        linear-gradient(135deg, #FCE4EC 0%, #F8BBD9 50%, #FFDDE1 100%);
+  --gradient-btn:         linear-gradient(135deg, #D63384 0%, #E91E8C 100%);
+  --pattern:              url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D63384' fill-opacity='0.04'%3E%3Cpath d='M30 30c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10S30 35.523 30 30zm-20 0c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10S10 35.523 10 30z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ============================================================
+   THEME 2 — GENTS 🔷
+   Deep navy & steel · Professional · Male teachers & institutions
+   ============================================================ */
+[data-theme="gents"] {
+  --color-primary:        #1565C0;
+  --color-primary-light:  #42A5F5;
+  --color-primary-dark:   #0D47A1;
+  --color-secondary:      #00838F;
+  --color-accent:         #29B6F6;
+  --color-background:     #F0F4FF;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #E3F2FD;
+  --color-text-primary:   #0D1B2A;
+  --color-text-secondary: #1B3A5C;
+  --color-text-muted:     #607D9E;
+  --color-border:         #BBDEFB;
+  --color-success:        #2E7D32;
+  --color-warning:        #F57C00;
+  --color-danger:         #C62828;
+  --radius:               8px;
+  --radius-sm:            4px;
+  --radius-lg:            14px;
+  --font-display:         'Inter', system-ui, sans-serif;
+  --font-body:            'Inter', system-ui, sans-serif;
+  --shadow:               0 4px 24px rgba(21, 101, 192, 0.12);
+  --shadow-card:          0 2px 12px rgba(21, 101, 192, 0.08);
+  --gradient-hero:        linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 50%, #E8EAF6 100%);
+  --gradient-btn:         linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+  --pattern:              url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231565C0' fill-opacity='0.04'%3E%3Crect x='0' y='0' width='20' height='20'/%3E%3Crect x='20' y='20' width='20' height='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ============================================================
+   THEME 3 — KIDS (default neutral) 🌈
+   Bright, bouncy, accessible · Ages 4–14
+   ============================================================ */
+[data-theme="kids"] {
+  --color-primary:        #FF6F00;
+  --color-primary-light:  #FFB300;
+  --color-primary-dark:   #E65100;
+  --color-secondary:      #7B1FA2;
+  --color-accent:         #00BCD4;
+  --color-background:     #FFFDE7;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #FFF9C4;
+  --color-text-primary:   #1A1A1A;
+  --color-text-secondary: #4A3728;
+  --color-text-muted:     #8D6E63;
+  --color-border:         #FFE082;
+  --color-success:        #2E7D32;
+  --color-warning:        #F57C00;
+  --color-danger:         #C62828;
+  --radius:               20px;
+  --radius-sm:            12px;
+  --radius-lg:            28px;
+  --font-display:         'Fredoka One', system-ui, sans-serif;
+  --font-body:            'Nunito', system-ui, sans-serif;
+  --shadow:               0 6px 28px rgba(255, 111, 0, 0.15);
+  --shadow-card:          0 4px 16px rgba(255, 111, 0, 0.10);
+  --gradient-hero:        linear-gradient(135deg, #FFFDE7 0%, #FFF9C4 50%, #FFECB3 100%);
+  --gradient-btn:         linear-gradient(135deg, #FF6F00 0%, #FF8F00 100%);
+}
+
+/* ============================================================
+   KIDS SUB-THEMES (10 choices)
+   ============================================================ */
+
+/* 1. Space 🚀 */
+[data-theme="kids"][data-kids-theme="space"] {
+  --color-primary:        #7C4DFF;
+  --color-primary-light:  #B388FF;
+  --color-primary-dark:   #4527A0;
+  --color-secondary:      #00E5FF;
+  --color-accent:         #E040FB;
+  --color-background:     #0A0E2A;
+  --color-surface:        #0D1B3E;
+  --color-surface-alt:    #131F4A;
+  --color-text-primary:   #E8E8FF;
+  --color-text-secondary: #B0BEC5;
+  --color-text-muted:     #607D8B;
+  --color-border:         #1E2D6B;
+  --gradient-hero:        linear-gradient(135deg, #0A0E2A 0%, #1A1060 100%);
+  --gradient-btn:         linear-gradient(135deg, #7C4DFF 0%, #E040FB 100%);
+}
+
+/* 2. Ocean 🌊 */
+[data-theme="kids"][data-kids-theme="ocean"] {
+  --color-primary:        #0277BD;
+  --color-primary-light:  #4FC3F7;
+  --color-primary-dark:   #01579B;
+  --color-secondary:      #00897B;
+  --color-accent:         #80DEEA;
+  --color-background:     #E0F7FA;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #B2EBF2;
+  --color-text-primary:   #002F3E;
+  --color-text-secondary: #00476A;
+  --color-border:         #80DEEA;
+  --gradient-hero:        linear-gradient(180deg, #E0F7FA 0%, #B2EBF2 100%);
+  --gradient-btn:         linear-gradient(135deg, #0277BD 0%, #00897B 100%);
+}
+
+/* 3. Jungle 🌿 */
+[data-theme="kids"][data-kids-theme="jungle"] {
+  --color-primary:        #2E7D32;
+  --color-primary-light:  #66BB6A;
+  --color-primary-dark:   #1B5E20;
+  --color-secondary:      #F57F17;
+  --color-accent:         #A5D6A7;
+  --color-background:     #E8F5E9;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #C8E6C9;
+  --color-text-primary:   #1B2E1B;
+  --color-text-secondary: #33691E;
+  --color-border:         #A5D6A7;
+  --gradient-hero:        linear-gradient(135deg, #E8F5E9 0%, #DCEDC8 100%);
+  --gradient-btn:         linear-gradient(135deg, #2E7D32 0%, #388E3C 100%);
+}
+
+/* 4. Princess 👑 */
+[data-theme="kids"][data-kids-theme="princess"] {
+  --color-primary:        #E91E8C;
+  --color-primary-light:  #F48FB1;
+  --color-primary-dark:   #880E4F;
+  --color-secondary:      #FFD700;
+  --color-accent:         #FF80AB;
+  --color-background:     #FFF0F7;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #FCE4EC;
+  --color-text-primary:   #2D0B1E;
+  --color-text-secondary: #880E4F;
+  --color-border:         #F8BBD9;
+  --gradient-hero:        linear-gradient(135deg, #FFF0F7 0%, #FCE4EC 50%, #FFF9C4 100%);
+  --gradient-btn:         linear-gradient(135deg, #E91E8C 0%, #FFD700 100%);
+}
+
+/* 5. Superhero ⚡ */
+[data-theme="kids"][data-kids-theme="superhero"] {
+  --color-primary:        #D32F2F;
+  --color-primary-light:  #FF5252;
+  --color-primary-dark:   #B71C1C;
+  --color-secondary:      #FFC107;
+  --color-accent:         #1565C0;
+  --color-background:     #FFEBEE;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #FFCDD2;
+  --color-text-primary:   #1A0000;
+  --color-text-secondary: #B71C1C;
+  --color-border:         #FFCDD2;
+  --gradient-hero:        linear-gradient(135deg, #FFEBEE 0%, #FFF9C4 100%);
+  --gradient-btn:         linear-gradient(135deg, #D32F2F 0%, #FFC107 100%);
+}
+
+/* 6. Dinosaur 🦕 */
+[data-theme="kids"][data-kids-theme="dinosaur"] {
+  --color-primary:        #558B2F;
+  --color-primary-light:  #9CCC65;
+  --color-primary-dark:   #33691E;
+  --color-secondary:      #6A1B9A;
+  --color-accent:         #F9A825;
+  --color-background:     #F1F8E9;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #DCEDC8;
+  --color-text-primary:   #1B2E0A;
+  --color-text-secondary: #33691E;
+  --color-border:         #C5E1A5;
+  --gradient-hero:        linear-gradient(135deg, #F1F8E9 0%, #DCEDC8 100%);
+  --gradient-btn:         linear-gradient(135deg, #558B2F 0%, #6A1B9A 100%);
+}
+
+/* 7. Candy 🍭 */
+[data-theme="kids"][data-kids-theme="candy"] {
+  --color-primary:        #E91E8C;
+  --color-primary-light:  #FF80AB;
+  --color-primary-dark:   #AD1457;
+  --color-secondary:      #7C4DFF;
+  --color-accent:         #00BCD4;
+  --color-background:     #FFF0FB;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #F8BBD9;
+  --color-text-primary:   #2D0022;
+  --color-text-secondary: #AD1457;
+  --color-border:         #F8BBD9;
+  --gradient-hero:        linear-gradient(135deg, #FFE0F0 0%, #EDE7F6 50%, #E0F7FA 100%);
+  --gradient-btn:         linear-gradient(135deg, #E91E8C 0%, #7C4DFF 100%);
+}
+
+/* 8. Farm 🐄 */
+[data-theme="kids"][data-kids-theme="farm"] {
+  --color-primary:        #5D4037;
+  --color-primary-light:  #A1887F;
+  --color-primary-dark:   #3E2723;
+  --color-secondary:      #C62828;
+  --color-accent:         #FDD835;
+  --color-background:     #F1F8E9;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #DCEDC8;
+  --color-text-primary:   #1B1207;
+  --color-text-secondary: #4E342E;
+  --color-border:         #BCAAA4;
+  --gradient-hero:        linear-gradient(135deg, #F1F8E9 0%, #FFF8E1 100%);
+  --gradient-btn:         linear-gradient(135deg, #5D4037 0%, #C62828 100%);
+}
+
+/* 9. Robot 🤖 */
+[data-theme="kids"][data-kids-theme="robot"] {
+  --color-primary:        #00897B;
+  --color-primary-light:  #4DB6AC;
+  --color-primary-dark:   #00695C;
+  --color-secondary:      #546E7A;
+  --color-accent:         #80CBC4;
+  --color-background:     #ECEFF1;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #CFD8DC;
+  --color-text-primary:   #102027;
+  --color-text-secondary: #37474F;
+  --color-border:         #B0BEC5;
+  --gradient-hero:        linear-gradient(135deg, #ECEFF1 0%, #CFD8DC 100%);
+  --gradient-btn:         linear-gradient(135deg, #00897B 0%, #546E7A 100%);
+}
+
+/* 10. Magic ✨ */
+[data-theme="kids"][data-kids-theme="magic"] {
+  --color-primary:        #6A1B9A;
+  --color-primary-light:  #CE93D8;
+  --color-primary-dark:   #4A148C;
+  --color-secondary:      #FFD600;
+  --color-accent:         #E040FB;
+  --color-background:     #F3E5F5;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #E1BEE7;
+  --color-text-primary:   #1A0030;
+  --color-text-secondary: #4A148C;
+  --color-border:         #CE93D8;
+  --gradient-hero:        linear-gradient(135deg, #F3E5F5 0%, #E8EAF6 50%, #FCE4EC 100%);
+  --gradient-btn:         linear-gradient(135deg, #6A1B9A 0%, #E040FB 100%);
+}
+
+/* ============================================================
+   REUSABLE COMPONENT CLASSES
+   ============================================================ */
+@layer components {
+
+  /* --- Buttons --- */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 font-semibold text-white rounded-theme transition-all duration-200 active:scale-95;
+    background: var(--gradient-btn);
+    box-shadow: var(--shadow-card);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.08);
+    box-shadow: var(--shadow);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-theme border-2 transition-all duration-200 active:scale-95;
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: transparent;
+  }
+  .btn-secondary:hover {
+    background: var(--color-surface-alt);
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 font-medium rounded-theme transition-all duration-200;
+    color: var(--color-text-secondary);
+  }
+  .btn-ghost:hover {
+    background: var(--color-surface-alt);
+    color: var(--color-primary);
+  }
+
+  /* --- Cards --- */
+  .card {
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--color-border);
+  }
+
+  .card-hover {
+    @apply card transition-all duration-200 cursor-pointer;
+  }
+  .card-hover:hover {
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+    border-color: var(--color-primary-light);
+  }
+
+  /* --- Inputs --- */
+  .input {
+    @apply w-full px-4 py-3 text-base outline-none transition-all duration-200;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    font-family: var(--font-body);
+  }
+  .input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  }
+  .input::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  /* --- Badges --- */
+  .badge {
+    @apply inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full;
+    background: var(--color-surface-alt);
+    color: var(--color-primary);
+  }
+
+  /* --- Page container --- */
+  .container-page {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* --- Hero gradient background --- */
+  .hero-bg {
+    background: var(--gradient-hero);
+    background-image: var(--pattern), var(--gradient-hero);
+  }
+
+  /* --- Section headings --- */
+  .heading-display {
+    font-family: var(--font-display);
+    color: var(--color-text-primary);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  /* --- Theme transition overlay --- */
+  .theme-transition {
+    transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+  }
+
+  /* --- Kids bounce animation --- */
+  [data-theme="kids"] .btn-primary:hover {
+    animation: wiggle 0.3s ease;
+  }
+
+  /* --- RTL specific --- */
+  [dir="rtl"] .btn-primary,
+  [dir="rtl"] .btn-secondary {
+    flex-direction: row-reverse;
+  }
+
+  /* --- Scrollbar theming --- */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--color-background); }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-primary-light);
+    border-radius: 99px;
+  }
+
+  /* --- Focus visible for accessibility --- */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* --- Reduced motion --- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

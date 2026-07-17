@@ -1,0 +1,130 @@
+{
+  "app": {
+    "name": "EduPlay",
+    "tagline": "互动学习，人人皆宜"
+  },
+  "nav": {
+    "home": "首页",
+    "activities": "活动",
+    "create": "创建",
+    "dashboard": "控制台",
+    "login": "登录",
+    "logout": "退出",
+    "signup": "注册"
+  },
+  "onboarding": {
+    "welcome": "欢迎使用 EduPlay",
+    "chooseRole": "我是...",
+    "teacher": "教师",
+    "student": "学生",
+    "chooseTheme": "选择主题",
+    "ladies": "女性",
+    "gents": "男性",
+    "kids": "儿童",
+    "continue": "继续",
+    "back": "返回",
+    "finish": "开始学习！"
+  },
+  "home": {
+    "hero": {
+      "title": "让学习变得有趣",
+      "subtitle": "创建、分享和玩互动学习活动",
+      "cta": "免费开始",
+      "ctaSecondary": "探索活动"
+    },
+    "stats": {
+      "activities": "个活动",
+      "teachers": "位教师",
+      "students": "名学生",
+      "countries": "个国家"
+    },
+    "features": {
+      "title": "为什么选择 EduPlay？",
+      "ai": "AI 生成",
+      "aiDesc": "几秒内创建活动",
+      "multilingual": "多语言",
+      "multilingualDesc": "支持 11 种语言",
+      "live": "实时游戏",
+      "liveDesc": "实时挑战您的学生"
+    }
+  },
+  "activities": {
+    "title": "活动",
+    "search": "搜索活动...",
+    "filter": "筛选",
+    "noResults": "未找到活动",
+    "playCount": "已玩 {count} 次",
+    "play": "开始",
+    "edit": "编辑",
+    "delete": "删除",
+    "share": "分享",
+    "types": {
+      "quiz": "测验",
+      "matchup": "配对",
+      "anagram": "字谜",
+      "crossword": "填字游戏",
+      "wordsearch": "找词",
+      "flashcards": "闪卡",
+      "truefalse": "判断题"
+    }
+  },
+  "create": {
+    "title": "创建活动",
+    "chooseType": "选择活动类型",
+    "addTitle": "活动标题",
+    "addItems": "添加题目",
+    "question": "题目",
+    "answer": "答案",
+    "addMore": "继续添加",
+    "publish": "发布",
+    "saveDraft": "保存草稿",
+    "aiGenerate": "AI 生成",
+    "aiPrompt": "描述您想教授的内容...",
+    "generating": "生成中..."
+  },
+  "game": {
+    "join": "加入",
+    "enterCode": "输入房间码",
+    "nickname": "昵称",
+    "start": "开始",
+    "waiting": "等待玩家...",
+    "players": "{count} 名玩家",
+    "score": "分数",
+    "rank": "排名",
+    "correct": "正确！",
+    "wrong": "错误！",
+    "timeUp": "时间到！",
+    "gameOver": "游戏结束",
+    "leaderboard": "排行榜",
+    "playAgain": "再玩一次"
+  },
+  "dashboard": {
+    "title": "控制台",
+    "overview": "概览",
+    "myActivities": "我的活动",
+    "analytics": "分析",
+    "students": "学生",
+    "reports": "报告",
+    "settings": "设置"
+  },
+  "errors": {
+    "notFound": "页面未找到",
+    "serverError": "服务器错误",
+    "tryAgain": "请重试",
+    "goHome": "返回首页"
+  },
+  "common": {
+    "loading": "加载中...",
+    "save": "保存",
+    "cancel": "取消",
+    "confirm": "确认",
+    "close": "关闭",
+    "next": "下一步",
+    "previous": "上一步",
+    "submit": "提交",
+    "required": "必填",
+    "optional": "可选",
+    "yes": "是",
+    "no": "否"
+  }
+}

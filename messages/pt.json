@@ -1,0 +1,130 @@
+{
+  "app": {
+    "name": "EduPlay",
+    "tagline": "Aprendizado interativo para todos"
+  },
+  "nav": {
+    "home": "Início",
+    "activities": "Atividades",
+    "create": "Criar",
+    "dashboard": "Painel",
+    "login": "Entrar",
+    "logout": "Sair",
+    "signup": "Cadastrar"
+  },
+  "onboarding": {
+    "welcome": "Bem-vindo ao EduPlay",
+    "chooseRole": "Eu sou...",
+    "teacher": "Professor",
+    "student": "Aluno",
+    "chooseTheme": "Escolha seu tema",
+    "ladies": "Feminino",
+    "gents": "Masculino",
+    "kids": "Infantil",
+    "continue": "Continuar",
+    "back": "Voltar",
+    "finish": "Começar a aprender!"
+  },
+  "home": {
+    "hero": {
+      "title": "Torne o aprendizado divertido",
+      "subtitle": "Crie, compartilhe e jogue atividades de aprendizado interativas",
+      "cta": "Começar grátis",
+      "ctaSecondary": "Explorar atividades"
+    },
+    "stats": {
+      "activities": "atividades",
+      "teachers": "professores",
+      "students": "alunos",
+      "countries": "países"
+    },
+    "features": {
+      "title": "Por que EduPlay?",
+      "ai": "Geração por IA",
+      "aiDesc": "Crie atividades em segundos",
+      "multilingual": "Multilíngue",
+      "multilingualDesc": "Suporte a 11 idiomas",
+      "live": "Jogos ao vivo",
+      "liveDesc": "Desafie seus alunos em tempo real"
+    }
+  },
+  "activities": {
+    "title": "Atividades",
+    "search": "Pesquisar atividades...",
+    "filter": "Filtrar",
+    "noResults": "Nenhuma atividade encontrada",
+    "playCount": "{count} jogadas",
+    "play": "Jogar",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "share": "Compartilhar",
+    "types": {
+      "quiz": "Questionário",
+      "matchup": "Associação",
+      "anagram": "Anagrama",
+      "crossword": "Palavras cruzadas",
+      "wordsearch": "Caça-palavras",
+      "flashcards": "Fichas",
+      "truefalse": "Verdadeiro ou falso"
+    }
+  },
+  "create": {
+    "title": "Criar atividade",
+    "chooseType": "Escolha o tipo de atividade",
+    "addTitle": "Título da atividade",
+    "addItems": "Adicionar perguntas",
+    "question": "Pergunta",
+    "answer": "Resposta",
+    "addMore": "Adicionar mais",
+    "publish": "Publicar",
+    "saveDraft": "Salvar rascunho",
+    "aiGenerate": "Gerar com IA",
+    "aiPrompt": "Descreva o que você quer ensinar...",
+    "generating": "Gerando..."
+  },
+  "game": {
+    "join": "Entrar",
+    "enterCode": "Digite o código da sala",
+    "nickname": "Apelido",
+    "start": "Iniciar",
+    "waiting": "Aguardando jogadores...",
+    "players": "{count} jogadores",
+    "score": "Pontuação",
+    "rank": "Classificação",
+    "correct": "Correto!",
+    "wrong": "Incorreto!",
+    "timeUp": "Tempo esgotado!",
+    "gameOver": "Fim de jogo",
+    "leaderboard": "Classificação",
+    "playAgain": "Jogar novamente"
+  },
+  "dashboard": {
+    "title": "Painel",
+    "overview": "Visão geral",
+    "myActivities": "Minhas atividades",
+    "analytics": "Análises",
+    "students": "Alunos",
+    "reports": "Relatórios",
+    "settings": "Configurações"
+  },
+  "errors": {
+    "notFound": "Página não encontrada",
+    "serverError": "Erro do servidor",
+    "tryAgain": "Tentar novamente",
+    "goHome": "Ir para o início"
+  },
+  "common": {
+    "loading": "Carregando...",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "close": "Fechar",
+    "next": "Próximo",
+    "previous": "Anterior",
+    "submit": "Enviar",
+    "required": "Obrigatório",
+    "optional": "Opcional",
+    "yes": "Sim",
+    "no": "Não"
+  }
+}
