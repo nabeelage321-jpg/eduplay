@@ -112,6 +112,14 @@ describe('GET /api/activities', () => {
     expect(Array.isArray(data.activities)).toBe(true)
   })
 
+  it('defaults to a 500-item page size when no limit is supplied', async () => {
+    const { GET } = await import('@/app/api/activities/route')
+    const req = mockRequest('GET', 'http://localhost:3000/api/activities')
+    const res = await GET(req as Parameters<typeof GET>[0])
+    const data = await res.json()
+    expect(data.pagination.limit).toBe(500)
+  })
+
   it('includes pagination info', async () => {
     const { GET } = await import('@/app/api/activities/route')
     const req = mockRequest('GET', 'http://localhost:3000/api/activities?page=1&limit=10')

@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
-  const { searchParams } = req.nextUrl
+  const searchParams = req.nextUrl?.searchParams ?? new URL(req.url).searchParams
   const subject = searchParams.get('subject') ?? ''
   const grade = searchParams.get('grade') ?? ''
   const type = searchParams.get('type') ?? ''
@@ -38,7 +38,8 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get('search') ?? ''
   const sort = searchParams.get('sort') ?? 'newest'
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10))
-  const limit = Math.min(48, parseInt(searchParams.get('limit') ?? '24', 10))
+  const offset = Math.max(0, parseInt(searchParams.get('offset') ?? '0', 10))
+  const limit = Math.min(500, Math.max(1, parseInt(searchParams.get('limit') ?? '500', 10)))
 
   try {
     const supabase = createServerClient()
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
     else if (sort === 'az') query = query.order('title', { ascending: true })
     else query = query.order('created_at', { ascending: false })
 
-    const from = (page - 1) * limit
+    const from = offset > 0 ? offset : (page - 1) * limit
     query = query.range(from, from + limit - 1)
 
     const { data, error, count } = await query
@@ -67,7 +68,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       activities: data ?? [],
-      pagination: { page, limit, total: count ?? 0, pages: Math.ceil((count ?? 0) / limit) },
+      pagination: { page, offset, limit, total: count ?? 0, pages: Math.ceil((count ?? 0) / limit) },
     })
   } catch (err) {
     console.error('[GET /api/activities]', err)
