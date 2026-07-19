@@ -8,7 +8,7 @@ interface HowToPlayScreenProps {
   onBack: () => void
 }
 
-const GAME_INSTRUCTIONS: Record<string, { steps: Array<{ emoji: string; text: string }> }> = {
+const GAME_INSTRUCTIONS: Record<string, { description?: string; steps: Array<{ emoji: string; text: string }> }> = {
   quiz: {
     steps: [
       { emoji: '👀', text: 'Read the question carefully' },
@@ -87,10 +87,11 @@ const GAME_INSTRUCTIONS: Record<string, { steps: Array<{ emoji: string; text: st
     ],
   },
   crossword: {
+    description: 'Use the numbered across/down clues to fill the empty crossword grid. Click each white cell, type the correct letter, and submit when all words are complete.',
     steps: [
-      { emoji: '👀', text: 'Read the clues carefully' },
-      { emoji: '🔤', text: 'Click boxes to type letters' },
-      { emoji: '✅', text: 'Fill all words to win' },
+      { emoji: '👀', text: 'Read the across and down clues' },
+      { emoji: '🔤', text: 'Click a white cell and type the letter' },
+      { emoji: '✅', text: 'Submit when the entire grid is filled' },
     ],
   },
   'word-search': {
@@ -122,10 +123,11 @@ const GAME_INSTRUCTIONS: Record<string, { steps: Array<{ emoji: string; text: st
     ],
   },
   'random-wheel': {
+    description: 'Spin the wheel to get a challenge, complete it, then press Finish when you are ready to save your score and time.',
     steps: [
-      { emoji: '👀', text: 'Watch the wheel spin' },
-      { emoji: '🎯', text: 'See where it lands' },
-      { emoji: '🎉', text: 'Do the fun challenge' },
+      { emoji: '👀', text: 'Watch the wheel spin to select a challenge' },
+      { emoji: '🎯', text: 'Read the challenge when the wheel stops' },
+      { emoji: '✅', text: 'Press Finish to save your score and time' },
     ],
   },
   'spin-wheel': {

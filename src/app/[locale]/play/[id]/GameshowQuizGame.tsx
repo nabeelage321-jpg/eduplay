@@ -120,10 +120,10 @@ export function GameshowQuizGame({ activity, locale }: GameshowQuizGameProps) {
     setShowFeedback(true)
 
     if (isCorrect) {
-      setCorrectAnswers(correctAnswers + 1)
+      setCorrectAnswers((prev) => prev + 1)
       const basePoints = 500
       const bonus = noLifelinesUsed ? 2000 : 0
-      setTotalScore(totalScore + basePoints + bonus)
+      setTotalScore((prev) => prev + basePoints + bonus)
     }
   }
 

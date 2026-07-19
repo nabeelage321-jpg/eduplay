@@ -64,6 +64,7 @@ export function OrderGame({ activity, locale }: OrderGameProps) {
   const [topScores, setTopScores] = useState<LeaderboardEntry[]>([])
   const [totalGameTime, setTotalGameTime] = useState(0)
   const [gameStartTimestamp, setGameStartTimestamp] = useState<number | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [shuffledRounds, setShuffledRounds] = useState<Round[]>([])
   const [shuffledItems, setShuffledItems] = useState<(Item & { id: number })[]>([])
   const [selectedOrder, setSelectedOrder] = useState<number[]>([])
@@ -89,6 +90,16 @@ export function OrderGame({ activity, locale }: OrderGameProps) {
     setShowHowToPlay(true)
   }
 
+  useEffect(() => {
+    if (!gameStarted || gameComplete) return
+
+    const timer = window.setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1)
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [gameStarted, gameComplete])
+
   const handleStartAfterHowToPlay = () => {
     const shuffled = shuffleArray(rounds)
     setShuffledRounds(shuffled)
@@ -100,6 +111,7 @@ export function OrderGame({ activity, locale }: OrderGameProps) {
     setShowHowToPlay(false)
     setGameStarted(true)
     setGameStartTimestamp(Date.now())
+    setElapsedSeconds(0)
   }
 
   const handleBackFromHowToPlay = () => {
@@ -116,18 +128,22 @@ export function OrderGame({ activity, locale }: OrderGameProps) {
   }
 
   const handleSubmitOrder = () => {
-    const correctOrder = shuffledItems.sort((a, b) => a.order - b.order).map((i) => i.id)
+    const correctOrder = shuffledItems
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .map((item) => item.id)
+
     const isCorrect =
       selectedOrder.length === shuffledItems.length &&
-      selectedOrder.every((id, i) => id === correctOrder[i])
+      selectedOrder.every((id, index) => id === correctOrder[index])
 
     const points = isCorrect ? 300 : 0
     setPointsEarned(points)
     setShowFeedback(true)
 
     if (isCorrect) {
-      setCorrectAnswers(correctAnswers + 1)
-      setTotalScore(totalScore + points)
+      setCorrectAnswers((prev) => prev + 1)
+      setTotalScore((prev) => prev + points)
     }
   }
 

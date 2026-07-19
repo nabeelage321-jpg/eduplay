@@ -18,7 +18,7 @@ interface Label {
   text: string
   x: number
   y: number
-  answer: number
+  answer: string | number
 }
 
 interface Activity {
@@ -61,10 +61,11 @@ export function LabelledDiagramGame({ activity, locale }: LabelledDiagramGamePro
   const [gameComplete, setGameComplete] = useState(false)
   const [topScores, setTopScores] = useState<LeaderboardEntry[]>([])
   const [gameStartTimestamp, setGameStartTimestamp] = useState<number | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [labels, setLabels] = useState<Label[]>([])
   const [image, setImage] = useState('')
   const [currentLabelIndex, setCurrentLabelIndex] = useState(0)
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [showFeedback, setShowFeedback] = useState(false)
   const [correctLabels, setCorrectLabels] = useState<Set<number>>(new Set())
 
@@ -74,6 +75,16 @@ export function LabelledDiagramGame({ activity, locale }: LabelledDiagramGamePro
       setPlayerName(savedName)
     }
   }, [])
+
+  useEffect(() => {
+    if (!gameStarted || gameComplete) return
+
+    const timer = window.setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1)
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [gameStarted, gameComplete])
 
   const labelsData: Label[] = activity.content?.labels || []
   const imageData: string = activity.content?.image || ''
@@ -94,6 +105,7 @@ export function LabelledDiagramGame({ activity, locale }: LabelledDiagramGamePro
     setShowHowToPlay(false)
     setGameStarted(true)
     setGameStartTimestamp(Date.now())
+    setElapsedSeconds(0)
   }
 
   const handleBackFromHowToPlay = () => {
@@ -101,19 +113,19 @@ export function LabelledDiagramGame({ activity, locale }: LabelledDiagramGamePro
     setPlayerName('')
   }
 
-  const handleAnswerSelect = (index: number) => {
+  const handleAnswerSelect = (option: string) => {
     if (selectedAnswer !== null || showFeedback) return
 
     const currentLabel = labels[currentLabelIndex]
-    const isCorrect = index === currentLabel.answer
+    const isCorrect = String(option) === String(currentLabel.answer)
 
-    setSelectedAnswer(index)
+    setSelectedAnswer(option)
     setShowFeedback(true)
 
     if (isCorrect) {
-      setCorrectAnswers(correctAnswers + 1)
-      setTotalScore(totalScore + 150)
-      setCorrectLabels(new Set([...correctLabels, currentLabelIndex]))
+      setCorrectAnswers((prev) => prev + 1)
+      setTotalScore((prev) => prev + 150)
+      setCorrectLabels((prev) => new Set([...prev, currentLabelIndex]))
     }
   }
 
@@ -236,16 +248,20 @@ export function LabelledDiagramGame({ activity, locale }: LabelledDiagramGamePro
   }
 
   const currentLabel = labels[currentLabelIndex]
-  const isCorrect = selectedAnswer === currentLabel.answer
   const progressPercent = ((currentLabelIndex + 1) / labels.length) * 100
+  const formattedTime = `${Math.floor(elapsedSeconds / 60)}:${String(elapsedSeconds % 60).padStart(2, '0')}`
+  const answerOptions = labels.map((label) => String(label.answer))
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 p-4">
       <div className="w-full max-w-4xl">
         <div className="mb-6 text-white">
-          <div className="flex justify-between items-center mb-3">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3">
             <p className="font-bold text-xl">{playerName}</p>
-            <p className="font-bold text-3xl text-yellow-200">{totalScore}</p>
+            <div className="text-right">
+              <p className="font-bold text-3xl text-yellow-200">{totalScore}</p>
+              <p className="text-sm text-white/80">Time: {formattedTime}</p>
+            </div>
           </div>
           <div className="bg-white bg-opacity-30 rounded-full h-6 overflow-hidden">
             <div
@@ -307,15 +323,37 @@ export function LabelledDiagramGame({ activity, locale }: LabelledDiagramGamePro
               <>
                 {showFeedback && (
                   <div className={`text-center mb-4 p-3 rounded-lg text-sm font-bold ${
-                    isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    String(selectedAnswer) === String(currentLabel.answer)
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
                   }`}>
-                    {isCorrect ? '✅ Correct! +150 pts' : '❌ Not quite!'}
+                    {String(selectedAnswer) === String(currentLabel.answer) ? '✅ Correct! +150 pts' : '❌ Not quite!'}
                   </div>
                 )}
 
                 {!showFeedback && (
                   <p className="text-gray-600 text-sm mb-4">Select the correct label below</p>
                 )}
+
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  {answerOptions.map((option) => {
+                    const isSelected = String(selectedAnswer) === option
+                    return (
+                      <button
+                        key={option}
+                        onClick={() => handleAnswerSelect(option)}
+                        disabled={showFeedback}
+                        className={`w-full p-4 rounded-xl font-bold text-lg transition-all ${
+                          isSelected
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                        } ${showFeedback ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        {option}
+                      </button>
+                    )
+                  })}
+                </div>
 
                 <button
                   onClick={handleNextLabel}

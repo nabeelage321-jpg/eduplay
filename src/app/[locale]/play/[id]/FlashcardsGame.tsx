@@ -139,8 +139,8 @@ export function FlashcardsGame({ activity, locale }: FlashcardsGameProps) {
     const points = calculatePoints(timeUsed, true)
     setPointsEarned(points)
     setShowPoints(true)
-    setCorrectAnswers(correctAnswers + 1)
-    setTotalScore(totalScore + points)
+    setCorrectAnswers((prev) => prev + 1)
+    setTotalScore((prev) => prev + points)
   }
 
   const handleDidntKnow = () => {

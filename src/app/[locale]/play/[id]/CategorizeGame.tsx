@@ -63,9 +63,11 @@ export function CategorizeGame({ activity, locale }: CategorizeGameProps) {
   const [gameComplete, setGameComplete] = useState(false)
   const [topScores, setTopScores] = useState<LeaderboardEntry[]>([])
   const [gameStartTimestamp, setGameStartTimestamp] = useState<number | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [categories, setCategories] = useState<Category[]>([])
   const [items, setItems] = useState<Item[]>([])
   const [categorizedItems, setCategorizedItems] = useState<Map<string, string>>(new Map())
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string | null>(null)
 
   useEffect(() => {
     const savedName = localStorage.getItem('playerName')
@@ -87,12 +89,23 @@ export function CategorizeGame({ activity, locale }: CategorizeGameProps) {
     setShowHowToPlay(true)
   }
 
+  useEffect(() => {
+    if (!gameStarted || gameComplete) return
+
+    const timer = window.setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1)
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [gameStarted, gameComplete])
+
   const handleStartAfterHowToPlay = () => {
     setCategories(categoriesData)
     setItems(shuffleArray(itemsData))
     setShowHowToPlay(false)
     setGameStarted(true)
     setGameStartTimestamp(Date.now())
+    setElapsedSeconds(0)
   }
 
   const handleBackFromHowToPlay = () => {
@@ -110,32 +123,22 @@ export function CategorizeGame({ activity, locale }: CategorizeGameProps) {
       newCategorized.delete(itemText)
       setCategorizedItems(newCategorized)
       if (currentCategory === item.category) {
-        setCorrectAnswers(Math.max(0, correctAnswers - 1))
-        setTotalScore(Math.max(0, totalScore - 150))
+        setCorrectAnswers((prev) => Math.max(0, prev - 1))
+        setTotalScore((prev) => Math.max(0, prev - 150))
       }
+      setSelectedCategoryName(null)
       return
     }
 
-    let selectedCategory: string | null = null
-    for (const cat of categories) {
-      const categoryDiv = document.querySelector(`[data-category="${cat.name}"]`)
-      if (categoryDiv) {
-        const rect = categoryDiv.getBoundingClientRect()
-        if (Math.random() < 0.5) {
-          selectedCategory = cat.name
-          break
-        }
-      }
-    }
-
+    const selectedCategory = selectedCategoryName
     if (selectedCategory) {
       const newCategorized = new Map(categorizedItems)
       newCategorized.set(itemText, selectedCategory)
       setCategorizedItems(newCategorized)
 
       if (selectedCategory === item.category) {
-        setCorrectAnswers(correctAnswers + 1)
-        setTotalScore(totalScore + 150)
+        setCorrectAnswers((prev) => prev + 1)
+        setTotalScore((prev) => prev + 150)
       }
     }
   }
@@ -149,20 +152,21 @@ export function CategorizeGame({ activity, locale }: CategorizeGameProps) {
 
     const newCategorized = new Map(categorizedItems)
 
-    if (currentCategory && currentCategory === items.find(i => i.text === itemText)?.category) {
-      setCorrectAnswers(Math.max(0, correctAnswers - 1))
-      setTotalScore(Math.max(0, totalScore - 150))
+    if (currentCategory && currentCategory === item.category) {
+      setCorrectAnswers((prev) => Math.max(0, prev - 1))
+      setTotalScore((prev) => Math.max(0, prev - 150))
     }
 
     newCategorized.set(itemText, categoryName)
     setCategorizedItems(newCategorized)
+    setSelectedCategoryName(categoryName)
 
     if (categoryName === item.category) {
-      setCorrectAnswers(correctAnswers + 1)
-      setTotalScore(totalScore + 150)
+      setCorrectAnswers((prev) => prev + 1)
+      setTotalScore((prev) => prev + 150)
     }
 
-    if (categorizedItems.size === items.length - 1) {
+    if (newCategorized.size === items.length) {
       setTimeout(() => finishGame(), 500)
     }
   }
@@ -246,6 +250,8 @@ export function CategorizeGame({ activity, locale }: CategorizeGameProps) {
   }
 
   if (gameComplete) {
+    const formattedTime = `${Math.floor(elapsedSeconds / 60)}:${String(elapsedSeconds % 60).padStart(2, '0')}`
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 p-4">
         <div className="w-full max-w-2xl">

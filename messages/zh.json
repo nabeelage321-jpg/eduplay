@@ -126,5 +126,17 @@
     "optional": "可选",
     "yes": "是",
     "no": "否"
+  },
+  "seo": {
+    "homePage": "互动学习活动",
+    "homePageDesc": "为全球学生创建并体验教育活动",
+    "title": "EduPlay - 互动学习活动",
+    "description": "为全球学生创建并体验教育活动",
+    "activitiesPage": "浏览活动",
+    "activitiesPageDesc": "查找数千个免费教育活动",
+    "createPage": "创建活动",
+    "createPageDesc": "创建您自己的互动学习活动",
+    "dashboardPage": "控制台",
+    "dashboardPageDesc": "管理您的活动并查看统计数据"
   }
 }

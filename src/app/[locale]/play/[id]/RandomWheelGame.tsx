@@ -35,6 +35,13 @@ interface Activity {
   }
 }
 
+interface LeaderboardEntry {
+  player_name: string
+  score: number
+  correct_answers: number
+  time_taken: number
+}
+
 interface RandomWheelGameProps {
   activity: Activity
   locale: string
@@ -49,6 +56,13 @@ export function RandomWheelGame({ activity, locale }: RandomWheelGameProps) {
   const [isSpinning, setIsSpinning] = useState(false)
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [rotation, setRotation] = useState(0)
+  const [completedChallenges, setCompletedChallenges] = useState(0)
+  const [totalScore, setTotalScore] = useState(0)
+  const [gameComplete, setGameComplete] = useState(false)
+  const [topScores, setTopScores] = useState<LeaderboardEntry[]>([])
+  const [gameStartTimestamp, setGameStartTimestamp] = useState<number | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [selectedItems, setSelectedItems] = useState<Item[]>([])
 
   useEffect(() => {
     const savedName = localStorage.getItem('playerName')
@@ -72,6 +86,11 @@ export function RandomWheelGame({ activity, locale }: RandomWheelGameProps) {
   const handleStartAfterHowToPlay = () => {
     setItems(shuffleArray(itemsData))
     setGameStarted(true)
+    setGameStartTimestamp(Date.now())
+    setElapsedSeconds(0)
+    setTotalScore(0)
+    setCompletedChallenges(0)
+    setSelectedItems([])
   }
 
   const handleBackFromHowToPlay = () => {
@@ -80,19 +99,69 @@ export function RandomWheelGame({ activity, locale }: RandomWheelGameProps) {
   }
 
   const handleSpin = () => {
-    if (isSpinning) return
+    if (isSpinning || items.length === 0) return
 
     setIsSpinning(true)
     setSelectedItem(null)
 
     const randomRotation = Math.random() * 360 + 1080
-    setRotation(rotation + randomRotation)
+    setRotation((prev) => prev + randomRotation)
 
     setTimeout(() => {
       const selectedIndex = Math.floor((randomRotation % 360) / (360 / items.length))
-      setSelectedItem(items[selectedIndex])
+      const item = items[selectedIndex]
+      setSelectedItem(item)
+      setSelectedItems((prev) => {
+        const alreadyDone = prev.some((existing) => existing.label === item.label)
+        if (alreadyDone) return prev
+        const next = [...prev, item]
+        setCompletedChallenges(next.length)
+        setTotalScore(next.length * 100)
+        return next
+      })
       setIsSpinning(false)
     }, 3000)
+  }
+
+  useEffect(() => {
+    if (!gameStarted || gameComplete) return
+
+    const timer = window.setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1)
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [gameStarted, gameComplete])
+
+  const handleFinish = async () => {
+    if (!gameStarted) return
+    const timeTaken = gameStartTimestamp ? Math.floor((Date.now() - gameStartTimestamp) / 1000) : 0
+    await saveToLeaderboard(timeTaken)
+    setGameComplete(true)
+  }
+
+  const saveToLeaderboard = async (timeTaken: number) => {
+    try {
+      await fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          activity_id: activity.id,
+          player_name: playerName,
+          score: totalScore,
+          correct_answers: completedChallenges,
+          time_taken: timeTaken,
+        }),
+      })
+
+      const leaderboardResponse = await fetch(`/api/leaderboard?activity_id=${activity.id}`)
+      if (leaderboardResponse.ok) {
+        const data = await leaderboardResponse.json()
+        setTopScores(data.data || [])
+      }
+    } catch (error) {
+      console.error('Error saving to leaderboard:', error)
+    }
   }
 
   if (!gameStarted) {
@@ -152,11 +221,43 @@ export function RandomWheelGame({ activity, locale }: RandomWheelGameProps) {
     'from-pink-400 to-pink-600',
   ]
 
+  if (gameComplete) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 p-4">
+        <div className="bg-white rounded-3xl p-8 md:p-12 max-w-2xl w-full shadow-2xl text-center">
+          <div className="text-7xl mb-6">🎉</div>
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-2">Well done!</h1>
+          <p className="text-2xl text-blue-600 mb-6">{playerName}</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div className="bg-blue-50 rounded-3xl p-6">
+              <p className="text-sm text-gray-600">Final Score</p>
+              <p className="text-4xl font-bold text-blue-600">{totalScore}</p>
+            </div>
+            <div className="bg-green-50 rounded-3xl p-6">
+              <p className="text-sm text-gray-600">Challenges Completed</p>
+              <p className="text-4xl font-bold text-green-600">{completedChallenges}</p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => router.push(`/${locale}/browse`)}
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-xl text-2xl transition-colors"
+          >
+            Back to Games 🎮
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 p-4">
       <div className="text-center mb-8">
         <h1 className="text-5xl font-bold text-white mb-2">{activity.title}</h1>
         <p className="text-3xl font-bold text-yellow-300">{playerName}</p>
+        <p className="text-lg text-blue-100">Time: {elapsedSeconds}s</p>
+        <p className="text-lg text-blue-100">Completed: {completedChallenges}/{items.length}</p>
       </div>
 
       <div className="relative w-80 h-80 mb-12">
@@ -200,12 +301,20 @@ export function RandomWheelGame({ activity, locale }: RandomWheelGameProps) {
           <p className="text-4xl mb-4">🎉</p>
           <p className="text-2xl font-bold text-gray-800 mb-4">Challenge:</p>
           <p className="text-xl font-bold text-purple-600 mb-6">{selectedItem.challenge}</p>
-          <button
-            onClick={handleSpin}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-xl text-2xl transition-colors"
-          >
-            Spin Again! 🎡
-          </button>
+          <div className="grid gap-4">
+            <button
+              onClick={handleSpin}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-xl text-2xl transition-colors"
+            >
+              Spin Again! 🎡
+            </button>
+            <button
+              onClick={handleFinish}
+              className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-xl text-2xl transition-colors"
+            >
+              Finish Game ✅
+            </button>
+          </div>
         </div>
       )}
 

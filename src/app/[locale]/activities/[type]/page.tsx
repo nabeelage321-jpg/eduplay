@@ -10,14 +10,15 @@ import { generateWebPageSchema } from '@/lib/seo/schema'
 // ─── Static params: 20 types × 11 locales ────────────────────────────────────
 
 export async function generateStaticParams() {
-  const params: { locale: string; type: string }[] = []
-  for (const locale of ALL_LOCALES) {
-    for (const actType of ACTIVITY_TYPES_SEED) {
-      params.push({ locale, type: actType.slug })
-    }
-  }
-  return params
+  const locale = 'en'
+  return ACTIVITY_TYPES_SEED.map((actType) => ({
+    locale,
+    type: actType.slug,
+  }))
 }
+
+export const dynamicParams = true
+export const revalidate = 86400
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 

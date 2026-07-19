@@ -132,8 +132,8 @@ export function HangmanGame({ activity, locale }: HangmanGameProps) {
       setPointsEarned(points)
       setShowPoints(true)
       setWordComplete(true)
-      setCorrectAnswers(correctAnswers + 1)
-      setTotalScore(totalScore + points)
+      setCorrectAnswers((prev) => prev + 1)
+      setTotalScore((prev) => prev + points)
     }
   }
 

@@ -146,8 +146,8 @@ export function TrueFalseGame({ activity, locale }: TrueFalseGameProps) {
       setShowPoints(true)
 
       if (isCorrect) {
-        setCorrectAnswers(correctAnswers + 1)
-        setTotalScore(totalScore + points)
+        setCorrectAnswers((prev) => prev + 1)
+        setTotalScore((prev) => prev + points)
       }
     }
   }

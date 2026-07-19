@@ -126,5 +126,17 @@
     "optional": "Opcional",
     "yes": "Sim",
     "no": "Não"
+  },
+  "seo": {
+    "homePage": "Atividades de aprendizagem interativas",
+    "homePageDesc": "Crie e jogue atividades educacionais para estudantes de todo o mundo",
+    "title": "EduPlay - Atividades de aprendizagem interativas",
+    "description": "Crie e jogue atividades educacionais para estudantes de todo o mundo",
+    "activitiesPage": "Explorar atividades",
+    "activitiesPageDesc": "Encontre milhares de atividades educacionais grátis",
+    "createPage": "Criar atividade",
+    "createPageDesc": "Crie sua própria atividade de aprendizagem interativa",
+    "dashboardPage": "Painel",
+    "dashboardPageDesc": "Gerencie suas atividades e veja estatísticas"
   }
 }

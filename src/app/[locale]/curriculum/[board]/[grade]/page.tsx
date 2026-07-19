@@ -11,16 +11,21 @@ import { generateWebPageSchema } from '@/lib/seo/schema'
 // ─── Static params: curricula × their grades × 11 locales ────────────────────
 
 export async function generateStaticParams() {
+  const locale = 'en'
   const params: { locale: string; board: string; grade: string }[] = []
-  for (const locale of ALL_LOCALES) {
-    for (const curriculum of CURRICULA_SEED) {
-      for (const gradeSlug of curriculum.grades) {
-        params.push({ locale, board: curriculum.slug, grade: gradeSlug })
-      }
+
+  for (const curriculum of CURRICULA_SEED.slice(0, 20)) {
+    const gradeSlug = curriculum.grades[0]
+    if (gradeSlug) {
+      params.push({ locale, board: curriculum.slug, grade: gradeSlug })
     }
   }
+
   return params
 }
+
+export const dynamicParams = true
+export const revalidate = 86400
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 

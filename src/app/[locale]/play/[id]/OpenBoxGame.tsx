@@ -60,6 +60,7 @@ export function OpenBoxGame({ activity, locale }: OpenBoxGameProps) {
   const [gameComplete, setGameComplete] = useState(false)
   const [topScores, setTopScores] = useState<LeaderboardEntry[]>([])
   const [gameStartTimestamp, setGameStartTimestamp] = useState<number | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [boxes, setBoxes] = useState<Box[]>([])
   const [openedBoxes, setOpenedBoxes] = useState<Set<number>>(new Set())
   const [currentBox, setCurrentBox] = useState<Box | null>(null)
@@ -72,6 +73,22 @@ export function OpenBoxGame({ activity, locale }: OpenBoxGameProps) {
       setPlayerName(savedName)
     }
   }, [])
+
+  useEffect(() => {
+    if (!gameStarted || gameComplete) return
+
+    const timer = window.setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1)
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [gameStarted, gameComplete])
+
+  useEffect(() => {
+    if (openedBoxes.size === boxes.length && currentBox && selectedAnswer !== null && !gameComplete) {
+      finishGame()
+    }
+  }, [openedBoxes, currentBox, selectedAnswer, boxes.length, gameComplete])
 
   const boxesData: Box[] = activity.content?.boxes || []
 
@@ -90,6 +107,7 @@ export function OpenBoxGame({ activity, locale }: OpenBoxGameProps) {
     setShowHowToPlay(false)
     setGameStarted(true)
     setGameStartTimestamp(Date.now())
+    setElapsedSeconds(0)
   }
 
   const handleBackFromHowToPlay = () => {
@@ -99,12 +117,9 @@ export function OpenBoxGame({ activity, locale }: OpenBoxGameProps) {
 
   const handleOpenBox = (box: Box) => {
     setCurrentBox(box)
-    const newOpened = new Set([...openedBoxes, box.id])
+    const newOpened = new Set(openedBoxes)
+    newOpened.add(box.id)
     setOpenedBoxes(newOpened)
-
-    if (newOpened.size === boxes.length) {
-      setTimeout(() => finishGame(), 2000)
-    }
   }
 
   const handleAnswerSelect = (index: number) => {
@@ -115,8 +130,8 @@ export function OpenBoxGame({ activity, locale }: OpenBoxGameProps) {
     setShowFeedback(true)
 
     if (isCorrect) {
-      setCorrectAnswers(correctAnswers + 1)
-      setTotalScore(totalScore + 200)
+      setCorrectAnswers((prev) => prev + 1)
+      setTotalScore((prev) => prev + 200)
     }
   }
 
@@ -127,7 +142,7 @@ export function OpenBoxGame({ activity, locale }: OpenBoxGameProps) {
   }
 
   const finishGame = async () => {
-    const timeTaken = gameStartTimestamp ? Math.floor((Date.now() - gameStartTimestamp) / 1000) : 0
+    const timeTaken = elapsedSeconds
     await saveToLeaderboard(timeTaken)
     setGameComplete(true)
   }
@@ -205,6 +220,8 @@ export function OpenBoxGame({ activity, locale }: OpenBoxGameProps) {
   }
 
   if (gameComplete) {
+    const formattedTime = `${Math.floor(elapsedSeconds / 60)}:${String(elapsedSeconds % 60).padStart(2, '0')}`
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 p-4">
         <div className="w-full max-w-2xl">
@@ -223,6 +240,10 @@ export function OpenBoxGame({ activity, locale }: OpenBoxGameProps) {
               <div className="bg-green-50 rounded-xl p-6 text-center">
                 <p className="text-gray-600 font-semibold mb-2">Correct</p>
                 <p className="text-4xl font-bold text-green-600">{correctAnswers}/{boxes.length}</p>
+              </div>
+              <div className="bg-purple-50 rounded-xl p-6 text-center col-span-2">
+                <p className="text-gray-600 font-semibold mb-2">Time</p>
+                <p className="text-3xl font-bold text-purple-600">{formattedTime}</p>
               </div>
             </div>
 
@@ -284,7 +305,7 @@ export function OpenBoxGame({ activity, locale }: OpenBoxGameProps) {
                   onClick={handleNextBox}
                   className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-xl text-2xl transition-colors"
                 >
-                  Open Another Box 🎁
+                  {openedBoxes.size === boxes.length ? 'View Results 🎉' : 'Open Another Box 🎁'}
                 </button>
               </>
             )}

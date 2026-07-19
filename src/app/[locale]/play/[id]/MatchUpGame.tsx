@@ -115,9 +115,9 @@ export function MatchUpGame({ activity, locale }: MatchUpGameProps) {
       const rightPairId = shuffledRight[selectedRight].id
       if (selectedLeft === rightPairId) {
         // Correct match
-        setMatchedPairs(new Set([...matchedPairs, selectedLeft]))
-        setCorrectAnswers(correctAnswers + 1)
-        setTotalScore(totalScore + 200)
+        setMatchedPairs((prev) => new Set([...prev, selectedLeft]))
+        setCorrectAnswers((prev) => prev + 1)
+        setTotalScore((prev) => prev + 200)
         setSelectedLeft(null)
         setSelectedRight(null)
 

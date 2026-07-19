@@ -43,6 +43,7 @@ export function WordSearchGame({ activity, locale }: WordSearchGameProps) {
   const [gameComplete, setGameComplete] = useState(false)
   const [topScores, setTopScores] = useState<LeaderboardEntry[]>([])
   const [gameStartTimestamp, setGameStartTimestamp] = useState<number | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [words, setWords] = useState<string[]>([])
   const [grid, setGrid] = useState<string[][]>([])
   const [foundWords, setFoundWords] = useState<Set<string>>(new Set())
@@ -55,6 +56,16 @@ export function WordSearchGame({ activity, locale }: WordSearchGameProps) {
       setPlayerName(savedName)
     }
   }, [])
+
+  useEffect(() => {
+    if (!gameStarted || gameComplete) return
+
+    const timer = window.setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1)
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [gameStarted, gameComplete])
 
   const wordsData: string[] = activity.content?.words || []
   const gridData: string[][] = activity.content?.grid || []
@@ -111,16 +122,18 @@ export function WordSearchGame({ activity, locale }: WordSearchGameProps) {
       const word = getWord(path)
 
       if (words.includes(word) && !foundWords.has(word)) {
-        setFoundWords(new Set([...foundWords, word]))
-        setTotalScore(totalScore + 200)
+        const nextFound = new Set(foundWords)
+        nextFound.add(word)
+        setFoundWords(nextFound)
+        setTotalScore((prev) => prev + 200)
+
+        if (nextFound.size === words.length) {
+          setTimeout(() => finishGame(), 500)
+        }
       }
 
       setSelectedCells(null)
       setHighlightedPath([])
-
-      if (foundWords.size === words.length - 1) {
-        setTimeout(() => finishGame(), 500)
-      }
     }
   }
 
@@ -236,13 +249,18 @@ export function WordSearchGame({ activity, locale }: WordSearchGameProps) {
     )
   }
 
+  const formattedTime = `${Math.floor(elapsedSeconds / 60)}:${String(elapsedSeconds % 60).padStart(2, '0')}`
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 p-4">
       <div className="w-full max-w-4xl">
         <div className="mb-6 text-white">
-          <div className="flex justify-between items-center mb-3">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3">
             <p className="font-bold text-xl">{playerName}</p>
-            <p className="font-bold text-3xl text-yellow-200">{totalScore}</p>
+            <div className="text-right">
+              <p className="font-bold text-3xl text-yellow-200">{totalScore}</p>
+              <p className="text-sm text-white/80">Time: {formattedTime}</p>
+            </div>
           </div>
         </div>
 

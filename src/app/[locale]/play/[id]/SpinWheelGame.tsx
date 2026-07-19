@@ -61,6 +61,7 @@ export function SpinWheelGame({ activity, locale }: SpinWheelGameProps) {
   const [gameComplete, setGameComplete] = useState(false)
   const [topScores, setTopScores] = useState<LeaderboardEntry[]>([])
   const [gameStartTimestamp, setGameStartTimestamp] = useState<number | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [items, setItems] = useState<Item[]>([])
   const [isSpinning, setIsSpinning] = useState(false)
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
@@ -95,6 +96,7 @@ export function SpinWheelGame({ activity, locale }: SpinWheelGameProps) {
     setItems(shuffleArray(itemsData))
     setGameStarted(true)
     setGameStartTimestamp(Date.now())
+    setElapsedSeconds(0)
   }
 
   const handleBackFromHowToPlay = () => {
@@ -105,7 +107,7 @@ export function SpinWheelGame({ activity, locale }: SpinWheelGameProps) {
   useEffect(() => {
     if (!selectedItem || gameComplete || showFeedback) return
 
-    const timer = setInterval(() => {
+    const timer = window.setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
           setShowFeedback(true)
@@ -116,8 +118,18 @@ export function SpinWheelGame({ activity, locale }: SpinWheelGameProps) {
       })
     }, 1000)
 
-    return () => clearInterval(timer)
+    return () => window.clearInterval(timer)
   }, [selectedItem, gameComplete, showFeedback])
+
+  useEffect(() => {
+    if (!gameStarted || gameComplete) return
+
+    const interval = window.setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1)
+    }, 1000)
+
+    return () => window.clearInterval(interval)
+  }, [gameStarted, gameComplete])
 
   const calculatePoints = (timeUsed: number, isCorrect: boolean): number => {
     if (!isCorrect) return 0
@@ -136,13 +148,13 @@ export function SpinWheelGame({ activity, locale }: SpinWheelGameProps) {
     setTimeRemaining(TOTAL_TIME)
 
     const randomRotation = Math.random() * 360 + 1080
-    setRotation(rotation + randomRotation)
+    setRotation((prev) => prev + randomRotation)
 
     setTimeout(() => {
       const selectedIndex = Math.floor((randomRotation % 360) / (360 / items.length))
       const selected = items[selectedIndex]
       setSelectedItem(selected)
-      setSpinCount(spinCount + 1)
+      setSpinCount((prev) => prev + 1)
       setStartTime(Date.now())
       setIsSpinning(false)
     }, 3000)
@@ -160,18 +172,20 @@ export function SpinWheelGame({ activity, locale }: SpinWheelGameProps) {
     setPointsEarned(points)
 
     if (isCorrect) {
-      setCorrectAnswers(correctAnswers + 1)
-      setTotalScore(totalScore + points)
+      setCorrectAnswers((prev) => prev + 1)
+      setTotalScore((prev) => prev + points)
     }
   }
 
   const handleNextSpin = async () => {
+    if (items.length === 0) {
+      return
+    }
+
     if (spinCount >= items.length) {
-      if (gameStartTimestamp) {
-        const timeTaken = Math.floor((Date.now() - gameStartTimestamp) / 1000)
-        await saveToLeaderboard(timeTaken)
-        setGameComplete(true)
-      }
+      const timeTaken = elapsedSeconds
+      await saveToLeaderboard(timeTaken)
+      setGameComplete(true)
     } else {
       setSelectedItem(null)
       setSelectedAnswer(null)
@@ -253,6 +267,8 @@ export function SpinWheelGame({ activity, locale }: SpinWheelGameProps) {
   }
 
   if (gameComplete) {
+    const formattedTime = `${Math.floor(elapsedSeconds / 60)}:${String(elapsedSeconds % 60).padStart(2, '0')}`
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 p-4">
         <div className="w-full max-w-2xl">
@@ -271,6 +287,10 @@ export function SpinWheelGame({ activity, locale }: SpinWheelGameProps) {
               <div className="bg-green-50 rounded-xl p-6 text-center">
                 <p className="text-gray-600 font-semibold mb-2">Correct</p>
                 <p className="text-4xl font-bold text-green-600">{correctAnswers}/{items.length}</p>
+              </div>
+              <div className="bg-purple-50 rounded-xl p-6 text-center col-span-2">
+                <p className="text-gray-600 font-semibold mb-2">Time</p>
+                <p className="text-3xl font-bold text-purple-600">{formattedTime}</p>
               </div>
             </div>
 
@@ -297,7 +317,8 @@ export function SpinWheelGame({ activity, locale }: SpinWheelGameProps) {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 p-4">
       <div className="text-center mb-6">
         <h1 className="text-4xl font-bold text-white mb-2">{activity.title}</h1>
-        <p className="text-2xl font-bold text-yellow-300">{playerName} • ${totalScore}</p>
+        <p className="text-2xl font-bold text-yellow-300">{playerName} • {totalScore} pts</p>
+        <p className="text-lg text-white/80 mt-2">Time: {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, '0')}</p>
       </div>
 
       {!selectedItem ? (

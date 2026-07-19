@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { HowToPlayScreen } from './HowToPlayScreen'
 
@@ -64,15 +64,41 @@ export function WhackAMoleGame({ activity, locale }: WhackAMoleGameProps) {
   const [topScores, setTopScores] = useState<LeaderboardEntry[]>([])
   const [totalGameTime, setTotalGameTime] = useState(0)
   const [gameStartTimestamp, setGameStartTimestamp] = useState<number | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [shuffledRounds, setShuffledRounds] = useState<Round[]>([])
   const [popupMole, setPopupMole] = useState<number | null>(null)
   const [roundComplete, setRoundComplete] = useState(false)
   const [pointsEarned, setPointsEarned] = useState(0)
+  const popupTimerRef = useRef<number | null>(null)
+  const roundCompleteRef = useRef(roundComplete)
 
   useEffect(() => {
     const savedName = localStorage.getItem('playerName')
     if (savedName) {
       setPlayerName(savedName)
+    }
+  }, [])
+
+  useEffect(() => {
+    roundCompleteRef.current = roundComplete
+  }, [roundComplete])
+
+  useEffect(() => {
+    if (!gameStarted || gameComplete) return
+
+    const interval = window.setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1)
+    }, 1000)
+
+    return () => window.clearInterval(interval)
+  }, [gameStarted, gameComplete])
+
+  useEffect(() => {
+    return () => {
+      if (popupTimerRef.current !== null) {
+        window.clearTimeout(popupTimerRef.current)
+      }
+      setPopupMole(null)
     }
   }, [])
 
@@ -93,6 +119,7 @@ export function WhackAMoleGame({ activity, locale }: WhackAMoleGameProps) {
     setShuffledRounds(shuffled)
     setGameStarted(true)
     setGameStartTimestamp(Date.now())
+    setElapsedSeconds(0)
     startMolePopup()
   }
 
@@ -102,14 +129,20 @@ export function WhackAMoleGame({ activity, locale }: WhackAMoleGameProps) {
   }
 
   const startMolePopup = () => {
+    if (popupTimerRef.current !== null) {
+      window.clearTimeout(popupTimerRef.current)
+    }
+
     const randomMole = Math.floor(Math.random() * 6)
     setPopupMole(randomMole)
-    setTimeout(() => {
+    const popupTimer = window.setTimeout(() => {
       setPopupMole(null)
-      if (!roundComplete) {
-        setTimeout(startMolePopup, 1000)
+      if (!roundCompleteRef.current) {
+        const nextPopupTimer = window.setTimeout(startMolePopup, 1000)
+        popupTimerRef.current = nextPopupTimer
       }
     }, 2000)
+    popupTimerRef.current = popupTimer
   }
 
   const calculatePoints = (): number => {
@@ -131,16 +164,15 @@ export function WhackAMoleGame({ activity, locale }: WhackAMoleGameProps) {
 
   const handleNextRound = async () => {
     if (currentRound < shuffledRounds.length - 1) {
-      setCurrentRound(currentRound + 1)
+      setCurrentRound((prev) => prev + 1)
       setRoundComplete(false)
+      setPointsEarned(0)
       startMolePopup()
     } else {
-      if (gameStartTimestamp) {
-        const timeTaken = Math.floor((Date.now() - gameStartTimestamp) / 1000)
-        setTotalGameTime(timeTaken)
-        await saveToLeaderboard(timeTaken)
-        setGameComplete(true)
-      }
+      const timeTaken = elapsedSeconds
+      setTotalGameTime(timeTaken)
+      await saveToLeaderboard(timeTaken)
+      setGameComplete(true)
     }
   }
 
@@ -316,6 +348,7 @@ export function WhackAMoleGame({ activity, locale }: WhackAMoleGameProps) {
 
   const currentRoundData = shuffledRounds[currentRound]
   const progressPercent = ((currentRound + 1) / shuffledRounds.length) * 100
+  const formattedElapsed = `${Math.floor(elapsedSeconds / 60)}:${String(elapsedSeconds % 60).padStart(2, '0')}`
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 p-4">
@@ -329,12 +362,17 @@ export function WhackAMoleGame({ activity, locale }: WhackAMoleGameProps) {
               <p className="font-bold text-3xl text-yellow-200">{totalScore}</p>
             </div>
           </div>
-          <div className="bg-white bg-opacity-30 rounded-full h-6 overflow-hidden">
+          <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="w-full bg-white bg-opacity-30 rounded-full h-6 overflow-hidden">
             <div
               className="bg-yellow-300 h-full transition-all duration-300"
               style={{ width: `${progressPercent}%` }}
             ></div>
           </div>
+          <div className="min-w-[80px] text-right text-white/90 text-sm font-semibold">
+            Time: {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, '0')}
+          </div>
+        </div>
         </div>
 
         <div className="bg-white rounded-3xl p-8 md:p-12 shadow-2xl">

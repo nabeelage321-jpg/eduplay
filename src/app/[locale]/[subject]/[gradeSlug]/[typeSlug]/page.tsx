@@ -9,23 +9,26 @@ import Breadcrumb from '@/components/seo/Breadcrumb'
 import { generateWebPageSchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
 
 export async function generateStaticParams() {
-  const params: { locale: string; subject: string; gradeSlug: string; typeSlug: string }[] = []
-  for (const locale of ALL_LOCALES) {
-    for (const subject of SUBJECTS_SEED) {
-      for (const grade of GRADES_SEED) {
-        for (const actType of ACTIVITY_TYPES_SEED) {
-          params.push({
-            locale,
-            subject: subject.slug,
-            gradeSlug: grade.slug,
-            typeSlug: actType.slug,
-          })
-        }
-      }
-    }
+  const locale = 'en'
+  const subjectSlug = 'mathematics'
+  const gradeSlug = 'pre-k'
+  const subject = SUBJECTS_SEED.find((s) => s.slug === subjectSlug)
+  const grade = GRADES_SEED.find((g) => g.slug === gradeSlug)
+
+  if (!subject || !grade) {
+    return []
   }
-  return params
+
+  return ACTIVITY_TYPES_SEED.map((actType) => ({
+    locale,
+    subject: subjectSlug,
+    gradeSlug,
+    typeSlug: actType.slug,
+  }))
 }
+
+export const dynamicParams = true
+export const revalidate = 86400
 
 export async function generateMetadata({
   params,

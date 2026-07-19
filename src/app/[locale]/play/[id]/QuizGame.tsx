@@ -176,8 +176,8 @@ export function QuizGame({ activity, locale }: QuizGameProps) {
       setShowPoints(true)
 
       if (isCorrect) {
-        setCorrectAnswers(correctAnswers + 1)
-        setTotalScore(totalScore + points)
+        setCorrectAnswers((prev) => prev + 1)
+        setTotalScore((prev) => prev + points)
       }
     }
   }

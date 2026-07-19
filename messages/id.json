@@ -126,5 +126,17 @@
     "optional": "Opsional",
     "yes": "Ya",
     "no": "Tidak"
+  },
+  "seo": {
+    "homePage": "Aktivitas pembelajaran interaktif",
+    "homePageDesc": "Buat dan mainkan aktivitas pendidikan untuk siswa di seluruh dunia",
+    "title": "EduPlay - Aktivitas pembelajaran interaktif",
+    "description": "Buat dan mainkan aktivitas pendidikan untuk siswa di seluruh dunia",
+    "activitiesPage": "Jelajahi aktivitas",
+    "activitiesPageDesc": "Temukan ribuan aktivitas pendidikan gratis",
+    "createPage": "Buat aktivitas",
+    "createPageDesc": "Buat aktivitas pembelajaran interaktif Anda sendiri",
+    "dashboardPage": "Dasbor",
+    "dashboardPageDesc": "Kelola aktivitas Anda dan lihat statistik"
   }
 }

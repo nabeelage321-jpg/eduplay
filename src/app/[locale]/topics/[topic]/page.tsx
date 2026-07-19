@@ -11,14 +11,15 @@ import { generateWebPageSchema } from '@/lib/seo/schema'
 // ─── Static params: 500 topics × 11 locales ──────────────────────────────────
 
 export async function generateStaticParams() {
-  const params: { locale: string; topic: string }[] = []
-  for (const locale of ALL_LOCALES) {
-    for (const topic of TOPICS_SEED) {
-      params.push({ locale, topic: topic.slug })
-    }
-  }
-  return params
+  const locale = 'en'
+  return TOPICS_SEED.slice(0, 20).map((topic) => ({
+    locale,
+    topic: topic.slug,
+  }))
 }
+
+export const dynamicParams = true
+export const revalidate = 86400
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 

@@ -4,15 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { HowToPlayScreen } from './HowToPlayScreen'
 
-function shuffleArray<T>(array: T[]): T[] {
-  const shuffled = [...array]
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-  }
-  return shuffled
-}
-
 interface Clue {
   number: number
   clue: string
@@ -61,10 +52,10 @@ export function CrosswordGame({ activity, locale }: CrosswordGameProps) {
   const [gameComplete, setGameComplete] = useState(false)
   const [topScores, setTopScores] = useState<LeaderboardEntry[]>([])
   const [gameStartTimestamp, setGameStartTimestamp] = useState<number | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [clues, setClues] = useState<Clue[]>([])
   const [grid, setGrid] = useState<(string | null)[][]>([])
   const [userAnswers, setUserAnswers] = useState<(string | null)[][]>([])
-  const [cellClueMap, setCellClueMap] = useState<Map<string, number[]>>(new Map())
 
   useEffect(() => {
     const savedName = localStorage.getItem('playerName')
@@ -91,6 +82,7 @@ export function CrosswordGame({ activity, locale }: CrosswordGameProps) {
     setShowHowToPlay(false)
     setGameStarted(true)
     setGameStartTimestamp(Date.now())
+    setElapsedSeconds(0)
   }
 
   const handleBackFromHowToPlay = () => {
@@ -98,59 +90,110 @@ export function CrosswordGame({ activity, locale }: CrosswordGameProps) {
     setPlayerName('')
   }
 
+  useEffect(() => {
+    if (!gameStarted || gameComplete) return
+
+    const timer = window.setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1)
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [gameStarted, gameComplete])
+
   const initializeGrid = () => {
-    const newGrid: (string | null)[][] = Array(10).fill(null).map(() => Array(10).fill(null))
-    const newUserAnswers: (string | null)[][] = Array(10).fill(null).map(() => Array(10).fill(null))
-    const newCellClueMap = new Map<string, number[]>()
+    const rows = Math.max(
+      0,
+      ...cluesData.map((clue) =>
+        clue.direction === 'across'
+          ? clue.row
+          : clue.row + clue.answer.length - 1
+      )
+    ) + 1
+    const cols = Math.max(
+      0,
+      ...cluesData.map((clue) =>
+        clue.direction === 'down'
+          ? clue.col
+          : clue.col + clue.answer.length - 1
+      )
+    ) + 1
+
+    const newGrid: (string | null)[][] = Array.from({ length: rows }, () => Array(cols).fill(null))
+    const newUserAnswers: (string | null)[][] = Array.from({ length: rows }, () => Array(cols).fill(null))
 
     cluesData.forEach((clue) => {
       if (clue.direction === 'across') {
         for (let i = 0; i < clue.answer.length; i++) {
           newGrid[clue.row][clue.col + i] = clue.answer[i]
           newUserAnswers[clue.row][clue.col + i] = ''
-          const key = `${clue.row}-${clue.col + i}`
-          if (!newCellClueMap.has(key)) newCellClueMap.set(key, [])
-          newCellClueMap.get(key)?.push(clue.number)
         }
       } else {
         for (let i = 0; i < clue.answer.length; i++) {
           newGrid[clue.row + i][clue.col] = clue.answer[i]
           newUserAnswers[clue.row + i][clue.col] = ''
-          const key = `${clue.row + i}-${clue.col}`
-          if (!newCellClueMap.has(key)) newCellClueMap.set(key, [])
-          newCellClueMap.get(key)?.push(clue.number)
         }
       }
     })
 
     setGrid(newGrid)
     setUserAnswers(newUserAnswers)
-    setCellClueMap(newCellClueMap)
   }
 
   const handleCellChange = (row: number, col: number, value: string) => {
     const upper = value.toUpperCase().slice(0, 1)
-    const newUserAnswers = userAnswers.map(r => [...r])
+    const newUserAnswers = userAnswers.map((r) => [...r])
     newUserAnswers[row][col] = upper
     setUserAnswers(newUserAnswers)
-
-    if (upper && grid[row][col]) {
-      const isCorrect = upper === grid[row][col]
-      if (isCorrect) {
-        const newScore = totalScore + 100
-        setTotalScore(newScore)
-        setCorrectAnswers(correctAnswers + 1)
-      }
-    }
   }
 
+  const evaluateGrid = () => {
+    let correctWordCount = 0
+
+    cluesData.forEach((clue) => {
+      const expected = clue.answer.toUpperCase().trim()
+      const entered: string[] = []
+
+      if (clue.direction === 'across') {
+        for (let i = 0; i < expected.length; i += 1) {
+          entered.push(userAnswers[clue.row]?.[clue.col + i] || '')
+        }
+      } else {
+        for (let i = 0; i < expected.length; i += 1) {
+          entered.push(userAnswers[clue.row + i]?.[clue.col] || '')
+        }
+      }
+
+      if (entered.join('') === expected) {
+        correctWordCount += 1
+      }
+    })
+
+    const score = correctWordCount * 100
+    setTotalScore(score)
+    setCorrectAnswers(correctWordCount)
+    return { score, correctWordCount }
+  }
+
+  useEffect(() => {
+    if (!gameStarted || gameComplete || grid.length === 0) return
+
+    const allFilled = grid.every((row, r) =>
+      row.every((cell, c) => cell === null || !!userAnswers[r]?.[c])
+    )
+
+    if (allFilled) {
+      evaluateGrid()
+    }
+  }, [userAnswers, grid, gameStarted, gameComplete])
+
   const handleSubmit = async () => {
+    const { score, correctWordCount } = evaluateGrid()
     const timeTaken = gameStartTimestamp ? Math.floor((Date.now() - gameStartTimestamp) / 1000) : 0
-    await saveToLeaderboard(timeTaken)
+    await saveToLeaderboard(timeTaken, score, correctWordCount)
     setGameComplete(true)
   }
 
-  const saveToLeaderboard = async (timeTaken: number) => {
+  const saveToLeaderboard = async (timeTaken: number, score: number, correctWordCount: number) => {
     try {
       await fetch('/api/leaderboard', {
         method: 'POST',
@@ -158,8 +201,8 @@ export function CrosswordGame({ activity, locale }: CrosswordGameProps) {
         body: JSON.stringify({
           activity_id: activity.id,
           player_name: playerName,
-          score: totalScore,
-          correct_answers: correctAnswers,
+          score,
+          correct_answers: correctWordCount,
           time_taken: timeTaken,
         }),
       })
@@ -263,18 +306,24 @@ export function CrosswordGame({ activity, locale }: CrosswordGameProps) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 p-4">
       <div className="w-full max-w-4xl">
         <div className="mb-6 text-white">
-          <div className="flex justify-between items-center mb-3">
-            <p className="font-bold text-xl">{playerName}</p>
-            <p className="font-bold text-3xl text-yellow-200">{totalScore}</p>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3">
+            <div>
+              <p className="font-bold text-xl">{playerName}</p>
+              <p className="text-sm text-blue-100">Time: {elapsedSeconds}s</p>
+            </div>
+            <div className="text-right">
+              <p className="font-bold text-3xl text-yellow-200">{totalScore}</p>
+              <p className="text-sm text-blue-100">Correct words: {correctAnswers}/{clues.length}</p>
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 bg-white rounded-3xl p-8 shadow-2xl">
-            <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(10, minmax(40px, 1fr))' }}>
+            <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${grid[0]?.length ?? 10}, minmax(40px, 1fr))` }}>
               {userAnswers.map((row, r) =>
                 row.map((cell, c) => (
-                  grid[r]?.[c] !== undefined && (
+                  grid[r]?.[c] !== null && grid[r]?.[c] !== undefined && (
                     <div
                       key={`${r}-${c}`}
                       className={`w-10 h-10 border-2 flex items-center justify-center font-bold text-lg relative
