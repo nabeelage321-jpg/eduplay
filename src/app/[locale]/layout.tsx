@@ -29,6 +29,9 @@ export async function generateMetadata({
       type: 'website',
     },
     robots: { index: true, follow: true },
+    verification: {
+      google: 'nrQfXDbfR7qFDIjiFgoF47jMFAa8myV4cVgzyKtlU64',
+    },
   }
 }
 
@@ -37,10 +40,8 @@ export default async function LocaleLayout({
   params: { locale },
 }: RootLayoutProps) {
   if (!locales.includes(locale as SupportedLocale)) notFound()
-
   const messages = await getMessages()
   const direction = RTL_LOCALES.includes(locale as SupportedLocale) ? 'rtl' : 'ltr'
-
   return (
     <html
       lang={locale}
