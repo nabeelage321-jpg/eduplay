@@ -1,69 +1,40 @@
 import type { MetadataRoute } from 'next'
 import {
-  buildT1SitemapEntries,
-  buildT2SitemapEntries,
-  buildT3SitemapEntries,
-  buildT8SitemapEntries,
-} from '@/lib/seo/sitemap'
-import { TOPIC_SLUGS } from '@/lib/supabase/seed/topics'
-import { ALL_LOCALES } from '@/lib/seo/metadata'
+  SITEMAP_CHUNK_SIZE,
+  buildAllSitemapEntries,
+} from '@/lib/seo/sitemap-entries'
 
-import { getBaseUrl } from '@/lib/seo/base-url'
+/**
+ * SEO EMERGENCY (Batch 2, code only) — the previous single sitemap
+ * listed 100,000+ URLs, over Google's 50,000-URL-per-sitemap limit.
+ * Next.js `generateSitemaps` splits it into chunk files
+ * (/sitemap/0.xml, /sitemap/1.xml, …), each capped at 40,000 URLs
+ * (headroom under the 50,000 limit). The index at /sitemap.xml is
+ * served by `src/app/sitemap.xml/route.ts` from the same entry list,
+ * so index and chunks can never disagree on chunk count.
+ *
+ * NOTE — tension, stated honestly: the T2/T3 template pages are
+ * noindexed (see their generateMetadata) because they currently show
+ * no real activities, yet they remain listed here. That is the
+ * emergency stop-gap the task asked for. The correct end-state is
+ * one of: (a) put real activities on T2/T3 and remove their noindex,
+ * or (b) drop T2/T3 from this sitemap entirely. Do not treat
+ * "listed + noindexed" as a finished SEO state.
+ */
+export { SITEMAP_CHUNK_SIZE }
 
-const BASE_URL = getBaseUrl()
+export async function generateSitemaps() {
+  const total = buildAllSitemapEntries().length
+  const chunks = Math.ceil(total / SITEMAP_CHUNK_SIZE)
+  return Array.from({ length: chunks }, (_, i) => ({ id: i }))
+}
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // ── Static home & core pages ──────────────────────────────────────────────
-  const corePages: MetadataRoute.Sitemap = ALL_LOCALES.flatMap((locale) => [
-    {
-      url: `${BASE_URL}/${locale}`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly' as const,
-      priority: 1.0,
-    },
-    {
-      url: `${BASE_URL}/${locale}/activities`,
-      lastModified: new Date(),
-      changeFrequency: 'daily' as const,
-      priority: 0.9,
-    },
-    {
-      url: `${BASE_URL}/${locale}/create`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly' as const,
-      priority: 0.8,
-    },
-  ])
-
-  // ── T1, T2, T3 (static params) ────────────────────────────────────────────
-  const t1 = buildT1SitemapEntries()
-  const t2 = buildT2SitemapEntries()
-  const t3 = buildT3SitemapEntries()
-
-  // ── T5: Topic pages ────────────────────────────────────────────────────────
-  const t5: MetadataRoute.Sitemap = ALL_LOCALES.flatMap((locale) =>
-    TOPIC_SLUGS.map((topic) => ({
-      url: `${BASE_URL}/${locale}/topics/${topic}`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly' as const,
-      priority: 0.6,
-    })),
-  )
-
-  // ── T8: Competitor alternatives ────────────────────────────────────────────
-  const t8 = buildT8SitemapEntries()
-
-  // NOTE: T4 (individual activities) and T7 (teacher profiles) use ISR and are
-  // submitted to Google Search Console as URL inspection / auto-discovered from
-  // internal links, not pre-generated in the main sitemap (they can be millions
-  // of URLs). A separate Supabase-backed sitemap index can be added in Phase 6.
-
-  return [
-    ...corePages,
-    ...t1,
-    ...t2,
-    ...t3,
-    ...t5,
-    ...t8,
-  ]
+export default async function sitemap({
+  id,
+}: {
+  id: number
+}): Promise<MetadataRoute.Sitemap> {
+  const all = buildAllSitemapEntries()
+  const start = id * SITEMAP_CHUNK_SIZE
+  return all.slice(start, start + SITEMAP_CHUNK_SIZE)
 }

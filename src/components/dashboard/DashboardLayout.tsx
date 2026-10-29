@@ -263,16 +263,18 @@ export default function DashboardLayout({
             borderBlockStart: '1px solid var(--color-border)',
           }}
         >
-          <a
-            href="mailto:support@eduplay.app"
+          {/* Help row: deliberately NOT a mailto link. support@eduplay.app
+              was removed 2026-10-29 because eduplay.app is NOT owned by the
+              owner — mail sent there would go to a stranger. Owner TODO:
+              supply a real support address, then restore a mailto link. */}
+          <span
             style={{
               fontSize: '13px',
               color: 'var(--color-text-muted)',
-              textDecoration: 'none',
             }}
           >
-            📧 {teacherEmail || 'support@eduplay.app'}
-          </a>
+            📧 {teacherEmail || 'Help'}
+          </span>
         </div>
       </aside>
 

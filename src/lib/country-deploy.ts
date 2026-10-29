@@ -5,6 +5,7 @@
 import fs from 'fs'
 import path from 'path'
 import { COUNTRY_CONFIGS, CountryCode } from '@/lib/stripe/config'
+import { getBaseUrl } from '@/lib/seo/base-url'
 
 interface DeployEnv {
   NEXT_PUBLIC_COUNTRY_CODE: string
@@ -24,15 +25,14 @@ function generateEnvContent(envVars: DeployEnv): string {
     .join('\n')
 }
 
-function getBaseUrl(code: CountryCode): string {
-  const subdomainMap: Partial<Record<CountryCode, string>> = {
-    PK: 'https://pk.eduplay.app',
-    SA: 'https://sa.eduplay.app',
-    AE: 'https://ae.eduplay.app',
-    IN: 'https://in.eduplay.app',
-    BR: 'https://br.eduplay.app',
-  }
-  return subdomainMap[code] ?? 'https://eduplay.app'
+// Country subdomains DISABLED 2026-10-29: eduplay.app is NOT owned by
+// the owner, so no country deployment may point at it or its subdomains.
+// Every country build uses the single live URL from getBaseUrl()
+// (https://eduplay-self.vercel.app unless NEXT_PUBLIC_BASE_URL is set
+// to a domain that is actually owned). Do not re-add the subdomain map
+// until a custom domain is owned and verified.
+function getCountryBaseUrl(_code: CountryCode): string {
+  return getBaseUrl()
 }
 
 export function generateCountryEnv(countryCode: CountryCode): string {
@@ -47,7 +47,7 @@ export function generateCountryEnv(countryCode: CountryCode): string {
     NEXT_PUBLIC_RTL_DEFAULT: config.rtl ? 'true' : 'false',
     NEXT_PUBLIC_PRO_PRICE_DISPLAY: config.proTierPriceDisplay,
     NEXT_PUBLIC_SCHOOL_PRICE_DISPLAY: config.schoolTierPriceDisplay,
-    NEXT_PUBLIC_BASE_URL: getBaseUrl(countryCode),
+    NEXT_PUBLIC_BASE_URL: getCountryBaseUrl(countryCode),
     NEXT_PUBLIC_SITE_NAME: `EduPlay ${config.name}`,
   }
 

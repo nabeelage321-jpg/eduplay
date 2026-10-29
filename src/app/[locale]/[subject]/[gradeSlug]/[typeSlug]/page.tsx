@@ -40,16 +40,23 @@ export async function generateMetadata({
   const actType = ACTIVITY_TYPES_SEED.find((t) => t.slug === params.typeSlug)
   if (!subject || !grade || !actType) return {}
 
-  return generatePageMetadata({
-    template: 'T3',
-    locale: params.locale,
-    subject: params.subject,
-    subjectLabel: getSubjectName(subject, params.locale),
-    grade: params.gradeSlug,
-    gradeLabel: getGradeLabel(grade, params.locale),
-    type: params.typeSlug,
-    typeLabel: getActivityTypeLabel(actType, params.locale),
-  })
+  // SEO EMERGENCY (Batch 2): this template page shows no real activities
+  // yet (one generic sentence + placeholder cards, removed in Batch 5),
+  // so it must not be indexed. Remove this robots override only when
+  // real activities are rendered on the page.
+  return {
+    ...generatePageMetadata({
+      template: 'T3',
+      locale: params.locale,
+      subject: params.subject,
+      subjectLabel: getSubjectName(subject, params.locale),
+      grade: params.gradeSlug,
+      gradeLabel: getGradeLabel(grade, params.locale),
+      type: params.typeSlug,
+      typeLabel: getActivityTypeLabel(actType, params.locale),
+    }),
+    robots: { index: false, follow: true },
+  }
 }
 
 export default async function SubjectGradeTypePage({

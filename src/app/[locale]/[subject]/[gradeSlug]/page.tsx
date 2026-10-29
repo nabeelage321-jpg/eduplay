@@ -32,14 +32,20 @@ export async function generateMetadata({
   const actType = ACTIVITY_TYPES_SEED.find((t) => t.slug === params.type)
   if (!subject || !actType) return {}
 
-  return generatePageMetadata({
-    template: 'T2',
-    locale: params.locale,
-    subject: params.subject,
-    subjectLabel: getSubjectName(subject, params.locale),
-    type: params.type,
-    typeLabel: getActivityTypeLabel(actType, params.locale),
-  })
+  // SEO EMERGENCY (Batch 2): this template page shows no real activities
+  // yet (navigation/links only), so it must not be indexed. Remove this
+  // robots override only when real activities are rendered on the page.
+  return {
+    ...generatePageMetadata({
+      template: 'T2',
+      locale: params.locale,
+      subject: params.subject,
+      subjectLabel: getSubjectName(subject, params.locale),
+      type: params.type,
+      typeLabel: getActivityTypeLabel(actType, params.locale),
+    }),
+    robots: { index: false, follow: true },
+  }
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────

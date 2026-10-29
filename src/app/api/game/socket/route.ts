@@ -1,35 +1,28 @@
-﻿// src/app/api/game/socket/route.ts
-// Socket.IO endpoint for real-time game communication
-// Phase 3: Multiplayer games via WebSockets
+// src/app/api/game/socket/route.ts
+// Batch 3 — this endpoint is REMOVED, not fixed with a mock.
+//
+// It previously returned { ok: true, message: 'WebSocket endpoint
+// ready' } while doing no websocket work at all. Returning that
+// again would fake live multiplayer, so both methods now answer
+// 410 Gone and point callers at the real interim flow:
+//   POST /api/live-sessions        (teacher creates a session)
+//   GET  /api/live-sessions?roomCode=XXXXXX
+//   POST /api/live-sessions/[id]/join
+//   POST /api/live-sessions/[id]/action
+//   UI: /[locale]/live (polling leaderboard, 3-second refresh)
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
-/**
- * POST /api/game/socket
- * Upgrade connection to WebSocket for real-time game updates
- */
-export async function POST(request: NextRequest) {
-  try {
-    // Socket.IO upgrade will be handled by Next.js WebSocket support
-    // This is a placeholder for the handshake endpoint
-    return NextResponse.json({
-      ok: true,
-      message: 'WebSocket endpoint ready',
-    })
-  } catch (error) {
-    console.error('Socket error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+const GONE = {
+  error: 'Socket endpoint removed',
+  detail: 'The old /api/game/socket endpoint never ran a real websocket and has been removed. Use the /api/live-sessions polling flow instead (see /[locale]/live).',
+  liveFlow: '/api/live-sessions',
 }
 
-/**
- * GET /api/game/socket
- * Check WebSocket availability
- */
+export async function POST() {
+  return NextResponse.json(GONE, { status: 410 })
+}
+
 export async function GET() {
-  return NextResponse.json({
-    ok: true,
-    version: '1.0',
-    features: ['real-time-updates', 'multiplayer', 'leaderboard'],
-  })
+  return NextResponse.json(GONE, { status: 410 })
 }
