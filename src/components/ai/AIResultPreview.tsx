@@ -14,6 +14,7 @@ interface AIResultPreviewProps {
   grade: string
   onAddAll: (items: ActivityItem[]) => void
   onClose: () => void
+  difficulty?: 'easy' | 'medium' | 'hard'
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -26,6 +27,7 @@ export default function AIResultPreview({
   grade,
   onAddAll,
   onClose,
+  difficulty = 'medium',
 }: AIResultPreviewProps) {
   const [items, setItems] = useState<ActivityItem[]>(initialItems)
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
@@ -61,15 +63,16 @@ export default function AIResultPreview({
   const handleRegenerateItem = async (index: number) => {
     setRegeneratingIndex(index)
     try {
-      const res = await fetch('/api/ai/generate-activity', {
+      const res = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           topic,
           activityType,
-          itemCount: 1,
+          itemCount: 2,
           locale,
           grade,
+          difficulty,
         }),
       })
       if (res.ok) {

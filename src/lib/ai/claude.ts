@@ -23,6 +23,7 @@ export interface GenerateActivityParams {
   grade: string
   curriculum?: string
   isPremium?: boolean
+  difficulty?: 'easy' | 'medium' | 'hard'
 }
 
 export interface GenerateQuestionsParams {
@@ -199,7 +200,7 @@ function chooseModel(isPremium = false): string {
 export async function generateActivity(
   params: GenerateActivityParams
 ): Promise<{ items: ActivityItem[]; cost: CostRecord }> {
-  const { topic, type, count, locale, grade, curriculum, isPremium } = params
+  const { topic, type, count, locale, grade, curriculum, isPremium, difficulty = 'medium' } = params
   const model = chooseModel(isPremium)
 
   const systemBlocks: SystemBlock[] = [
@@ -210,7 +211,7 @@ export async function generateActivity(
     },
   ]
 
-  const userPrompt = buildActivityUserPrompt({ topic, type, count, locale, grade, curriculum })
+  const userPrompt = buildActivityUserPrompt({ topic, type, count, locale, grade, curriculum, difficulty })
 
   const response = await callClaude({
     model,

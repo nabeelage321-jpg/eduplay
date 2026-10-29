@@ -6,6 +6,7 @@ import { SUBJECTS_SEED, getSubjectName } from '@/lib/supabase/seed/subjects'
 import { GRADES_SEED, getGradeLabel } from '@/lib/supabase/seed/grades'
 import JsonLd from '@/components/seo/JsonLd'
 import Breadcrumb from '@/components/seo/Breadcrumb'
+import EmptyActivitiesCTA from '@/components/activities/EmptyActivitiesCTA'
 import { generateWebPageSchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
 
 export async function generateStaticParams() {
@@ -252,23 +253,7 @@ export default async function SubjectGradeTypePage({
               gap: '1rem',
             }}
           >
-            {Array.from({ length: 8 }).map((_, i) => (
-              <article
-                key={i}
-                style={{
-                  background: 'var(--color-surface)',
-                  borderRadius: 'var(--radius)',
-                  padding: '1.25rem',
-                  boxShadow: 'var(--shadow-card)',
-                  minHeight: '160px',
-                }}
-              >
-                <div style={{ height: '1rem', background: 'var(--color-border)', borderRadius: '4px', width: '75%', marginBottom: '0.5rem' }} />
-                <div style={{ height: '0.75rem', background: 'var(--color-border)', borderRadius: '4px', width: '50%', marginBottom: '1rem' }} />
-                <div style={{ height: '0.75rem', background: 'var(--color-border)', borderRadius: '4px', width: '90%', marginBottom: '0.375rem' }} />
-                <div style={{ height: '0.75rem', background: 'var(--color-border)', borderRadius: '4px', width: '65%' }} />
-              </article>
-            ))}
+            <EmptyActivitiesCTA locale={params.locale} />
           </div>
         </section>
 

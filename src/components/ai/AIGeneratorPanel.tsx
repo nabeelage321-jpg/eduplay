@@ -21,6 +21,8 @@ interface UsageData {
   isPremium: boolean
 }
 
+// Batch 4 — all 23 types, matching the creator + play games. Previously
+// only 12 were offered here, so AI could not make the other 11 games.
 const ACTIVITY_TYPES = [
   { value: 'quiz', label: 'Quiz' },
   { value: 'match-up', label: 'Match Up' },
@@ -34,11 +36,23 @@ const ACTIVITY_TYPES = [
   { value: 'missing-word', label: 'Missing Word' },
   { value: 'unjumble', label: 'Unjumble' },
   { value: 'order', label: 'Order' },
+  { value: 'crossword', label: 'Crossword' },
+  { value: 'spin-wheel', label: 'Spin Wheel' },
+  { value: 'balloon-pop', label: 'Balloon Pop' },
+  { value: 'whack-a-mole', label: 'Whack-a-Mole' },
+  { value: 'labelled-diagram', label: 'Labelled Diagram' },
+  { value: 'gameshow-quiz', label: 'Gameshow Quiz' },
+  { value: 'random-wheel', label: 'Random Wheel' },
+  { value: 'open-box', label: 'Open the Box' },
+  { value: 'memory-match', label: 'Memory Match' },
+  { value: 'typing-race', label: 'Typing Race' },
+  { value: 'bingo', label: 'Bingo' },
 ]
 
 const GRADES = [
   'Pre-K', 'KG', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4',
   'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10',
+  'Grade 11', 'Grade 12',
 ]
 
 const LOCALES = [
@@ -65,6 +79,7 @@ export default function AIGeneratorPanel({
   const [itemCount, setItemCount] = useState(10)
   const [selectedLocale, setSelectedLocale] = useState(locale)
   const [grade, setGrade] = useState('Grade 3')
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium')
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [usage, setUsage] = useState<UsageData | null>(null)
@@ -105,7 +120,7 @@ export default function AIGeneratorPanel({
     }, 800)
 
     try {
-      const res = await fetch('/api/ai/generate-activity', {
+      const res = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -114,6 +129,7 @@ export default function AIGeneratorPanel({
           itemCount,
           locale: selectedLocale,
           grade,
+          difficulty,
         }),
       })
 
@@ -332,6 +348,47 @@ export default function AIGeneratorPanel({
                       </option>
                     ))}
                   </select>
+
+                  {/* Difficulty - Batch 4 */}
+                  <label style={labelStyle} htmlFor="ai-difficulty">
+                    Difficulty
+                  </label>
+                  <div
+                    role="group"
+                    aria-label="Difficulty"
+                    style={{ display: 'flex', gap: '0.5rem', marginBlockEnd: '1.5rem' }}
+                  >
+                    {([
+                      { value: 'easy', label: 'Easy' },
+                      { value: 'medium', label: 'Medium' },
+                      { value: 'hard', label: 'Hard' },
+                    ] as const).map((d) => (
+                      <button
+                        key={d.value}
+                        type="button"
+                        onClick={() => setDifficulty(d.value)}
+                        aria-pressed={difficulty === d.value}
+                        style={{
+                          flex: 1,
+                          minHeight: '48px',
+                          padding: '0.5rem',
+                          borderRadius: 'var(--radius)',
+                          border: difficulty === d.value ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                          background: difficulty === d.value ? 'var(--color-surface-alt)' : 'var(--color-surface)',
+                          color: 'var(--color-text-primary)',
+                          fontWeight: difficulty === d.value ? 700 : 400,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                  {activityType === 'bingo' && (
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBlockEnd: '1rem' }}>
+                      Bingo needs at least 8 items - use 10 or more for a full 5x5 card.
+                    </p>
+                  )}
 
                   {/* Item count slider */}
                   <label style={labelStyle} htmlFor="ai-count">

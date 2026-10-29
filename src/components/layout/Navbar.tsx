@@ -21,7 +21,8 @@ export default function Navbar({ locale }: NavbarProps) {
   const [themePanelOpen, setThemePanelOpen] = useState(false)
 
   const navLinks = [
-    { href: `/${locale}/activities`, label: t('activities') },
+    { href: `/${locale}/browse`, label: 'Browse Games' },
+    { href: `/${locale}/live`, label: 'Live Game' },
     { href: `/${locale}/create`,     label: t('create') },
     { href: `/${locale}/dashboard`,  label: t('dashboard') },
   ]

@@ -99,14 +99,15 @@ export default function HomePage({ locale }: { locale: SupportedLocale }) {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link href={`/${locale}/create`} className="btn-primary text-lg px-8 py-4">
-                {t('heroCta')}
+              <Link href={`/${locale}/create`} className="btn-primary text-lg px-8 py-4" style={{ minHeight: '48px', display: 'inline-flex', alignItems: 'center' }}>
+                {t('startCreating')}
               </Link>
               <Link
-                href={`/${locale}/activities`}
+                href={`/${locale}/browse`}
                 className="btn-secondary text-base px-6 py-3"
+                style={{ minHeight: '48px', display: 'inline-flex', alignItems: 'center' }}
               >
-                Browse activities
+                {t('browseActivities')}
               </Link>
             </div>
 

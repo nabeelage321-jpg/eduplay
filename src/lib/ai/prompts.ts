@@ -13,6 +13,7 @@ interface ActivityPromptParams {
   locale: string
   grade: string
   curriculum?: string
+  difficulty?: 'easy' | 'medium' | 'hard'
 }
 
 interface QuestionsPromptParams {
@@ -58,6 +59,28 @@ const ACTIVITY_TYPE_SCHEMAS: Record<string, string> = {
   hangman: `{"items": [{"prompt": "clue or category", "answer": "WORD (uppercase, max 12 chars)"}]}`,
   'missing-word': `{"items": [{"prompt": "full sentence", "answer": "the missing word"}]}`,
   unjumble: `{"items": [{"prompt": "jumbled word order sentence", "answer": "correct sentence"}]}`,
+  // Batch 4 — schemas for every remaining type. All still use the same
+  // prompt/answer item model the game engines already accept, so no
+  // new database fields are needed. How each engine maps the pair:
+  // spin-wheel / random-wheel: prompt = wheel item, answer = same item
+  // (the wheel shows prompts); balloon-pop / whack-a-mole: prompt =
+  // question, answer = correct label to pop/hit; labelled-diagram:
+  // prompt = part name, answer = part name (image supplied by creator);
+  // gameshow-quiz: prompt = question, answer = correct answer, hint =
+  // lifeline hint; open-box: prompt = box label/question, answer =
+  // hidden item; memory-match: prompt/answer = matching pair;
+  // typing-race: prompt = question/word, answer = exact text to type;
+  // bingo: prompt = clue/call, answer = cell value.
+  'spin-wheel': `{"items": [{"prompt": "wheel item", "answer": "wheel item"}]}`,
+  'random-wheel': `{"items": [{"prompt": "wheel item", "answer": "wheel item"}]}`,
+  'balloon-pop': `{"items": [{"prompt": "question", "answer": "correct answer"}]}`,
+  'whack-a-mole': `{"items": [{"prompt": "question", "answer": "correct answer"}]}`,
+  'labelled-diagram': `{"items": [{"prompt": "part name", "answer": "part name", "hint": "where it is"}]}`,
+  'gameshow-quiz': `{"items": [{"prompt": "question", "answer": "correct answer", "hint": "lifeline hint"}]}`,
+  'open-box': `{"items": [{"prompt": "box question or label", "answer": "hidden answer"}]}`,
+  'memory-match': `{"items": [{"prompt": "first half of pair", "answer": "matching second half"}]}`,
+  'typing-race': `{"items": [{"prompt": "question or word to type", "answer": "exact answer text to type"}]}`,
+  bingo: `{"items": [{"prompt": "clue to call out", "answer": "bingo cell value"}]}`,
 }
 
 function getActivitySchema(type: string): string {
@@ -91,13 +114,19 @@ QUALITY RULES:
 }
 
 export function buildActivityUserPrompt(params: ActivityPromptParams): string {
-  const { topic, type, count, locale, grade, curriculum } = params
+  const { topic, type, count, locale, grade, curriculum, difficulty = 'medium' } = params
   const lang = getLangName(locale)
   const schema = getActivitySchema(type)
   const curriculumNote = curriculum ? `Curriculum: ${curriculum}.` : ''
+  const difficultyGuide: Record<string, string> = {
+    easy: 'basic recall, straightforward concepts, simple vocabulary',
+    medium: 'understanding and application, moderate vocabulary, some inference',
+    hard: 'analysis, evaluation, advanced vocabulary, multi-step reasoning',
+  }
 
   return `Create a "${type}" activity about "${topic}" for grade ${grade} students.
 Language: ${lang}. ${curriculumNote}
+Difficulty: ${difficulty} (${difficultyGuide[difficulty] ?? difficultyGuide.medium}).
 Generate exactly ${count} items.
 
 Required JSON schema:
@@ -125,6 +154,16 @@ function getTypeSpecificRules(type: string): string {
     hangman: '- Choose topic-relevant words\n- 5-10 letter words work best',
     'missing-word': '- Remove the most important word from a meaningful sentence\n- The removed word tests vocabulary knowledge',
     unjumble: '- Jumble word order in a grammatically correct sentence\n- Result should be a natural, meaningful sentence',
+    'spin-wheel': '- Each item is one wheel entry; prompt and answer are the same text',
+    'random-wheel': '- Each item is one wheel entry; prompt and answer are the same text',
+    'balloon-pop': '- Prompt is a question, answer is the single correct label',
+    'whack-a-mole': '- Prompt is a question, answer is the single correct label',
+    'labelled-diagram': '- Prompt/answer are part names the creator will attach to an image',
+    'gameshow-quiz': '- Prompt is a dramatic quiz question, answer is correct, hint is a lifeline hint',
+    'open-box': '- Prompt is the box question/label, answer is the hidden item',
+    'memory-match': '- Prompt and answer must form a clear matching pair (term/definition, word/meaning, question/answer)',
+    'typing-race': '- Answer must be short and exactly typable (one word or short phrase, no punctuation surprises)',
+    bingo: '- Prompt is a clue, answer is the bingo cell value; answers must all be distinct',
   }
   return rules[type] ?? '- Create clear, educationally valuable items'
 }

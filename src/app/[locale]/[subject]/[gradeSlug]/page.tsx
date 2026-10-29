@@ -5,6 +5,7 @@ import { ACTIVITY_TYPES_SEED, getActivityTypeLabel } from '@/lib/supabase/seed/a
 import { SUBJECTS_SEED, getSubjectName } from '@/lib/supabase/seed/subjects'
 import JsonLd from '@/components/seo/JsonLd'
 import Breadcrumb from '@/components/seo/Breadcrumb'
+import EmptyActivitiesCTA from '@/components/activities/EmptyActivitiesCTA'
 import { generateWebPageSchema } from '@/lib/seo/schema'
 
 // ─── Static params: 30 subjects × 20 types × 11 locales ──────────────────────
@@ -206,37 +207,7 @@ export default async function SubjectTypePage({
             }}
             aria-label="Activities grid"
           >
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  background: 'var(--color-surface)',
-                  borderRadius: 'var(--radius)',
-                  padding: '1.25rem',
-                  boxShadow: 'var(--shadow-card)',
-                  minHeight: '140px',
-                }}
-                aria-hidden="true"
-              >
-                <div
-                  style={{
-                    height: '1rem',
-                    background: 'var(--color-border)',
-                    borderRadius: '4px',
-                    width: '75%',
-                    marginBottom: '0.5rem',
-                  }}
-                />
-                <div
-                  style={{
-                    height: '0.75rem',
-                    background: 'var(--color-border)',
-                    borderRadius: '4px',
-                    width: '55%',
-                  }}
-                />
-              </div>
-            ))}
+            <EmptyActivitiesCTA locale={params.locale} />
           </div>
         </section>
 

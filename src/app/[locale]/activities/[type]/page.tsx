@@ -5,6 +5,7 @@ import { ACTIVITY_TYPES_SEED, getActivityTypeLabel } from '@/lib/supabase/seed/a
 import { ALL_LOCALES } from '@/lib/seo/metadata'
 import JsonLd from '@/components/seo/JsonLd'
 import Breadcrumb from '@/components/seo/Breadcrumb'
+import EmptyActivitiesCTA from '@/components/activities/EmptyActivitiesCTA'
 import { generateWebPageSchema } from '@/lib/seo/schema'
 
 // ─── Static params: 20 types × 11 locales ────────────────────────────────────
@@ -213,7 +214,7 @@ export default async function ActivityTypeHubPage({
             Featured {typeLabel}s
           </h2>
           <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem' }}>
-            Hand-picked {typeLabel.toLowerCase()}s loved by teachers worldwide.
+            Browse real activities, or create a new one below. A database-backed list for this type will appear here once it is connected.
           </p>
 
           {/* Skeleton grid — replaced with real ActivityGrid component in Phase 2 integration */}
@@ -225,48 +226,7 @@ export default async function ActivityTypeHubPage({
             }}
             aria-label={`${typeLabel} activities grid`}
           >
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  background: 'var(--color-surface)',
-                  borderRadius: 'var(--radius)',
-                  padding: '1.25rem',
-                  boxShadow: 'var(--shadow-card)',
-                  minHeight: '140px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.5rem',
-                }}
-                aria-hidden="true"
-              >
-                <div
-                  style={{
-                    height: '1rem',
-                    background: 'var(--color-border)',
-                    borderRadius: '4px',
-                    width: '70%',
-                  }}
-                />
-                <div
-                  style={{
-                    height: '0.75rem',
-                    background: 'var(--color-border)',
-                    borderRadius: '4px',
-                    width: '50%',
-                  }}
-                />
-                <div style={{ flex: 1 }} />
-                <div
-                  style={{
-                    height: '2rem',
-                    background: 'var(--color-primary)',
-                    borderRadius: 'var(--radius-sm)',
-                    opacity: 0.15,
-                  }}
-                />
-              </div>
-            ))}
+            <EmptyActivitiesCTA locale={params.locale} />
           </div>
         </section>
 

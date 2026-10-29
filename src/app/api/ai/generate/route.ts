@@ -1,5 +1,5 @@
 /**
- * POST /api/ai/generate-activity
+ * POST /api/ai/generate
  * Requires auth. Enforces daily generation limits.
  */
 
@@ -54,6 +54,7 @@ interface GenerateActivityBody {
   locale: string
   grade: string
   curriculum?: string
+  difficulty?: 'easy' | 'medium' | 'hard'
 }
 
 function validateBody(body: unknown): GenerateActivityBody {
@@ -93,6 +94,9 @@ function validateBody(body: unknown): GenerateActivityBody {
   const grade = String(b.grade ?? '').trim()
   if (!grade) throw new Error('grade is required')
 
+  const difficultyRaw = String(b.difficulty ?? 'medium').trim().toLowerCase()
+  const difficulty: 'easy' | 'medium' | 'hard' =
+    difficultyRaw === 'easy' || difficultyRaw === 'hard' ? (difficultyRaw as 'easy' | 'hard') : 'medium'
   return {
     topic,
     activityType,
@@ -100,6 +104,7 @@ function validateBody(body: unknown): GenerateActivityBody {
     locale,
     grade,
     curriculum: b.curriculum ? String(b.curriculum).trim().slice(0, 100) : undefined,
+    difficulty,
   }
 }
 
@@ -173,6 +178,7 @@ export async function POST(request: NextRequest) {
       grade: body.grade,
       curriculum: body.curriculum,
       isPremium: user.is_premium,
+      difficulty: body.difficulty ?? 'medium',
     })
   } catch (err) {
     console.error('[AI generate-activity]', err)
@@ -195,5 +201,6 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     items: result.items,
     tokensUsed: result.cost.inputTokens + result.cost.outputTokens,
+    difficulty: body.difficulty ?? 'medium',
   })
 }
