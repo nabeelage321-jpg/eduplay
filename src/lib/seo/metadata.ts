@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
+import { getBaseUrl } from './base-url'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const SITE_NAME = 'EduPlay'
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.app'
+const BASE_URL = getBaseUrl()
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-default.png`
 
 export const ALL_LOCALES = ['en', 'ur', 'ar', 'hi', 'es', 'fr', 'bn', 'pt', 'ru', 'id', 'zh'] as const

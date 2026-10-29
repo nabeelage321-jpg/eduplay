@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import TypeSelector from './TypeSelector'
+import RolePicker, { readStoredRole, storeRole, type CreatorRole } from './RolePicker'
 import MetaForm, { type ActivityMeta } from './MetaForm'
 import ItemEditor from './ItemEditor'
 import ActivityPreview from './ActivityPreview'
@@ -29,6 +30,8 @@ interface ActivityCreatorProps {
 export default function ActivityCreator({ locale }: ActivityCreatorProps) {
   const router = useRouter()
   const [step, setStep] = useState(1)
+  const [creatorRole, setCreatorRole] = useState<CreatorRole>('teacher')
+  const [roleHydrated, setRoleHydrated] = useState(false)
   const [typeSlug, setTypeSlug] = useState<string | null>(null)
   const [meta, setMeta] = useState<ActivityMeta>({
     title: '', description: '', subject: '', grade: '',
@@ -42,6 +45,8 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
   const [saveOptions, setSaveOptions] = useState<SaveOptions>({ isPublic: true, tags: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => { setCreatorRole(readStoredRole()); setRoleHydrated(true) }, [])
 
   function canProceed(): boolean {
     if (step === 1) return !!typeSlug
@@ -90,6 +95,13 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
 
   return (
     <div style={{ maxWidth: '680px', margin: '0 auto', padding: '1rem' }}>
+      {/* Batch 1 — creator role picker (local choice; auth is a later batch) */}
+      <div style={{ maxWidth: '720px', margin: '0 auto 1.5rem' }}>
+        <RolePicker
+          value={roleHydrated ? creatorRole : 'teacher'}
+          onChange={(role) => { setCreatorRole(role); storeRole(role) }}
+        />
+      </div>
       {/* Step indicator */}
       <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', alignItems: 'center' }}>
         {STEPS.map((s, i) => (

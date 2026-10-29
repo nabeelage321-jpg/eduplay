@@ -68,7 +68,7 @@ export default async function TopicPage({
         ? topic.name_ar
         : topic.name_en
 
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.app'
+  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'
   const pageUrl = `${base}/${params.locale}/topics/${params.topic}`
 
   // Related topics from same subject

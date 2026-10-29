@@ -99,7 +99,7 @@ export default async function ActivityPage({
   const activity = await getActivity(params.id, params.locale)
   if (!activity) notFound()
 
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.app'
+  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'
   const pageUrl = `${base}/${params.locale}/activity/${activity.id}`
 
   const activitySchema = generateActivitySchema({

@@ -30,7 +30,7 @@ interface LTIActivity {
 }
 
 function buildLTIExport(activity: Record<string, unknown>): LTIActivity {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.app'
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'
   return {
     '@context': 'https://schema.org',
     type: 'EducationalActivity',
@@ -50,7 +50,7 @@ function buildLTIExport(activity: Record<string, unknown>): LTIActivity {
 }
 
 function buildCommonCartridgeXML(activity: Record<string, unknown>): string {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.app'
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'
   const activityUrl = `${baseUrl}/activity/${activity.id}/play`
 
   return `<?xml version="1.0" encoding="UTF-8"?>

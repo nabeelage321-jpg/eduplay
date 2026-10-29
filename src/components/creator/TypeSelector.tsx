@@ -23,6 +23,9 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'hangman',          icon: '🎯', name: 'Hangman',          desc: 'Guess letter by letter' },
   { slug: 'random-wheel',     icon: '🎰', name: 'Random Wheel',     desc: 'Pick a random name/topic' },
   { slug: 'open-box',         icon: '🎁', name: 'Open the Box',     desc: 'Reveal hidden items' },
+  { slug: 'memory-match',     icon: '🧠', name: 'Memory Match',     desc: 'Flip tiles to match pairs' },
+  { slug: 'typing-race',      icon: '⌨️', name: 'Typing Race',      desc: 'Type fast, build a streak' },
+  { slug: 'bingo',            icon: '🎱', name: 'Bingo',            desc: 'Mark answers, complete a line' },
 ]
 
 interface TypeSelectorProps {

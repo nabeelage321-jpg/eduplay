@@ -144,6 +144,27 @@ const GAME_INSTRUCTIONS: Record<string, { description?: string; steps: Array<{ e
       { emoji: '✅', text: 'Answer the question' },
     ],
   },
+  'memory-match': {
+    steps: [
+      { emoji: '👀', text: 'Flip two tiles to reveal them' },
+      { emoji: '🧠', text: 'Match the prompt with its answer' },
+      { emoji: '✅', text: 'Match all pairs to win' },
+    ],
+  },
+  'typing-race': {
+    steps: [
+      { emoji: '👀', text: 'Read the prompt carefully' },
+      { emoji: '⌨️', text: 'Type the answer before time runs out' },
+      { emoji: '🔥', text: 'Keep a streak going for bonus points' },
+    ],
+  },
+  bingo: {
+    steps: [
+      { emoji: '👀', text: 'Read the called prompt' },
+      { emoji: '👆', text: 'Tap the matching answer on your card' },
+      { emoji: '🎱', text: 'Complete a row, column or diagonal for Bingo' },
+    ],
+  },
   'labelled-diagram': {
     steps: [
       { emoji: '👀', text: 'Look at the diagram' },

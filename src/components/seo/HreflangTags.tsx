@@ -6,7 +6,9 @@
 
 import { ALL_LOCALES } from '@/lib/seo/metadata'
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.app'
+import { getBaseUrl } from '@/lib/seo/base-url'
+
+const BASE_URL = getBaseUrl()
 
 interface HreflangTagsProps {
   /** The path AFTER the locale segment, e.g. "/activities/quiz" */

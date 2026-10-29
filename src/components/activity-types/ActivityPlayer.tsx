@@ -31,6 +31,9 @@ const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
   'hangman':          lazy(() => import('./HangmanActivity')),
   'random-wheel':     lazy(() => import('./RandomWheelActivity')),
   'open-box':         lazy(() => import('./OpenBoxActivity')),
+  'memory-match':     lazy(() => import('./MemoryMatchActivity')),
+  'typing-race':      lazy(() => import('./TypingRaceActivity')),
+  'bingo':            lazy(() => import('./BingoActivity')),
 }
 
 interface ActivityPlayerProps {

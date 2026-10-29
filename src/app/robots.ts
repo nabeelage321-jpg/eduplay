@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.app'
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'
 
 export default function robots(): MetadataRoute.Robots {
   return {

@@ -22,7 +22,7 @@ export async function generateMetadata({
   return {
     title: { default: t('homePage'), template: '%s | EduPlay' },
     description: t('homePageDesc'),
-    metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.com'),
+    metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'),
     openGraph: {
       siteName: 'EduPlay',
       locale,

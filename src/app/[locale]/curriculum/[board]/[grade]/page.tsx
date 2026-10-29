@@ -61,7 +61,7 @@ export default async function CurriculumPage({
   if (!curriculum || !grade) notFound()
 
   const gradeLabel = getGradeLabel(grade, params.locale)
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.app'
+  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'
   const pageUrl = `${base}/${params.locale}/curriculum/${params.board}/${params.grade}`
 
   // Other grades for this curriculum

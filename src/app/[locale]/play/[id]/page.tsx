@@ -19,6 +19,9 @@ import { RandomWheelGame } from './RandomWheelGame'
 import { SpinWheelGame } from './SpinWheelGame'
 import { OpenBoxGame } from './OpenBoxGame'
 import { LabelledDiagramGame } from './LabelledDiagramGame'
+import { MemoryMatchGame } from './MemoryMatchGame'
+import { TypingRaceGame } from './TypingRaceGame'
+import { BingoGame } from './BingoGame'
 
 interface Activity {
   id: string
@@ -110,7 +113,10 @@ export default async function PlayPage({ params }: PageProps) {
       {activity.type === 'spin-wheel' && <SpinWheelGame activity={activity} locale={params.locale} />}
       {activity.type === 'open-box' && <OpenBoxGame activity={activity} locale={params.locale} />}
       {activity.type === 'labelled-diagram' && <LabelledDiagramGame activity={activity} locale={params.locale} />}
-      {!['quiz', 'flashcards', 'true-false', 'hangman', 'match-up', 'anagram', 'balloon-pop', 'whack-a-mole', 'fill-blank', 'missing-word', 'order', 'crossword', 'word-search', 'categorize', 'unjumble', 'gameshow-quiz', 'random-wheel', 'spin-wheel', 'open-box', 'labelled-diagram'].includes(activity.type) && (
+      {activity.type === 'memory-match' && <MemoryMatchGame activity={activity} locale={params.locale} />}
+      {activity.type === 'typing-race' && <TypingRaceGame activity={activity} locale={params.locale} />}
+      {activity.type === 'bingo' && <BingoGame activity={activity} locale={params.locale} />}
+      {!['quiz', 'flashcards', 'true-false', 'hangman', 'match-up', 'anagram', 'balloon-pop', 'whack-a-mole', 'fill-blank', 'missing-word', 'order', 'crossword', 'word-search', 'categorize', 'unjumble', 'gameshow-quiz', 'random-wheel', 'spin-wheel', 'open-box', 'labelled-diagram', 'memory-match', 'typing-race', 'bingo'].includes(activity.type) && (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-white mb-4">Game Type Not Found</h1>

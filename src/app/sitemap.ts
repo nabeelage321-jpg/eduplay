@@ -8,7 +8,9 @@ import {
 import { TOPIC_SLUGS } from '@/lib/supabase/seed/topics'
 import { ALL_LOCALES } from '@/lib/seo/metadata'
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.app'
+import { getBaseUrl } from '@/lib/seo/base-url'
+
+const BASE_URL = getBaseUrl()
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // ── Static home & core pages ──────────────────────────────────────────────

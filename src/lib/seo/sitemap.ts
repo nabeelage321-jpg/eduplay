@@ -1,7 +1,9 @@
 import type { MetadataRoute } from 'next'
 import { ALL_LOCALES } from './metadata'
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.app'
+import { getBaseUrl } from './base-url'
+
+const BASE_URL = getBaseUrl()
 
 // ─── Static data references (mirrors seed data) ──────────────────────────────
 
@@ -40,7 +42,7 @@ export const COMPETITOR_SLUGS = [
 
 // ─── Sitemap entry builders ───────────────────────────────────────────────────
 
-/** T1: Activity Type Hub — 20 types × 11 locales = 220 pages */
+/** T1: Activity Type Hub — 23 types × 11 locales = 253 pages */
 export function buildT1SitemapEntries(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = []
   for (const locale of ALL_LOCALES) {
@@ -56,7 +58,7 @@ export function buildT1SitemapEntries(): MetadataRoute.Sitemap {
   return entries
 }
 
-/** T2: Subject + Type — 30 subjects × 20 types × 11 locales = 6,600 pages */
+/** T2: Subject + Type — 30 subjects × 23 types × 11 locales = 7,590 pages */
 export function buildT2SitemapEntries(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = []
   for (const locale of ALL_LOCALES) {
@@ -74,7 +76,7 @@ export function buildT2SitemapEntries(): MetadataRoute.Sitemap {
   return entries
 }
 
-/** T3: Subject + Grade + Type — 30 × 14 × 20 × 11 = 92,400 pages */
+/** T3: Subject + Grade + Type — 30 × 14 × 23 × 11 = 106,260 pages */
 export function buildT3SitemapEntries(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = []
   for (const locale of ALL_LOCALES) {

@@ -3,7 +3,9 @@
  * All generators return plain objects — rendering is handled by <JsonLd />.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.app'
+import { getBaseUrl } from './base-url'
+
+const BASE_URL = getBaseUrl()
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

@@ -111,7 +111,7 @@ export default async function TeacherProfilePage({
   const teacher = await getTeacherProfile(params.username)
   if (!teacher) notFound()
 
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.app'
+  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'
 
   const teacherSchema = generateTeacherSchema({
     username: teacher.username,

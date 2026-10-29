@@ -51,7 +51,7 @@ export default async function ActivityTypeHubPage({
   if (!actType) notFound()
 
   const typeLabel = getActivityTypeLabel(actType, params.locale)
-  const pageUrl = `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.app'}/${params.locale}/activities/${params.type}`
+  const pageUrl = `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'}/${params.locale}/activities/${params.type}`
 
   const jsonLd = generateWebPageSchema({
     url: pageUrl,

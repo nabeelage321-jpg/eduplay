@@ -12,7 +12,7 @@ export type SupportedLocale =
 
 export const RTL_LOCALES: SupportedLocale[] = ['ur', 'ar']
 
-export type UserRole = 'teacher' | 'student' | 'admin'
+export type UserRole = 'teacher' | 'student' | 'parent' | 'admin'
 
 export type ActivityTypeSlug =
   | 'quiz' | 'match-up' | 'anagram' | 'crossword' | 'wordsearch'
@@ -20,6 +20,7 @@ export type ActivityTypeSlug =
   | 'categorize' | 'order' | 'fill-blank' | 'labelled-diagram'
   | 'flashcards' | 'missing-word' | 'unjumble' | 'gameshow-quiz'
   | 'hangman' | 'random-wheel' | 'open-box'
+  | 'memory-match' | 'typing-race' | 'bingo'
 
 export interface ActivityItem {
   prompt: string

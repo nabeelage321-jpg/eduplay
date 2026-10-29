@@ -55,7 +55,7 @@ export default async function SubjectTypePage({
 
   const subjectLabel = getSubjectName(subject, params.locale)
   const typeLabel = getActivityTypeLabel(actType, params.locale)
-  const pageUrl = `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.app'}/${params.locale}/${params.subject}/${params.type}`
+  const pageUrl = `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'}/${params.locale}/${params.subject}/${params.type}`
 
   const jsonLd = generateWebPageSchema({
     url: pageUrl,

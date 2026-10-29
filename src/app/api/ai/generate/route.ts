@@ -73,6 +73,7 @@ function validateBody(body: unknown): GenerateActivityBody {
     'balloon-pop','whack-a-mole','true-false','categorize','order',
     'fill-blank','labelled-diagram','flashcards','missing-word','unjumble',
     'gameshow-quiz','hangman','random-wheel','open-box',
+    'memory-match','typing-race','bingo',
   ]
   if (!validTypes.includes(activityType)) {
     throw new Error(`Invalid activityType: ${activityType}`)

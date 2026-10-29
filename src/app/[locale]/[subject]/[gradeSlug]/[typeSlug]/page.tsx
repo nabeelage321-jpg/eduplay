@@ -65,7 +65,7 @@ export default async function SubjectGradeTypePage({
   const subjectLabel = getSubjectName(subject, params.locale)
   const gradeLabel = getGradeLabel(grade, params.locale)
   const typeLabel = getActivityTypeLabel(actType, params.locale)
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay.app'
+  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'
   const pageUrl = `${base}/${params.locale}/${params.subject}/${params.gradeSlug}/${params.typeSlug}`
 
   const gradeIndex = GRADES_SEED.findIndex((g) => g.slug === params.gradeSlug)
