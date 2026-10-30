@@ -86,7 +86,7 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
         throw new Error(data.error || 'Failed to save activity')
       }
       const { activity } = await res.json()
-      router.push(`/${locale}/activity/${activity.id}`)
+      router.push(`/${locale}/activity/${activity.id}/play`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
       setSaving(false)

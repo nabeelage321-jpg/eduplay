@@ -433,3 +433,19 @@
     }
   }
 }
+
+/* ── Homepage + UI batch: kid-first tap targets (no game logic change) ── */
+/* Inline styles in game components set small sizes; these !important rules
+   only raise tappable targets and text size inside the player, and add a
+   visible focus ring. Colours stay CSS variables; no hardcoded palette. */
+.eduplay-player button,
+.eduplay-player [role="button"] {
+  min-height: 48px;
+  min-width: 48px;
+  font-size: 1rem;
+}
+.eduplay-player button:focus-visible,
+.eduplay-player [role="button"]:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}

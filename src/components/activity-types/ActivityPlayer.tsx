@@ -86,8 +86,10 @@ export default function ActivityPlayer({ activity, theme, locale, onComplete }: 
   }
 
   return (
-    <Suspense fallback={<LoadingSkeleton />}>
-      <Component items={items} theme={theme} locale={locale} onComplete={onComplete} />
-    </Suspense>
+    <div className="eduplay-player">
+      <Suspense fallback={<LoadingSkeleton />}>
+        <Component items={items} theme={theme} locale={locale} onComplete={onComplete} />
+      </Suspense>
+    </div>
   )
 }

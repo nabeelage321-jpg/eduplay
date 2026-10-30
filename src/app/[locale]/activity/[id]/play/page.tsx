@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import ActivityPlayer from '@/components/activity-types/ActivityPlayer'
+import ShareGameButton from '@/components/home/ShareGameButton'
 import { useThemeStore } from '@/lib/store/theme-store'
 import type { Activity, SupportedLocale } from '@/types'
 
@@ -134,13 +135,14 @@ export default function PlayPage() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{
             color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)',
-            fontWeight: 700, fontSize: '0.9rem',
+            fontWeight: 700, fontSize: '1.1rem',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0,
           }}>
             {activity.title}
           </p>
         </div>
-        <span style={{ color: 'var(--color-text-muted)', fontFamily: 'monospace', fontSize: '0.875rem', flexShrink: 0 }}>
+        <ShareGameButton locale={locale} gameId={id} gameTitle={activity.title} />
+        <span style={{ color: 'var(--color-text-muted)', fontFamily: 'monospace', fontSize: '1rem', flexShrink: 0 }}>
           {formatTime(elapsed)}
         </span>
       </div>
@@ -175,7 +177,7 @@ export default function PlayPage() {
                   whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                   onClick={() => { setFinalScore(null); setElapsed(0) }}
                   style={{
-                    padding: '0.75rem 1.5rem', borderRadius: 'var(--radius)',
+                    padding: '1rem 1.75rem', borderRadius: 'var(--radius)', minHeight: '56px',
                     border: 'none', background: 'var(--gradient-btn)',
                     color: '#fff', fontFamily: 'var(--font-display)', fontSize: '0.95rem',
                     cursor: 'pointer', boxShadow: 'var(--shadow)',
@@ -187,7 +189,7 @@ export default function PlayPage() {
                   whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                   onClick={() => router.push(`/${locale}/activities`)}
                   style={{
-                    padding: '0.75rem 1.5rem', borderRadius: 'var(--radius)',
+                    padding: '1rem 1.75rem', borderRadius: 'var(--radius)', minHeight: '56px',
                     border: '2px solid var(--color-border)', background: 'var(--color-surface)',
                     color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontSize: '0.95rem',
                     cursor: 'pointer',

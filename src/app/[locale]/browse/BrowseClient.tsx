@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 
@@ -46,9 +47,10 @@ export function BrowseClient({ locale }: { locale: string }) {
   const router = useRouter()
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedGrade, setSelectedGrade] = useState('pre-k')
-  const [selectedSubject, setSelectedSubject] = useState('All Subjects')
-  const [search, setSearch] = useState('')
+  const searchParams = useSearchParams()
+  const [selectedGrade, setSelectedGrade] = useState(searchParams.get('grade') ?? 'pre-k')
+  const [selectedSubject, setSelectedSubject] = useState(searchParams.get('subject') ?? 'All Subjects')
+  const [search, setSearch] = useState(searchParams.get('search') ?? '')
 
   useEffect(() => {
     const fetchActivities = async () => {

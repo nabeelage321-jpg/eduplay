@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { BrowseClient } from './BrowseClient'
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 }
 
 export default function BrowsePage({ params }: { params: { locale: string } }) {
-  return <BrowseClient locale={params.locale} />
+  return (
+    <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Loading games…</div>}>
+      <BrowseClient locale={params.locale} />
+    </Suspense>
+  )
 }
