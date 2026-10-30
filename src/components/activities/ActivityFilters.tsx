@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { ACTIVITY_TYPE_META } from '@/components/creator/TypeSelector'
+import { FILTER_SUBJECTS, FILTER_GRADES, normalizeTypeFilter } from '@/lib/filters'
 
 export interface FilterState {
   subject: string
@@ -18,15 +19,10 @@ interface ActivityFiltersProps {
   resultCount?: number
 }
 
-const SUBJECTS = [
-  '', 'Mathematics', 'English', 'Science', 'Urdu', 'Social Studies',
-  'History', 'Geography', 'Physics', 'Chemistry', 'Biology', 'Computer Science',
-]
-
-const GRADES = [
-  '', 'Pre-K', 'Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4',
-  'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10',
-]
+// Subject/grade options live in @/lib/filters (DB values as <option value>,
+// display labels as visible text). Do not re-introduce label-as-value lists
+// here — that was the 2026-10-30 "0 activities found" bug: /api/activities
+// does an exact eq on the DB columns, so 'Mathematics'/'Pre-K' matched nothing.
 
 const LOCALES = [
   { code: '', name: 'All Languages' }, { code: 'en', name: 'English' },
@@ -94,19 +90,19 @@ export default function ActivityFilters({ filters, onChange, resultCount }: Acti
         <select value={filters.subject} onChange={(e) => set('subject', e.target.value)}
           aria-label="Filter by subject" style={selectStyle}>
           <option value="">All Subjects</option>
-          {SUBJECTS.filter(Boolean).map((s) => <option key={s} value={s}>{s}</option>)}
+          {FILTER_SUBJECTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
 
         <select value={filters.grade} onChange={(e) => set('grade', e.target.value)}
           aria-label="Filter by grade" style={selectStyle}>
           <option value="">All Grades</option>
-          {GRADES.filter(Boolean).map((g) => <option key={g} value={g}>{g}</option>)}
+          {FILTER_GRADES.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
         </select>
 
         <select value={filters.type} onChange={(e) => set('type', e.target.value)}
           aria-label="Filter by activity type" style={selectStyle}>
           <option value="">All Types</option>
-          {ACTIVITY_TYPE_META.map((t) => <option key={t.slug} value={t.slug}>{t.icon} {t.name}</option>)}
+          {ACTIVITY_TYPE_META.map((t) => <option key={t.slug} value={normalizeTypeFilter(t.slug)}>{t.icon} {t.name}</option>)}
         </select>
 
         <select value={filters.locale} onChange={(e) => set('locale', e.target.value)}

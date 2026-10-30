@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { resolveSessionUser } from '@/lib/auth/session-user'
+import { normalizeSubjectFilter, normalizeGradeFilter, normalizeTypeFilter } from '@/lib/filters'
 
 // Rate limiting (simple in-memory — replace with Upstash Redis in production)
 const rateLimitMap = new Map<string, { count: number; reset: number }>()
@@ -32,9 +33,12 @@ export async function GET(req: NextRequest) {
   }
 
   const searchParams = req.nextUrl?.searchParams ?? new URL(req.url).searchParams
-  const subject = searchParams.get('subject') ?? ''
-  const grade = searchParams.get('grade') ?? ''
-  const type = searchParams.get('type') ?? ''
+  // Defence in depth for the 2026-10-30 browse bug: the client now sends
+  // DB values, but old/bookmarked URLs may still send display labels
+  // ('Mathematics', 'Pre-K', 'wordsearch'). Normalize before the exact eq.
+  const subject = normalizeSubjectFilter(searchParams.get('subject') ?? '')
+  const grade = normalizeGradeFilter(searchParams.get('grade') ?? '')
+  const type = normalizeTypeFilter(searchParams.get('type') ?? '')
   const locale = searchParams.get('locale') ?? ''
   const search = searchParams.get('search') ?? ''
   const sort = searchParams.get('sort') ?? 'newest'
