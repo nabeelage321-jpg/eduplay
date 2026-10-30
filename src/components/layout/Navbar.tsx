@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSession, signOut } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
@@ -16,6 +17,7 @@ interface NavbarProps {
 
 export default function Navbar({ locale }: NavbarProps) {
   const t = useTranslations('nav')
+  const { data: session } = useSession()
   const { audience, kidsTheme } = useThemeStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [themePanelOpen, setThemePanelOpen] = useState(false)
@@ -91,19 +93,38 @@ export default function Navbar({ locale }: NavbarProps) {
             </span>
           </button>
 
-          {/* Auth buttons */}
-          <Link
-            href={`/${locale}/login`}
-            className="btn-ghost text-sm hidden sm:flex"
-          >
-            {t('login')}
-          </Link>
-          <Link
-            href={`/${locale}/signup`}
-            className="btn-primary text-sm py-2 px-4"
-          >
-            {t('signup')}
-          </Link>
+          {/* Auth buttons — AUTH batch: show session state, not dead links.
+              When signed in, Navbar shows the account email + Sign out;
+              otherwise the login/signup pages (which now exist). */}
+          {session?.user?.email ? (
+            <>
+              <span className="text-sm hidden sm:inline" style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {session.user.email}
+              </span>
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: `/${locale}` })}
+                className="btn-ghost text-sm hidden sm:flex"
+              >
+                {t('logout')}
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href={`/${locale}/login`}
+                className="btn-ghost text-sm hidden sm:flex"
+              >
+                {t('login')}
+              </Link>
+              <Link
+                href={`/${locale}/signup`}
+                className="btn-primary text-sm py-2 px-4"
+              >
+                {t('signup')}
+              </Link>
+            </>
+          )}
 
           {/* Mobile hamburger */}
           <button
@@ -154,13 +175,24 @@ export default function Navbar({ locale }: NavbarProps) {
                   {link.label}
                 </Link>
               ))}
-              <Link
-                href={`/${locale}/login`}
-                className="btn-ghost py-3 text-base"
-                onClick={() => setMenuOpen(false)}
-              >
-                {t('login')}
-              </Link>
+              {session?.user?.email ? (
+                <button
+                  type="button"
+                  onClick={() => { setMenuOpen(false); signOut({ callbackUrl: `/${locale}` }) }}
+                  className="btn-ghost py-3 text-base"
+                  style={{ textAlign: 'left' }}
+                >
+                  {t('logout')} ({session.user.email})
+                </button>
+              ) : (
+                <Link
+                  href={`/${locale}/login`}
+                  className="btn-ghost py-3 text-base"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t('login')}
+                </Link>
+              )}
             </div>
           </motion.div>
         )}

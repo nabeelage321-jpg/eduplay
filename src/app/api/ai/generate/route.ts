@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth/auth-options'
 import { generateActivity, moderateContent } from '@/lib/ai/claude'
 import { createServerClient } from '@/lib/supabase/server'
 
@@ -112,7 +113,7 @@ function validateBody(body: unknown): GenerateActivityBody {
 
 export async function POST(request: NextRequest) {
   // 1. Auth
-  const session = await getServerSession()
+  const session = await getServerSession(authOptions)
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

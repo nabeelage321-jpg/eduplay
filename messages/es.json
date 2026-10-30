@@ -192,6 +192,7 @@
     "create": "Crear",
     "dashboard": "Panel",
     "login": "Iniciar sesión",
+"signup": "Crear cuenta",
     "logout": "Cerrar sesión",
     "profile": "Perfil"
   },

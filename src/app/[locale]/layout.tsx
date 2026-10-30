@@ -4,6 +4,7 @@ import { getMessages, getTranslations } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import type { SupportedLocale } from '@/types'
 import { RTL_LOCALES } from '@/types'
+import AuthProvider from '@/components/auth/AuthProvider'
 import '@/styles/globals.css'
 
 const locales: SupportedLocale[] = [
@@ -76,7 +77,7 @@ export default async function LocaleLayout({
       </head>
       <body className="theme-transition antialiased" suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
-          {children}
+          <AuthProvider>{children}</AuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>

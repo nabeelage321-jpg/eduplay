@@ -277,6 +277,7 @@
     "create": "Create",
     "dashboard": "Dashboard",
     "login": "Sign in",
+"signup": "Sign up",
     "logout": "Sign out",
     "profile": "Profile"
   },

@@ -3,13 +3,14 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth/auth-options'
 import { stripe, getOrCreateStripeCustomer } from '@/lib/stripe/stripe'
 import { TIERS, TierId } from '@/lib/stripe/tiers'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession()
+  const session = await getServerSession(authOptions)
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

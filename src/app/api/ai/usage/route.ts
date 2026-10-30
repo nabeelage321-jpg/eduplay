@@ -5,12 +5,13 @@
 
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth/auth-options'
 import { createServerClient } from '@/lib/supabase/server'
 
 const FREE_DAILY_LIMIT = 10
 
 export async function GET() {
-  const session = await getServerSession()
+  const session = await getServerSession(authOptions)
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
