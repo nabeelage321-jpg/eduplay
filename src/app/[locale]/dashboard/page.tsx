@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { resolveSessionUser } from '@/lib/auth/session-user'
 import { createServerClient } from '@/lib/supabase/server'
+import { approvalLabel, APPROVED_GAMES_FOR_CREATOR_BADGE } from '@/lib/approval'
+import RoleSetup from '@/components/dashboard/RoleSetup'
 import type { SupportedLocale } from '@/types'
 
 interface Props {
@@ -22,6 +24,7 @@ interface MyActivity {
   subject: string | null
   grade: string | null
   is_public: boolean | null
+  approval_status?: string | null
   created_at: string | null
 }
 
@@ -52,17 +55,33 @@ export default async function DashboardPage({ params }: Props) {
     listUnavailable = true
   } else {
     const supabase = createServerClient()
-    const { data, error, count } = await supabase
+    // APPROVAL BATCH 2026-10-30: try with approval_status; if migration
+    // 007 has not been run yet, fall back to the old columns so the list
+    // still works (status then shows as Approved).
+    const withStatus = await supabase
       .from('activities')
-      .select('id, title, type, subject, grade, is_public, created_at', { count: 'exact' })
+      .select('id, title, type, subject, grade, is_public, approval_status, created_at', { count: 'exact' })
       .eq('teacher_id', sessionUser.userId)
       .order('created_at', { ascending: false })
       .range(0, 49)
-    if (error) {
-      listUnavailable = true
+    if (!withStatus.error) {
+      activities = (withStatus.data ?? []) as MyActivity[]
+      myCount = withStatus.count ?? activities.length
+    } else if (/approval_status/i.test(withStatus.error.message ?? '')) {
+      const legacy = await supabase
+        .from('activities')
+        .select('id, title, type, subject, grade, is_public, created_at', { count: 'exact' })
+        .eq('teacher_id', sessionUser.userId)
+        .order('created_at', { ascending: false })
+        .range(0, 49)
+      if (legacy.error) {
+        listUnavailable = true
+      } else {
+        activities = (legacy.data ?? []) as MyActivity[]
+        myCount = legacy.count ?? activities.length
+      }
     } else {
-      activities = (data ?? []) as MyActivity[]
-      myCount = count ?? activities.length
+      listUnavailable = true
     }
   }
 
@@ -72,9 +91,27 @@ export default async function DashboardPage({ params }: Props) {
         <h1 className="heading-display" style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
           Dashboard
         </h1>
-        <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem' }}>
+        <p style={{ color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
           Signed in as {sessionUser.email}
+          {sessionUser.role ? ` · Role: ${sessionUser.role}` : ''}
+          {sessionUser.creatorBadge ? ' · ⭐ Creator badge' : ''}
         </p>
+        {sessionUser.creatorBadge ? (
+          <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem' }}>
+            You have earned the Creator badge ({APPROVED_GAMES_FOR_CREATOR_BADGE} approved games) —
+            your new games can go public without per-game approval.
+          </p>
+        ) : sessionUser.role === null ? (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <RoleSetup />
+          </div>
+        ) : (
+          <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem' }}>
+            {sessionUser.role === 'student'
+              ? 'Your games wait for teacher/parent approval before they can go public.'
+              : ''}
+          </p>
+        )}
 
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
           <Link href={`/${locale}/create`} className="btn-primary" style={{ padding: '0.6rem 1.2rem' }}>
@@ -122,6 +159,7 @@ export default async function DashboardPage({ params }: Props) {
                 <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: '0.25rem 0 0' }}>
                   {[activity.type, activity.subject, activity.grade].filter(Boolean).join(' · ')}
                   {activity.is_public === false ? ' · Private' : ''}
+                  {activity.approval_status ? ` · ${approvalLabel(activity.approval_status)}` : ''}
                 </p>
               </li>
             ))}

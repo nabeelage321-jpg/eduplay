@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { resolveSessionUser } from '@/lib/auth/session-user'
+import { needsApproval } from '@/lib/approval'
 
 function sanitize(str: unknown): string {
   if (typeof str !== 'string') return ''
@@ -51,11 +52,26 @@ export async function PUT(
     // Verify ownership. A row with no teacher_id (all programme games,
     // which predate the column) has no owner and is therefore NOT
     // editable by anyone — returning 403 for it protects the programme.
-    const { data: existing } = await supabase
-      .from('activities')
-      .select('teacher_id')
-      .eq('id', params.id)
-      .single()
+    // APPROVAL BATCH 2026-10-30: also read approval_status, falling back
+    // to 'approved' if migration 007 has not been run yet.
+    let existing: { teacher_id: string | null; approval_status?: string | null } | null = null
+    {
+      const withStatus = await supabase
+        .from('activities')
+        .select('teacher_id, approval_status')
+        .eq('id', params.id)
+        .single()
+      if (!withStatus.error && withStatus.data) {
+        existing = withStatus.data
+      } else {
+        const legacy = await supabase
+          .from('activities')
+          .select('teacher_id')
+          .eq('id', params.id)
+          .single()
+        existing = legacy.data ? { ...legacy.data, approval_status: 'approved' } : null
+      }
+    }
 
     if (!existing) {
       return NextResponse.json({ error: 'Activity not found' }, { status: 404 })
@@ -65,6 +81,16 @@ export async function PUT(
     }
 
     const body = await req.json()
+
+    // APPROVAL BATCH 2026-10-30: a student without the Creator badge may
+    // NOT flip a pending game public — rejected, not silently forced.
+    const studentGated = needsApproval(sessionUser.role, sessionUser.creatorBadge)
+    if (studentGated && existing.approval_status === 'pending' && body.is_public === true) {
+      return NextResponse.json(
+        { error: 'Waiting for teacher/parent approval. This game cannot go public yet.' },
+        { status: 403 },
+      )
+    }
 
     // Only columns that exist in the activities table (migration 001 +
     // 005). The old code updated subject_id / grade_id / curriculum_id /
@@ -91,12 +117,47 @@ export async function PUT(
       updates.content = body.content
     }
 
-    const { data: activity, error } = await supabase
+    // APPROVAL BATCH 2026-10-30: a gated student editing a REJECTED game
+    // resubmits it — back to pending, private, awaiting approval again.
+    // A pending game stays pending on content edits; only an approval
+    // (see /approve) can move it to approved.
+    const editedContent =
+      updates.title !== undefined || updates.description !== undefined ||
+      updates.type !== undefined || updates.subject !== undefined ||
+      updates.grade !== undefined || updates.language !== undefined ||
+      updates.curriculum !== undefined || updates.content !== undefined
+    if (studentGated && existing.approval_status === 'rejected' && editedContent) {
+      updates.approval_status = 'pending'
+      updates.approved_by = null
+      updates.approved_at = null
+      updates.is_public = false
+    }
+    // A pending game can never be left public by an edit.
+    if (studentGated && existing.approval_status === 'pending') {
+      updates.is_public = false
+    }
+
+    let { data: activity, error } = await supabase
       .from('activities')
       .update(updates)
       .eq('id', params.id)
       .select()
       .single()
+
+    // Pre-migration fallback: retry without approval columns if 007
+    // has not been run yet, so editing does not break.
+    if (error && /approval_status|approved_by|approved_at/i.test(error.message ?? '')) {
+      const { approval_status: _s, approved_by: _b, approved_at: _a, ...legacyUpdates } = updates
+      const retry = await supabase.from('activities').update(legacyUpdates).eq('id', params.id).select().single()
+      activity = retry.data
+      error = retry.error
+      if (!retry.error) {
+        return NextResponse.json({
+          activity,
+          migration_warning: 'Approval is not set up yet (migration 007 has not been run).',
+        })
+      }
+    }
 
     if (error) throw error
 

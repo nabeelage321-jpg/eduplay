@@ -59,6 +59,10 @@ export interface Activity {
   topic_id?: string
   items?: ActivityItem[]
   is_public: boolean
+  /** Approval gate (migration 007). Undefined on rows read before 007 ran. */
+  approval_status?: 'pending' | 'approved' | 'rejected'
+  approved_by?: string | null
+  approved_at?: string | null
   tags?: string[]
   play_count?: number
   like_count?: number

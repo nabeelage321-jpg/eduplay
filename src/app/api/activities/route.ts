@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { resolveSessionUser } from '@/lib/auth/session-user'
 import { normalizeSubjectFilter, normalizeGradeFilter, normalizeTypeFilter } from '@/lib/filters'
+import { needsApproval } from '@/lib/approval'
 
 // Rate limiting (simple in-memory — replace with Upstash Redis in production)
 const rateLimitMap = new Map<string, { count: number; reset: number }>()
@@ -124,22 +125,49 @@ export async function POST(req: NextRequest) {
         hint: sanitize(item.hint),
         imageUrl: typeof item.imageUrl === 'string' ? item.imageUrl.slice(0, 500) : '',
       })) } : { questions: [] },
-      is_public: body.is_public === true,
+      // APPROVAL BATCH 2026-10-30: server-enforced, never client-chosen.
+      // A student without the Creator badge gets a pending, private game
+      // no matter what is_public the client sent. Client-sent approval
+      // fields are ignored outright. A badge holder publishes like a
+      // teacher: approved, and public if they asked for it.
+      is_public: needsApproval(sessionUser.role, sessionUser.creatorBadge)
+        ? false
+        : body.is_public === true,
+      approval_status: needsApproval(sessionUser.role, sessionUser.creatorBadge)
+        ? 'pending'
+        : 'approved',
+      approved_by: null,
+      approved_at: null,
     }
 
     if (!payload.title) return NextResponse.json({ error: 'Title is required' }, { status: 400 })
     if (!payload.type) return NextResponse.json({ error: 'Activity type is required' }, { status: 400 })
     if (payload.content.questions.length < 2) return NextResponse.json({ error: 'At least 2 questions are required' }, { status: 400 })
 
-    const { data: activity, error } = await supabase
+    let { data: activity, error } = await supabase
       .from('activities')
       .insert(payload)
       .select()
       .single()
 
+    // Pre-migration fallback: if migration 007 has not been run yet, the
+    // approval columns do not exist and the insert fails. Retry without
+    // them so creating does not break — and say so in the response.
+    let migrationWarning: string | null = null
+    if (error && /approval_status|approved_by|approved_at/i.test(error.message ?? '')) {
+      const { approval_status: _s, approved_by: _b, approved_at: _a, ...legacyPayload } = payload
+      const retry = await supabase.from('activities').insert(legacyPayload).select().single()
+      activity = retry.data
+      error = retry.error
+      if (!retry.error) {
+        migrationWarning =
+          'Approval is not set up yet (migration 007 has not been run). This game was saved without approval status.'
+      }
+    }
+
     if (error) throw error
 
-    return NextResponse.json({ activity }, { status: 201 })
+    return NextResponse.json({ activity, ...(migrationWarning ? { migration_warning: migrationWarning } : {}) }, { status: 201 })
   } catch (err) {
     console.error('[POST /api/activities]', err)
     return NextResponse.json({ error: 'Failed to create activity' }, { status: 500 })

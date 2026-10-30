@@ -19,6 +19,36 @@ export default function PlayPage() {
   const [activity, setActivity] = useState<Activity | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [approvalMessage, setApprovalMessage] = useState<string | null>(null)
+
+  // APPROVAL BATCH 2026-10-30: pending/rejected games never show a public
+  // share prompt. The creator can still play privately via this link.
+  const approvalStatus = activity?.approval_status ?? null
+  const isPending = approvalStatus === 'pending'
+  const isRejected = approvalStatus === 'rejected'
+  const showShare = !isPending && !isRejected
+
+  async function decideApproval(action: 'approve' | 'reject') {
+    setApprovalMessage(null)
+    const res = await fetch(`/api/activities/${id}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      setApprovalMessage(data.error ?? 'Could not update approval.')
+      return
+    }
+    setActivity((prev) => (prev ? { ...prev, approval_status: action === 'approve' ? 'approved' : 'rejected' } : prev))
+    setApprovalMessage(
+      action === 'approve'
+        ? data.badge_earned
+          ? 'Approved! This creator has earned the ⭐ Creator badge.'
+          : 'Approved! The creator can now make this game public.'
+        : 'Rejected. The creator can edit it to resubmit for approval.',
+    )
+  }
   const [finalScore, setFinalScore] = useState<number | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -142,12 +172,60 @@ export default function PlayPage() {
             {activity.title}
           </p>
         </div>
-        <ShareGameButton locale={locale} gameId={id} gameTitle={activity.title} />
+        {showShare ? (
+          <ShareGameButton locale={locale} gameId={id} gameTitle={activity.title} />
+        ) : (
+          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', flexShrink: 0 }}>
+            {isPending ? '⏳ Waiting for teacher/parent approval' : '✕ Not approved'}
+          </span>
+        )}
         <SoundToggle />
         <span style={{ color: 'var(--color-text-muted)', fontFamily: 'monospace', fontSize: '1rem', flexShrink: 0 }}>
           {formatTime(elapsed)}
         </span>
       </div>
+
+      {/* Approval notice: pending games show this instead of a share prompt. */}
+      {isPending || isRejected ? (
+        <div style={{
+          maxWidth: '700px', margin: '1rem auto 0', padding: '1rem',
+          background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-lg)',
+        }}>
+          <p style={{ color: 'var(--color-text-secondary)', margin: '0 0 0.75rem' }}>
+            {isPending
+              ? '⏳ Waiting for teacher/parent approval. This game can be played privately here, but it cannot go public yet.'
+              : '✕ This game was not approved. The creator can edit it to resubmit for approval.'}
+          </p>
+          {isPending ? (
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => decideApproval('approve')}
+                style={{ minHeight: '48px', padding: '0.6rem 1.2rem', borderRadius: 'var(--radius)', border: 'none', background: 'var(--gradient-btn)', color: '#fff', cursor: 'pointer' }}
+              >
+                Approve (teacher / parent)
+              </button>
+              <button
+                type="button"
+                onClick={() => decideApproval('reject')}
+                style={{ minHeight: '48px', padding: '0.6rem 1.2rem', borderRadius: 'var(--radius)', border: '2px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)', cursor: 'pointer' }}
+              >
+                Reject
+              </button>
+            </div>
+          ) : null}
+          {approvalMessage ? (
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: '0.75rem 0 0' }}>
+              {approvalMessage}
+            </p>
+          ) : null}
+        </div>
+      ) : approvalMessage ? (
+        <div style={{ maxWidth: '700px', margin: '1rem auto 0', padding: '1rem' }}>
+          <p style={{ color: 'var(--color-text-secondary)', margin: 0 }}>{approvalMessage}</p>
+        </div>
+      ) : null}
 
       {/* Game area */}
       <div style={{ padding: '1rem 0.5rem', maxWidth: '700px', margin: '0 auto' }}>
