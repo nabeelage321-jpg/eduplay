@@ -200,13 +200,15 @@ function buildT2Metadata(p: T2Params): Metadata {
 
 function buildT3Metadata(p: T3Params): Metadata {
   const path = `/${p.subject}/${p.grade}/${p.type}`
-  const title = `Grade ${p.gradeLabel} ${capitalize(p.subjectLabel)} ${p.typeLabel} — free for teachers | ${SITE_NAME}`
-  const description = `Free Grade ${p.gradeLabel} ${p.subjectLabel} ${p.typeLabel} activities. Curriculum-aligned, ready to play, and easy to customise for your class.`
+  // gradeLabel already contains the grade word in English ("Grade 3")
+  // and is a full grade name in other locales — never prefix "Grade ".
+  const title = `${p.gradeLabel} ${capitalize(p.subjectLabel)} ${p.typeLabel} — free for teachers | ${SITE_NAME}`
+  const description = `Free ${p.gradeLabel} ${p.subjectLabel} ${p.typeLabel} activities. Curriculum-aligned, ready to play, and easy to customise for your class.`
 
   return {
     title,
     description,
-    keywords: `grade ${p.gradeLabel} ${p.subjectLabel} ${p.typeLabel}, ${p.subjectLabel} grade ${p.gradeLabel}, ${p.typeLabel} grade ${p.gradeLabel}, free grade ${p.gradeLabel} activities`,
+    keywords: `${p.gradeLabel} ${p.subjectLabel} ${p.typeLabel}, ${p.subjectLabel} ${p.gradeLabel}, ${p.typeLabel} ${p.gradeLabel}, free ${p.gradeLabel} activities`,
     alternates: {
       canonical: `${BASE_URL}/${p.locale}${path}`,
       languages: buildHreflangAlternates(path),
@@ -284,13 +286,13 @@ function buildT5Metadata(p: T5Params): Metadata {
 
 function buildT6Metadata(p: T6Params): Metadata {
   const path = `/curriculum/${p.board}/${p.grade}`
-  const title = `${p.boardLabel} Grade ${p.gradeLabel} interactive activities — ${SITE_NAME}`
-  const description = `Curriculum-aligned interactive activities, quizzes, and games for ${p.boardLabel} Grade ${p.gradeLabel}. Mapped to your syllabus — free for teachers.`
+  const title = `${p.boardLabel} ${p.gradeLabel} interactive activities — ${SITE_NAME}`
+  const description = `Curriculum-aligned interactive activities, quizzes, and games for ${p.boardLabel} ${p.gradeLabel}. Mapped to your syllabus — free for teachers.`
 
   return {
     title,
     description,
-    keywords: `${p.boardLabel} grade ${p.gradeLabel}, ${p.boardLabel} activities, curriculum aligned grade ${p.gradeLabel}, ${p.country ?? ''} curriculum activities`.trim(),
+    keywords: `${p.boardLabel} ${p.gradeLabel}, ${p.boardLabel} activities, curriculum aligned ${p.gradeLabel}, ${p.country ?? ''} curriculum activities`.trim(),
     alternates: {
       canonical: `${BASE_URL}/${p.locale}${path}`,
       languages: buildHreflangAlternates(path),

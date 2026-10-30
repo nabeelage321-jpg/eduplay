@@ -1,51 +1,66 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { generatePageMetadata, ALL_LOCALES } from '@/lib/seo/metadata'
+import { generatePageMetadata } from '@/lib/seo/metadata'
 import { ACTIVITY_TYPES_SEED, getActivityTypeLabel } from '@/lib/supabase/seed/activity-types'
 import { SUBJECTS_SEED, getSubjectName } from '@/lib/supabase/seed/subjects'
 import JsonLd from '@/components/seo/JsonLd'
 import Breadcrumb from '@/components/seo/Breadcrumb'
 import EmptyActivitiesCTA from '@/components/activities/EmptyActivitiesCTA'
 import { generateWebPageSchema } from '@/lib/seo/schema'
+import { fetchProgrammaticActivities, isIndexable } from '@/lib/seo/programmatic'
 
-// ─── Static params: 30 subjects × 20 types × 11 locales ──────────────────────
-
+// ─── Static params ────────────────────────────────────────────────────────────
+// NOTE: this route is /[locale]/[subject]/[gradeSlug] where the second
+// segment actually carries the TYPE slug (URLs are /{subject}/{type}).
+// The previous generateStaticParams returned a `type` key that never
+// matched this route. Pages render on demand (revalidated daily) instead.
 export async function generateStaticParams() {
-  const params: { locale: string; subject: string; type: string }[] = []
-  for (const locale of ALL_LOCALES) {
-    for (const subject of SUBJECTS_SEED) {
-      for (const actType of ACTIVITY_TYPES_SEED) {
-        params.push({ locale, subject: subject.slug, type: actType.slug })
-      }
-    }
-  }
-  return params
+  return []
 }
+
+export const dynamicParams = true
+export const revalidate = 86400
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
 export async function generateMetadata({
   params,
 }: {
-  params: { locale: string; subject: string; type: string }
+  params: { locale: string; subject: string; gradeSlug: string }
 }): Promise<Metadata> {
+  const typeSlug = params.gradeSlug
   const subject = SUBJECTS_SEED.find((s) => s.slug === params.subject)
-  const actType = ACTIVITY_TYPES_SEED.find((t) => t.slug === params.type)
+  const actType = ACTIVITY_TYPES_SEED.find((t) => t.slug === typeSlug)
   if (!subject || !actType) return {}
 
-  // SEO EMERGENCY (Batch 2): this template page shows no real activities
-  // yet (navigation/links only), so it must not be indexed. Remove this
-  // robots override only when real activities are rendered on the page.
+  // SEO batch 2026-10-30: index ONLY when real games exist for this
+  // subject/type combination; description comes from real games.
+  const { activities, count } = await fetchProgrammaticActivities({
+    subjectSlug: params.subject,
+    typeSlug,
+    limit: 100,
+  })
+  const base = generatePageMetadata({
+    template: 'T2',
+    locale: params.locale,
+    subject: params.subject,
+    subjectLabel: getSubjectName(subject, params.locale),
+    type: typeSlug,
+    typeLabel: getActivityTypeLabel(actType, params.locale),
+  })
+  if (!isIndexable(count)) {
+    return { ...base, robots: { index: false, follow: true } }
+  }
+  const realDescription = activities
+    .slice(0, 3)
+    .map((a) => (a.description ? `${a.title}: ${a.description}` : a.title))
+    .join(' ')
   return {
-    ...generatePageMetadata({
-      template: 'T2',
-      locale: params.locale,
-      subject: params.subject,
-      subjectLabel: getSubjectName(subject, params.locale),
-      type: params.type,
-      typeLabel: getActivityTypeLabel(actType, params.locale),
-    }),
-    robots: { index: false, follow: true },
+    ...base,
+    description: realDescription,
+    openGraph: { ...base.openGraph, description: realDescription },
+    twitter: { ...base.twitter, description: realDescription },
+    robots: { index: true, follow: true },
   }
 }
 
@@ -54,15 +69,21 @@ export async function generateMetadata({
 export default async function SubjectTypePage({
   params,
 }: {
-  params: { locale: string; subject: string; type: string }
+  params: { locale: string; subject: string; gradeSlug: string }
 }) {
+  const typeSlug = params.gradeSlug
   const subject = SUBJECTS_SEED.find((s) => s.slug === params.subject)
-  const actType = ACTIVITY_TYPES_SEED.find((t) => t.slug === params.type)
+  const actType = ACTIVITY_TYPES_SEED.find((t) => t.slug === typeSlug)
   if (!subject || !actType) notFound()
 
   const subjectLabel = getSubjectName(subject, params.locale)
   const typeLabel = getActivityTypeLabel(actType, params.locale)
-  const pageUrl = `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'}/${params.locale}/${params.subject}/${params.type}`
+  const pageUrl = `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'}/${params.locale}/${params.subject}/${typeSlug}`
+  const { activities } = await fetchProgrammaticActivities({
+    subjectSlug: params.subject,
+    typeSlug,
+    limit: 100,
+  })
 
   const jsonLd = generateWebPageSchema({
     url: pageUrl,
@@ -165,7 +186,7 @@ export default async function SubjectTypePage({
               (grade) => (
                 <a
                   key={grade}
-                  href={`/${params.locale}/${params.subject}/grade-${grade.toLowerCase()}/${params.type}`}
+                  href={`/${params.locale}/${params.subject}/grade-${grade.toLowerCase()}/${typeSlug}`}
                   role="listitem"
                   style={{
                     padding: '0.375rem 0.75rem',
@@ -207,7 +228,35 @@ export default async function SubjectTypePage({
             }}
             aria-label="Activities grid"
           >
-            <EmptyActivitiesCTA locale={params.locale} />
+            {activities.length > 0 ? (
+              activities.map((activity) => (
+                <a
+                  key={activity.id}
+                  href={`/${params.locale}/activity/${activity.id}`}
+                  style={{
+                    display: 'block',
+                    padding: '1rem',
+                    background: 'var(--color-surface)',
+                    borderRadius: 'var(--radius)',
+                    textDecoration: 'none',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text-primary)',
+                  }}
+                >
+                  <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>{activity.title}</h3>
+                  {activity.description ? (
+                    <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', margin: 0 }}>
+                      {activity.description}
+                    </p>
+                  ) : null}
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                    {activity.subject} · {activity.grade} · {activity.type}
+                  </span>
+                </a>
+              ))
+            ) : (
+              <EmptyActivitiesCTA locale={params.locale} />
+            )}
           </div>
         </section>
 
@@ -272,7 +321,7 @@ export default async function SubjectTypePage({
               .map((s) => (
                 <a
                   key={s.slug}
-                  href={`/${params.locale}/${s.slug}/${params.type}`}
+                  href={`/${params.locale}/${s.slug}/${typeSlug}`}
                   role="listitem"
                   style={{
                     display: 'inline-flex',

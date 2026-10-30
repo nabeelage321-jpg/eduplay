@@ -21,7 +21,11 @@ export async function generateMetadata({
 }: RootLayoutProps): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'seo' })
   return {
-    title: { default: t('homePage'), template: '%s | EduPlay' },
+    // Every child title already carries the brand ("... | EduPlay" or
+    // "EduPlay - ..."), so the template must NOT append it again —
+    // that produced "Browse Educational Games | EduPlay | EduPlay".
+    // The default is the branded home title, not the unbranded label.
+    title: { default: t('title'), template: '%s' },
     description: t('homePageDesc'),
     metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'),
     openGraph: {

@@ -7,6 +7,7 @@ import JsonLd from '@/components/seo/JsonLd'
 import Breadcrumb from '@/components/seo/Breadcrumb'
 import EmptyActivitiesCTA from '@/components/activities/EmptyActivitiesCTA'
 import { generateWebPageSchema } from '@/lib/seo/schema'
+import { fetchProgrammaticActivities, isIndexable } from '@/lib/seo/programmatic'
 
 // ─── Static params: 20 types × 11 locales ────────────────────────────────────
 
@@ -33,12 +34,32 @@ export async function generateMetadata({
 
   const typeLabel = getActivityTypeLabel(actType, params.locale)
 
-  return generatePageMetadata({
+  // SEO batch 2026-10-30: index only when real games of this type exist;
+  // description comes from real games, never invented copy.
+  const { activities, count } = await fetchProgrammaticActivities({
+    typeSlug: params.type,
+    limit: 100,
+  })
+  const base = generatePageMetadata({
     template: 'T1',
     locale: params.locale,
     type: params.type,
     typeLabel,
   })
+  if (!isIndexable(count)) {
+    return { ...base, robots: { index: false, follow: true } }
+  }
+  const realDescription = activities
+    .slice(0, 3)
+    .map((a) => (a.description ? `${a.title}: ${a.description}` : a.title))
+    .join(' ')
+  return {
+    ...base,
+    description: realDescription,
+    openGraph: { ...base.openGraph, description: realDescription },
+    twitter: { ...base.twitter, description: realDescription },
+    robots: { index: true, follow: true },
+  }
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -53,6 +74,10 @@ export default async function ActivityTypeHubPage({
 
   const typeLabel = getActivityTypeLabel(actType, params.locale)
   const pageUrl = `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'}/${params.locale}/activities/${params.type}`
+  const { activities, count } = await fetchProgrammaticActivities({
+    typeSlug: params.type,
+    limit: 100,
+  })
 
   const jsonLd = generateWebPageSchema({
     url: pageUrl,
@@ -115,7 +140,7 @@ export default async function ActivityTypeHubPage({
               margin: '0 auto 1.5rem',
             }}
           >
-            {actType.description_en}. Browse thousands of ready-made {typeLabel.toLowerCase()}s
+            {actType.description_en}. Browse the {typeLabel.toLowerCase()}s below
             or create your own in minutes — completely free.
           </p>
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -167,10 +192,10 @@ export default async function ActivityTypeHubPage({
           aria-label="Activity statistics"
         >
           {[
-            { label: `${typeLabel}s available`, value: '10,000+' },
-            { label: 'Subjects covered', value: '30' },
+            { label: `${typeLabel}s available`, value: count.toLocaleString() },
+            { label: 'Subjects with this type', value: '15' },
             { label: 'Grade levels', value: '14' },
-            { label: 'Languages', value: '11' },
+            { label: 'Shown on this page', value: String(activities.length) },
           ].map((stat) => (
             <div
               key={stat.label}
@@ -200,7 +225,6 @@ export default async function ActivityTypeHubPage({
           ))}
         </div>
 
-        {/* Activity grid placeholder — populated from DB in production */}
         <section aria-labelledby="activities-heading">
           <h2
             id="activities-heading"
@@ -213,11 +237,7 @@ export default async function ActivityTypeHubPage({
           >
             Featured {typeLabel}s
           </h2>
-          <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem' }}>
-            Browse real activities, or create a new one below. A database-backed list for this type will appear here once it is connected.
-          </p>
 
-          {/* Skeleton grid — replaced with real ActivityGrid component in Phase 2 integration */}
           <div
             style={{
               display: 'grid',
@@ -226,7 +246,35 @@ export default async function ActivityTypeHubPage({
             }}
             aria-label={`${typeLabel} activities grid`}
           >
-            <EmptyActivitiesCTA locale={params.locale} />
+            {activities.length > 0 ? (
+              activities.map((activity) => (
+                <a
+                  key={activity.id}
+                  href={`/${params.locale}/activity/${activity.id}`}
+                  style={{
+                    display: 'block',
+                    padding: '1rem',
+                    background: 'var(--color-surface)',
+                    borderRadius: 'var(--radius)',
+                    textDecoration: 'none',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text-primary)',
+                  }}
+                >
+                  <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>{activity.title}</h3>
+                  {activity.description ? (
+                    <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', margin: 0 }}>
+                      {activity.description}
+                    </p>
+                  ) : null}
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                    {activity.subject} · {activity.grade} · {activity.type}
+                  </span>
+                </a>
+              ))
+            ) : (
+              <EmptyActivitiesCTA locale={params.locale} />
+            )}
           </div>
         </section>
 

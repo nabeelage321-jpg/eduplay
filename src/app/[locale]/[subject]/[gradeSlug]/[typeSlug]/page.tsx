@@ -8,6 +8,7 @@ import JsonLd from '@/components/seo/JsonLd'
 import Breadcrumb from '@/components/seo/Breadcrumb'
 import EmptyActivitiesCTA from '@/components/activities/EmptyActivitiesCTA'
 import { generateWebPageSchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
+import { fetchProgrammaticActivities, isIndexable } from '@/lib/seo/programmatic'
 
 export async function generateStaticParams() {
   const locale = 'en'
@@ -41,22 +42,38 @@ export async function generateMetadata({
   const actType = ACTIVITY_TYPES_SEED.find((t) => t.slug === params.typeSlug)
   if (!subject || !grade || !actType) return {}
 
-  // SEO EMERGENCY (Batch 2): this template page shows no real activities
-  // yet (one generic sentence + placeholder cards, removed in Batch 5),
-  // so it must not be indexed. Remove this robots override only when
-  // real activities are rendered on the page.
+  // SEO batch 2026-10-30: index ONLY when real games exist for this
+  // exact subject/grade/type combination. The meta description then
+  // comes from the real game(s), never from invented copy.
+  const { activities, count } = await fetchProgrammaticActivities({
+    subjectSlug: params.subject,
+    gradeSlug: params.gradeSlug,
+    typeSlug: params.typeSlug,
+    limit: 50,
+  })
+  const base = generatePageMetadata({
+    template: 'T3',
+    locale: params.locale,
+    subject: params.subject,
+    subjectLabel: getSubjectName(subject, params.locale),
+    grade: params.gradeSlug,
+    gradeLabel: getGradeLabel(grade, params.locale),
+    type: params.typeSlug,
+    typeLabel: getActivityTypeLabel(actType, params.locale),
+  })
+  if (!isIndexable(count)) {
+    return { ...base, robots: { index: false, follow: true } }
+  }
+  const realDescription = activities
+    .slice(0, 3)
+    .map((a) => (a.description ? `${a.title}: ${a.description}` : a.title))
+    .join(' ')
   return {
-    ...generatePageMetadata({
-      template: 'T3',
-      locale: params.locale,
-      subject: params.subject,
-      subjectLabel: getSubjectName(subject, params.locale),
-      grade: params.gradeSlug,
-      gradeLabel: getGradeLabel(grade, params.locale),
-      type: params.typeSlug,
-      typeLabel: getActivityTypeLabel(actType, params.locale),
-    }),
-    robots: { index: false, follow: true },
+    ...base,
+    description: realDescription,
+    openGraph: { ...base.openGraph, description: realDescription },
+    twitter: { ...base.twitter, description: realDescription },
+    robots: { index: true, follow: true },
   }
 }
 
@@ -73,6 +90,12 @@ export default async function SubjectGradeTypePage({
   const subjectLabel = getSubjectName(subject, params.locale)
   const gradeLabel = getGradeLabel(grade, params.locale)
   const typeLabel = getActivityTypeLabel(actType, params.locale)
+  const { activities } = await fetchProgrammaticActivities({
+    subjectSlug: params.subject,
+    gradeSlug: params.gradeSlug,
+    typeSlug: params.typeSlug,
+    limit: 50,
+  })
   const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'
   const pageUrl = `${base}/${params.locale}/${params.subject}/${params.gradeSlug}/${params.typeSlug}`
 
@@ -253,7 +276,35 @@ export default async function SubjectGradeTypePage({
               gap: '1rem',
             }}
           >
-            <EmptyActivitiesCTA locale={params.locale} />
+            {activities.length > 0 ? (
+              activities.map((activity) => (
+                <a
+                  key={activity.id}
+                  href={`/${params.locale}/activity/${activity.id}`}
+                  style={{
+                    display: 'block',
+                    padding: '1rem',
+                    background: 'var(--color-surface)',
+                    borderRadius: 'var(--radius)',
+                    textDecoration: 'none',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text-primary)',
+                  }}
+                >
+                  <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>{activity.title}</h3>
+                  {activity.description ? (
+                    <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', margin: 0 }}>
+                      {activity.description}
+                    </p>
+                  ) : null}
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                    {activity.subject} · {activity.grade} · {activity.type}
+                  </span>
+                </a>
+              ))
+            ) : (
+              <EmptyActivitiesCTA locale={params.locale} />
+            )}
           </div>
         </section>
 

@@ -501,6 +501,26 @@ export const SUBJECTS_SEED: SubjectSeed[] = [
     name_id: 'Bahasa Pashto',
     name_zh: '普什图语',
   },
+  {
+    // Added 2026-10-30 SEO batch: 'General Knowledge' is a real DB
+    // subject (342 live games) and a Browse subject, but had no seed
+    // entry, so its programmatic pages 404'd. Non-English names fall
+    // back to the English name (getSubjectName falls back to name_en).
+    slug: 'general-knowledge',
+    emoji: '🧠',
+    order: 31,
+    name_en: 'General Knowledge',
+    name_ur: 'General Knowledge',
+    name_ar: 'General Knowledge',
+    name_hi: 'General Knowledge',
+    name_es: 'General Knowledge',
+    name_fr: 'General Knowledge',
+    name_bn: 'General Knowledge',
+    name_pt: 'General Knowledge',
+    name_ru: 'General Knowledge',
+    name_id: 'General Knowledge',
+    name_zh: 'General Knowledge',
+  },
 ]
 
 /** Get subject name in a specific locale */

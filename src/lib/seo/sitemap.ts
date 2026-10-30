@@ -7,12 +7,14 @@ const BASE_URL = getBaseUrl()
 
 // ─── Static data references (mirrors seed data) ──────────────────────────────
 
+// Programmatic grid, 2026-10-30 SEO batch: ONLY the 15 subjects that
+// actually have games in the live database (see lib/seo/programmatic.ts).
+// The old 30-subject list generated 60k+ thin pages for subjects with
+// zero games (arabic, music, economics, ...). Those are no longer listed.
 export const SUBJECT_SLUGS = [
-  'mathematics', 'science', 'english', 'urdu', 'arabic', 'islamiat',
-  'history', 'geography', 'computer-science', 'art', 'music', 'physical-education',
-  'economics', 'biology', 'chemistry', 'physics', 'pakistan-studies',
-  'social-studies', 'environmental-science', 'health', 'civics', 'literature',
-  'french', 'spanish', 'german', 'chinese', 'hindi', 'punjabi', 'sindhi', 'pashto',
+  'mathematics', 'science', 'english', 'urdu', 'islamiat',
+  'history', 'geography', 'computer-science', 'art', 'physical-education',
+  'biology', 'chemistry', 'physics', 'social-studies', 'general-knowledge',
 ] as const
 
 export const ACTIVITY_TYPE_SLUGS = [
@@ -43,7 +45,7 @@ export const COMPETITOR_SLUGS = [
 
 // ─── Sitemap entry builders ───────────────────────────────────────────────────
 
-/** T1: Activity Type Hub — 23 types × 11 locales = 253 pages */
+/** T1: Activity Type Hub — 23 types × 11 locales = 253 pages (all types have real games) */
 export function buildT1SitemapEntries(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = []
   for (const locale of ALL_LOCALES) {
@@ -59,7 +61,7 @@ export function buildT1SitemapEntries(): MetadataRoute.Sitemap {
   return entries
 }
 
-/** T2: Subject + Type — 30 subjects × 23 types × 11 locales = 7,590 pages */
+/** T2: Subject + Type — 15 subjects × 23 types × 11 locales = 3,795 pages (every combo has 14 real games, one per grade) */
 export function buildT2SitemapEntries(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = []
   for (const locale of ALL_LOCALES) {
@@ -77,7 +79,7 @@ export function buildT2SitemapEntries(): MetadataRoute.Sitemap {
   return entries
 }
 
-/** T3: Subject + Grade + Type — 30 × 14 × 23 × 11 = 106,260 pages */
+/** T3: Subject + Grade + Type — 15 × 14 × 23 × 11 = 53,130 pages (every combo has >=1 real game) */
 export function buildT3SitemapEntries(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = []
   for (const locale of ALL_LOCALES) {

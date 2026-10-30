@@ -17,9 +17,9 @@ import { GRADES_SEED } from '../lib/supabase/seed/grades'
 describe('buildT1SitemapEntries', () => {
   const entries = buildT1SitemapEntries()
 
-  it('generates exactly 20 types × 11 locales = 220 entries', () => {
+  it('generates exactly 23 types × 11 locales = 253 entries', () => {
     expect(entries).toHaveLength(ACTIVITY_TYPE_SLUGS.length * ALL_LOCALES.length)
-    expect(entries).toHaveLength(220)
+    expect(entries).toHaveLength(253)
   })
 
   it('every URL contains a valid locale and type slug', () => {
@@ -48,11 +48,11 @@ describe('buildT1SitemapEntries', () => {
 describe('buildT2SitemapEntries', () => {
   const entries = buildT2SitemapEntries()
 
-  it('generates 30 subjects × 20 types × 11 locales = 6,600 entries', () => {
+  it('generates 15 subjects × 23 types × 11 locales = 3,795 entries', () => {
     expect(entries).toHaveLength(
       SUBJECT_SLUGS.length * ACTIVITY_TYPE_SLUGS.length * ALL_LOCALES.length,
     )
-    expect(entries).toHaveLength(6600)
+    expect(entries).toHaveLength(3795)
   })
 
   it('no duplicate URLs', () => {
@@ -127,8 +127,8 @@ describe('buildT8SitemapEntries', () => {
 describe('countStaticEntries', () => {
   it('returns correct individual counts', () => {
     const counts = countStaticEntries()
-    expect(counts.t1).toBe(220)
-    expect(counts.t2).toBe(6600)
+    expect(counts.t1).toBe(253)
+    expect(counts.t2).toBe(3795)
     expect(counts.t8).toBe(COMPETITOR_SLUGS.length)
   })
 
@@ -137,9 +137,9 @@ describe('countStaticEntries', () => {
     expect(counts.total).toBe(counts.t1 + counts.t2 + counts.t3 + counts.t8)
   })
 
-  it('total static entries exceeds 90,000', () => {
-    // T1: 220 + T2: 6,600 + T3: 30×14×20×11 = 92,400 + T8: 50 = 99,270
+  it('total static entries is the programmatic grid only', () => {
+    // T1: 253 + T2: 3,795 + T3: 15×14×23×11 = 53,130 + T8: 50 = 57,228
     const counts = countStaticEntries()
-    expect(counts.total).toBeGreaterThan(90_000)
+    expect(counts.total).toBe(57_228)
   })
 })
