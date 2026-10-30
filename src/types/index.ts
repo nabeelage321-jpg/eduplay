@@ -6,6 +6,18 @@ export type Audience = 'ladies' | 'gents' | 'kids'
 export type KidsTheme =
   | 'space' | 'ocean' | 'jungle' | 'princess' | 'superhero'
   | 'dinosaur' | 'candy' | 'farm' | 'robot' | 'magic'
+  | 'astronaut' | 'garden' | 'mountains' | 'sky' | 'waterfall'
+
+/**
+ * Role themes (UI repair batch, 2026-10-30): a role look is separate
+ * from the ladies/gents/kids audience. Applied as data-role-theme on
+ * <html> via the theme store. Creator palettes are a SAFE fixed list —
+ * never arbitrary user CSS/JS.
+ */
+export type RoleTheme = 'teacher' | 'student' | 'parent' | 'creator'
+
+export type CreatorPalette =
+  | 'sunset' | 'forest' | 'ocean-blue' | 'plum' | 'slate' | 'gold'
 
 export type SupportedLocale =
   | 'en' | 'ur' | 'ar' | 'hi' | 'es' | 'fr' | 'bn' | 'pt' | 'ru' | 'id' | 'zh'

@@ -300,6 +300,201 @@
 }
 
 /* ============================================================
+   KIDS SUB-THEMES (5 more, UI repair batch 2026-10-30)
+   Astronaut, Garden, Mountains, Sky, Waterfall — CSS variables only.
+   ============================================================ */
+
+/* 11. Astronaut 🧑‍🚀 — deep space suit, bright visor accents */
+[data-theme="kids"][data-kids-theme="astronaut"] {
+  --color-primary:        #1565C0;
+  --color-primary-light:  #42A5F5;
+  --color-primary-dark:   #0D47A1;
+  --color-secondary:      #FF6F00;
+  --color-accent:         #80D8FF;
+  --color-background:     #0B1026;
+  --color-surface:        #131A3A;
+  --color-surface-alt:    #1A2452;
+  --color-text-primary:   #EAF2FF;
+  --color-text-secondary: #B0BEC5;
+  --color-text-muted:     #78909C;
+  --color-border:         #283593;
+  --gradient-hero:        linear-gradient(135deg, #0B1026 0%, #1565C0 100%);
+  --gradient-btn:         linear-gradient(135deg, #1565C0 0%, #FF6F00 100%);
+}
+
+/* 12. Garden 🌻 — soft green, warm sun */
+[data-theme="kids"][data-kids-theme="garden"] {
+  --color-primary:        #43A047;
+  --color-primary-light:  #81C784;
+  --color-primary-dark:   #2E7D32;
+  --color-secondary:      #F9A825;
+  --color-accent:         #FFCC80;
+  --color-background:     #F1F8E9;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #DCEDC8;
+  --color-text-primary:   #1B2E1B;
+  --color-text-secondary: #33691E;
+  --color-border:         #A5D6A7;
+  --gradient-hero:        linear-gradient(135deg, #F1F8E9 0%, #FFFDE7 100%);
+  --gradient-btn:         linear-gradient(135deg, #43A047 0%, #F9A825 100%);
+}
+
+/* 13. Mountains ⛰️ — cool peaks, warm sunset */
+[data-theme="kids"][data-kids-theme="mountains"] {
+  --color-primary:        #37474F;
+  --color-primary-light:  #78909C;
+  --color-primary-dark:   #263238;
+  --color-secondary:      #FF7043;
+  --color-accent:         #B2EBF2;
+  --color-background:     #ECEFF1;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #CFD8DC;
+  --color-text-primary:   #102027;
+  --color-text-secondary: #37474F;
+  --color-border:         #B0BEC5;
+  --gradient-hero:        linear-gradient(180deg, #B2EBF2 0%, #FFE0B2 100%);
+  --gradient-btn:         linear-gradient(135deg, #37474F 0%, #FF7043 100%);
+}
+
+/* 14. Sky ☁️ — light, airy, high contrast */
+[data-theme="kids"][data-kids-theme="sky"] {
+  --color-primary:        #0288D1;
+  --color-primary-light:  #4FC3F7;
+  --color-primary-dark:   #01579B;
+  --color-secondary:      #FFB300;
+  --color-accent:         #B3E5FC;
+  --color-background:     #E1F5FE;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #B3E5FC;
+  --color-text-primary:   #013047;
+  --color-text-secondary: #01579B;
+  --color-border:         #81D4FA;
+  --gradient-hero:        linear-gradient(180deg, #E1F5FE 0%, #FFFFFF 100%);
+  --gradient-btn:         linear-gradient(135deg, #0288D1 0%, #FFB300 100%);
+}
+
+/* 15. Waterfall 💧 — teal water on deep slate */
+[data-theme="kids"][data-kids-theme="waterfall"] {
+  --color-primary:        #00838F;
+  --color-primary-light:  #4DD0E1;
+  --color-primary-dark:   #006064;
+  --color-secondary:      #7E57C2;
+  --color-accent:         #B2DFDB;
+  --color-background:     #E0F2F1;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #B2DFDB;
+  --color-text-primary:   #002B2E;
+  --color-text-secondary: #006064;
+  --color-border:         #80CBC4;
+  --gradient-hero:        linear-gradient(180deg, #E0F2F1 0%, #B2DFDB 100%);
+  --gradient-btn:         linear-gradient(135deg, #00838F 0%, #7E57C2 100%);
+}
+
+/* ============================================================
+   ROLE THEMES (UI repair batch 2026-10-30)
+   [data-theme][data-role-theme] ties the kids-sub-theme specificity
+   and is placed later, so a chosen role look wins. CSS variables only.
+   ============================================================ */
+
+/* Teacher — calm, professional, high contrast */
+[data-theme][data-role-theme="teacher"] {
+  --color-primary:        #1F4E79;
+  --color-primary-light:  #4A7BA6;
+  --color-primary-dark:   #14365A;
+  --color-secondary:      #2E7D6B;
+  --color-accent:         #7FB3D5;
+  --color-background:     #F4F7F9;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #E8EEF2;
+  --color-text-primary:   #16222E;
+  --color-text-secondary: #33475B;
+  --color-text-muted:     #6B7C8D;
+  --color-border:         #C9D6DF;
+  --gradient-hero:        linear-gradient(135deg, #F4F7F9 0%, #E8EEF2 100%);
+  --gradient-btn:         linear-gradient(135deg, #1F4E79 0%, #2E7D6B 100%);
+}
+
+/* Student — simple, large, friendly */
+[data-theme][data-role-theme="student"] {
+  --color-primary:        #FF6F00;
+  --color-primary-light:  #FFB300;
+  --color-primary-dark:   #E65100;
+  --color-secondary:      #0288D1;
+  --color-accent:         #00BCD4;
+  --color-background:     #FFFDE7;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #FFF9C4;
+  --color-text-primary:   #1A1A1A;
+  --color-text-secondary: #4A3728;
+  --color-text-muted:     #8D6E63;
+  --color-border:         #FFE082;
+  --gradient-hero:        linear-gradient(135deg, #FFFDE7 0%, #FFF9C4 100%);
+  --gradient-btn:         linear-gradient(135deg, #FF6F00 0%, #0288D1 100%);
+}
+
+/* Parent — warm family, soft and readable */
+[data-theme][data-role-theme="parent"] {
+  --color-primary:        #7B4D9E;
+  --color-primary-light:  #B39DDB;
+  --color-primary-dark:   #4A2C6B;
+  --color-secondary:      #E67E22;
+  --color-accent:         #F5CBA7;
+  --color-background:     #FDF6F0;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #FDEBD0;
+  --color-text-primary:   #2C1A3A;
+  --color-text-secondary: #5D4037;
+  --color-text-muted:     #8D7B68;
+  --color-border:         #E8D5C4;
+  --gradient-hero:        linear-gradient(135deg, #FDF6F0 0%, #FDEBD0 100%);
+  --gradient-btn:         linear-gradient(135deg, #7B4D9E 0%, #E67E22 100%);
+}
+
+/* Creator — base palette; a chosen creator palette (below) wins. */
+[data-theme][data-role-theme="creator"] {
+  --color-primary:        #C0392B;
+  --color-primary-light:  #E67E6B;
+  --color-primary-dark:   #922B21;
+  --color-secondary:      #2C3E50;
+  --color-accent:         #F39C12;
+  --color-background:     #FDF2E9;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #FADBD8;
+  --color-text-primary:   #1F1A17;
+  --color-text-secondary: #5D4037;
+  --color-text-muted:     #8D6E63;
+  --color-border:         #EDBB99;
+  --gradient-hero:        linear-gradient(135deg, #FDF2E9 0%, #FADBD8 100%);
+  --gradient-btn:         linear-gradient(135deg, #C0392B 0%, #F39C12 100%);
+}
+
+/* Creator's own palette — SAFE fixed list only, never user CSS. */
+[data-theme][data-role-theme="creator"][data-creator-palette="sunset"] {
+  --color-primary: #C0392B; --color-primary-dark: #922B21;
+  --gradient-btn: linear-gradient(135deg, #C0392B 0%, #F39C12 100%);
+}
+[data-theme][data-role-theme="creator"][data-creator-palette="forest"] {
+  --color-primary: #2E7D32; --color-primary-dark: #1B5E20;
+  --gradient-btn: linear-gradient(135deg, #2E7D32 0%, #F9A825 100%);
+}
+[data-theme][data-role-theme="creator"][data-creator-palette="ocean-blue"] {
+  --color-primary: #0277BD; --color-primary-dark: #01579B;
+  --gradient-btn: linear-gradient(135deg, #0277BD 0%, #00897B 100%);
+}
+[data-theme][data-role-theme="creator"][data-creator-palette="plum"] {
+  --color-primary: #6A1B9A; --color-primary-dark: #4A148C;
+  --gradient-btn: linear-gradient(135deg, #6A1B9A 0%, #E040FB 100%);
+}
+[data-theme][data-role-theme="creator"][data-creator-palette="slate"] {
+  --color-primary: #37474F; --color-primary-dark: #263238;
+  --gradient-btn: linear-gradient(135deg, #37474F 0%, #78909C 100%);
+}
+[data-theme][data-role-theme="creator"][data-creator-palette="gold"] {
+  --color-primary: #B7950B; --color-primary-dark: #7D6608;
+  --gradient-btn: linear-gradient(135deg, #B7950B 0%, #E67E22 100%);
+}
+
+/* ============================================================
    REUSABLE COMPONENT CLASSES
    ============================================================ */
 @layer components {
@@ -443,6 +638,55 @@
   min-height: 48px;
   min-width: 48px;
   font-size: 1rem;
+}
+/* Tap feedback for every game (no logic/scoring change): a press
+   shrinks slightly, so a tap always feels answered instantly. */
+.eduplay-player button:active,
+.eduplay-player [role="button"]:active {
+  transform: scale(0.96);
+}
+/* Correct / wrong motion for the three prompt-to-game types (quiz,
+   unjumble): colour + icon + sound, never colour alone. The feedback
+   banner pops on correct and shakes on wrong. */
+@keyframes eduplay-pop {
+  0% { transform: scale(0.85); }
+  60% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+@keyframes eduplay-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.eduplay-feedback-correct { animation: eduplay-pop 0.35s ease; }
+.eduplay-feedback-wrong { animation: eduplay-shake 0.4s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .eduplay-feedback-correct, .eduplay-feedback-wrong {
+    animation: none;
+  }
+}
+/* Creator + prompt boxes: 48px primary actions, 1rem text, and a
+   bottom-centre primary action row on small screens. */
+.eduplay-create button,
+.eduplay-create input,
+.eduplay-create select,
+.eduplay-create textarea {
+  font-size: 1rem;
+}
+.eduplay-create .eduplay-primary-action {
+  min-height: 48px;
+  padding: 0.75rem 1.5rem;
+}
+@media (max-width: 640px) {
+  .eduplay-create .eduplay-primary-action-row {
+    position: sticky;
+    bottom: 0.5rem;
+    z-index: 20;
+    display: flex;
+    justify-content: center;
+  }
 }
 .eduplay-player button:focus-visible,
 .eduplay-player [role="button"]:focus-visible {

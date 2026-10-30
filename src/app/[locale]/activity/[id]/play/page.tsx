@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import ActivityPlayer from '@/components/activity-types/ActivityPlayer'
 import ShareGameButton from '@/components/home/ShareGameButton'
+import SoundToggle from '@/components/activity-types/SoundToggle'
 import { useThemeStore } from '@/lib/store/theme-store'
 import type { Activity, SupportedLocale } from '@/types'
 
@@ -142,6 +143,7 @@ export default function PlayPage() {
           </p>
         </div>
         <ShareGameButton locale={locale} gameId={id} gameTitle={activity.title} />
+        <SoundToggle />
         <span style={{ color: 'var(--color-text-muted)', fontFamily: 'monospace', fontSize: '1rem', flexShrink: 0 }}>
           {formatTime(elapsed)}
         </span>

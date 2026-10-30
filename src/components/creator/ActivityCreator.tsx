@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import TypeSelector from './TypeSelector'
@@ -8,7 +9,13 @@ import RolePicker, { readStoredRole, storeRole, type CreatorRole } from './RoleP
 import MetaForm, { type ActivityMeta } from './MetaForm'
 import ItemEditor from './ItemEditor'
 import ActivityPreview from './ActivityPreview'
+import type { PromptDraft } from '@/lib/prompt-to-game'
 import type { ActivityItem, SupportedLocale } from '@/types'
+
+// Lazy-loaded so the creator's first paint stays light; these panels
+// only load when the creator opens /create.
+const PromptToGame = dynamic(() => import('./PromptToGame'), { ssr: false })
+const ChapterScan = dynamic(() => import('./ChapterScan'), { ssr: false })
 
 interface SaveOptions {
   isPublic: boolean
@@ -58,6 +65,30 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
   function next() { if (canProceed() && step < 5) setStep((s) => s + 1) }
   function back() { if (step > 1) setStep((s) => s - 1) }
 
+  /**
+   * Prompt / chapter approval (mandatory, no auto-publish): an approved
+   * draft only fills the wizard and jumps to Preview. Nothing is saved
+   * until the creator clicks Save, and prompt/chapter games start
+   * PRIVATE — the creator must choose public in step 5, and a student
+   * game should be checked by a teacher/parent before going public.
+   */
+  function approveDraft(draft: PromptDraft) {
+    setTypeSlug(draft.type)
+    setMeta((m) => ({
+      ...m,
+      title: draft.title,
+      description: draft.sourceNote.slice(0, 300),
+    }))
+    setItems(draft.items.map((i) => ({
+      prompt: i.prompt,
+      answer: i.answer,
+      hint: i.hint ?? '',
+      imageUrl: i.imageUrl ?? '',
+    })))
+    setSaveOptions((o) => ({ ...o, isPublic: false }))
+    setStep(4)
+  }
+
   async function save() {
     if (!typeSlug) return
     setSaving(true)
@@ -94,7 +125,11 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
   }
 
   return (
-    <div style={{ maxWidth: '680px', margin: '0 auto', padding: '1rem' }}>
+    <div className="eduplay-create" style={{ maxWidth: '680px', margin: '0 auto', padding: '1rem' }}>
+      {/* Prompt-to-game + chapter-scan, prominent at the top of /create.
+          Both are lazy-loaded; approval only fills the wizard below. */}
+      <PromptToGame onApprove={approveDraft} />
+      <ChapterScan onApprove={approveDraft} />
       {/* Batch 1 — creator role picker (local choice; auth is a later batch) */}
       <div style={{ maxWidth: '720px', margin: '0 auto 1.5rem' }}>
         <RolePicker
@@ -111,7 +146,7 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
               aria-current={step === s.id ? 'step' : undefined}
               aria-label={`Step ${s.id}: ${s.label}`}
               style={{
-                width: '36px', height: '36px', borderRadius: '50%',
+                width: '48px', height: '48px', borderRadius: '50%',
                 border: `2px solid ${step >= s.id ? 'var(--color-primary)' : 'var(--color-border)'}`,
                 background: step > s.id ? 'var(--color-primary)' : step === s.id ? 'var(--color-primary-light)' : 'var(--color-surface)',
                 color: step >= s.id ? (step > s.id ? '#fff' : 'var(--color-primary)') : 'var(--color-text-muted)',
@@ -255,7 +290,7 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
           onClick={back}
           disabled={step === 1}
           style={{
-            padding: '0.6rem 1.25rem', borderRadius: 'var(--radius)',
+            padding: '0.75rem 1.25rem', minHeight: '48px', borderRadius: 'var(--radius)',
             border: '2px solid var(--color-border)', background: 'var(--color-surface)',
             color: step === 1 ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
             fontFamily: 'var(--font-display)', fontSize: '0.9rem',
@@ -272,7 +307,7 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
             onClick={next}
             disabled={!canProceed()}
             style={{
-              padding: '0.6rem 1.5rem', borderRadius: 'var(--radius)',
+              padding: '0.75rem 1.5rem', minHeight: '48px', borderRadius: 'var(--radius)',
               border: 'none',
               background: canProceed() ? 'var(--gradient-btn)' : 'var(--color-border)',
               color: '#fff', fontFamily: 'var(--font-display)', fontSize: '0.9rem',

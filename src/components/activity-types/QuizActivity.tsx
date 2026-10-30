@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, TIMER_DEFAULT, shuffleArray, isRTL, getRandomFeedback } from './shared'
 import type { ActivityItem } from '@/types'
+import { playGameSound, readSoundOn } from '@/lib/game-sound'
 
 interface QuizQuestion {
   item: ActivityItem
@@ -21,6 +22,12 @@ export default function QuizActivity({ items, locale, onComplete }: ActivityProp
   const [feedback, setFeedback] = useState<{ type: 'correct' | 'wrong'; msg: string } | null>(null)
   const [finished, setFinished] = useState(false)
   const rtl = isRTL(locale)
+
+  // Sound is an extra layer only (colour + icon + text already signal
+  // correct/wrong). Default is muted; the play-page sound button turns it on.
+  useEffect(() => {
+    if (feedback) playGameSound(feedback.type, readSoundOn())
+  }, [feedback])
 
   useEffect(() => {
     const allAnswers = items.map((i) => i.answer)
@@ -155,12 +162,13 @@ export default function QuizActivity({ items, locale, onComplete }: ActivityProp
         {feedback && (
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }}
             role="alert"
+            className={feedback.type === 'correct' ? 'eduplay-feedback-correct' : 'eduplay-feedback-wrong'}
             style={{
               marginTop: '1rem', padding: '0.75rem 1.25rem', borderRadius: 'var(--radius)',
               background: feedback.type === 'correct' ? 'var(--color-success)' : 'var(--color-danger)',
               color: '#fff', textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: '1rem',
             }}>
-            {feedback.msg}
+            {feedback.type === 'correct' ? '✅ ' : '❌ '}{feedback.msg}
           </motion.div>
         )}
       </AnimatePresence>

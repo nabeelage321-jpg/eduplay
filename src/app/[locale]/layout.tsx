@@ -62,17 +62,28 @@ export default async function LocaleLayout({
             __html: `
               (function() {
                 try {
-                  var stored = localStorage.getItem('edtech-theme');
-                  if (stored) {
-                    var data = JSON.parse(stored);
+                  var kids = ['space','ocean','jungle','princess','superhero','dinosaur','candy','farm','robot','magic','astronaut','garden','mountains','sky','waterfall'];
+                  var roles = ['teacher','student','parent','creator'];
+                  var palettes = ['sunset','forest','ocean-blue','plum','slate','gold'];
+                  function apply(data) {
+                    if (!data || !data.state) return;
                     var state = data.state;
-                    if (state && state.audience) {
-                      document.documentElement.setAttribute('data-theme', state.audience);
-                      if (state.audience === 'kids' && state.kidsTheme) {
-                        document.documentElement.setAttribute('data-kids-theme', state.kidsTheme);
-                      }
+                    if (state.audience) document.documentElement.setAttribute('data-theme', state.audience);
+                    if (state.audience === 'kids' && kids.indexOf(state.kidsTheme) >= 0) {
+                      document.documentElement.setAttribute('data-kids-theme', state.kidsTheme);
+                    }
+                    if (roles.indexOf(state.roleTheme) >= 0) {
+                      document.documentElement.setAttribute('data-role-theme', state.roleTheme);
+                    }
+                    if (palettes.indexOf(state.creatorPalette) >= 0) {
+                      document.documentElement.setAttribute('data-creator-palette', state.creatorPalette);
                     }
                   }
+                  // Current store name (theme-store) first, legacy key second.
+                  var current = localStorage.getItem('theme-store');
+                  if (current) apply(JSON.parse(current));
+                  var legacy = localStorage.getItem('edtech-theme');
+                  if (legacy) apply(JSON.parse(legacy));
                 } catch(e) {}
               })();
             `,

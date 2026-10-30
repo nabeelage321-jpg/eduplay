@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, shuffleArray, isRTL, getRandomFeedback } from './shared'
+import { playGameSound, readSoundOn } from '@/lib/game-sound'
 
 interface WordToken {
   id: string
@@ -21,6 +22,12 @@ export default function UnjumbleActivity({ items, locale, onComplete }: Activity
   const [finished, setFinished] = useState(false)
   const rtl = isRTL(locale)
   const item = items[currentIdx]
+
+  // Sound is an extra layer only (colour + icon + text already signal
+  // correct/wrong). Default is muted; the play-page sound button turns it on.
+  useEffect(() => {
+    if (feedback) playGameSound(feedback.type, readSoundOn())
+  }, [feedback])
 
   useEffect(() => {
     if (!item) return
@@ -169,12 +176,13 @@ export default function UnjumbleActivity({ items, locale, onComplete }: Activity
         {feedback && (
           <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }}
             role="alert"
+            className={feedback.type === 'correct' ? 'eduplay-feedback-correct' : 'eduplay-feedback-wrong'}
             style={{
               padding: '0.6rem', borderRadius: 'var(--radius)',
               background: feedback.type === 'correct' ? 'var(--color-success)' : 'var(--color-danger)',
               color: '#fff', fontFamily: 'var(--font-display)', fontSize: '0.95rem',
             }}>
-            {feedback.msg}
+            {feedback.type === 'correct' ? '✅ ' : '❌ '}{feedback.msg}
           </motion.div>
         )}
       </AnimatePresence>
