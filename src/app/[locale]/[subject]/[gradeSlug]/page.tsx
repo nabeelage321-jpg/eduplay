@@ -19,7 +19,11 @@ export async function generateStaticParams() {
 }
 
 export const dynamicParams = true
-export const revalidate = 86400
+// force-dynamic: with generateStaticParams() returning [], Next 14.2
+// otherwise tries to prerender this route statically and throws
+// DYNAMIC_SERVER_USAGE on the Supabase fetch (live 500 before this fix).
+// T2 pages therefore render on demand, always with fresh DB data.
+export const dynamic = 'force-dynamic'
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 

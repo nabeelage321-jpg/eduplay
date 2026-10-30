@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/client'
+import { createServerClient } from '@/lib/supabase/server'
 
 /**
  * Programmatic SEO — real-DB mapping (2026-10-30 SEO batch).
@@ -108,6 +108,14 @@ export async function fetchProgrammaticActivities(
   if (query.typeSlug && !dbType) return { activities: [], count: 0 }
 
   try {
+    // Server-side service-role client, same as the working /api/activities
+    // route. The anon client is NOT used here: no existing page ever
+    // queried Supabase with it live, and the repo's supabase-js (2.39)
+    // predates the new publishable-key format, so an anon query cannot
+    // be trusted to work on Vercel. This runs only on the server
+    // (generateMetadata + server components), so the key never reaches
+    // the browser.
+    const supabase = createServerClient()
     let countQuery = supabase
       .from('activities')
       .select('id', { count: 'exact', head: true })
