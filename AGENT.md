@@ -95,9 +95,19 @@ Weaknesses to turn into strengths:
 6. Remix with attribution lineage: one content set across game types.
 7. Multilingual + RTL as architecture: 11 locales today, Urdu/Arabic RTL,
    read-aloud + mute, high-contrast type, no colour-only feedback.
-8. Gated student authoring: students submit, teacher accepts, class plays.
-   No public publishing by children, no open chat, no child names/photos
-   in share cards or ads without parent consent.
+8. Gated student authoring — SUPERSEDED 2026-10-30 (owner):
+   Teacher/parent blocking approval is REMOVED. It was only a click, not a
+   real check, and it blocked games for no safety gain (system-generated
+   chapter/prompt games contain no free-form child text).
+   New rule — 12 TESTERS / 3 APPROVALS (social approval, not gatekeeper):
+   creator sends a new game/item to 12 testers (friends, via link/WhatsApp);
+   testers play and give feedback; if 3 of 12 approve, the item is approved
+   for public listing. This IS the virality loop: every item is shared to
+   12 people before it goes public. Teacher/parent may still remove a bad
+   item AFTER it is live (moderation after, not blocking before).
+   No public publishing by children with personal data, no open chat,
+   no child names/photos in share cards or ads without parent consent.
+   Creator badge (15 approved games) stays as an ACHIEVEMENT, not a gate.
 9. Curriculum tags per country: SNC, then US, UK and others as separate
    tag sets. Never present one country's curriculum as worldwide.
 
@@ -155,10 +165,28 @@ Translate limits change — check before quoting; LibreTranslate self-hosted
 is licence-unlimited but not cost-free. Always attribute CC content.
 Never scrape rivals.
 
+## 7b. Selling — for DIFFERENT things, not games only (owner, 2026-10-30)
+Like people use an LLM to make notes and sell them, creators on EduPlay
+can sell DIFFERENT things, all made with prompt-to-game / prompt-to-content:
+games, quizzes, match-up and other interactive games; chapter notes;
+quiz packs (one chapter or one subject); worksheets and flashcards for
+print; full course packs (e.g. chapters 1–10 in one pack).
+Rules: every sellable item goes through the same 12-testers / 3-approvals
+rule before public listing; creator sets the price; buyer gets play/use
+rights, not a copy to resell; EduPlay takes a small share, the rest goes
+to the creator (exact share to be decided by the owner before payments
+go live — do NOT invent a percentage). Payments use the existing Stripe
+setup only when the owner says so; no payment code is live in this plan
+until then. No child personal data in any sellable item.
+
 ## 8. Build order (one thing at a time, closed in batches)
 - Phase 0: one content model + quiz/match-up/unjumble + no-login join.
 - Phase 1: prompt-to-game (draft → approval → play), print/PDF +
   low-bandwidth, teacher reteach report, homework.
+- Phase 1b (next, owner-approved): REPLACE teacher/parent blocking gate
+  with 12-testers / 3-approvals social approval + selling for different
+  things (§7b). Teacher gate code from batch 4fbfc6d is superseded and
+  must be removed/replaced, not kept alongside the tester model.
 - Phase 2: moderated library + remix + curriculum tags for one subject
   band, then per country.
 - Phase 3: multilingual/RTL + accommodations + gated student authoring.
@@ -200,8 +228,6 @@ Never scrape rivals.
   consent, no child data shared between platforms, no mixed counts.
 - When the owner says wait/park, park fully and do not nudge early.
   When he says one step at a time, give literally one step.
-
----
 
 ## Appendix — preserved tech and theme rules (still true, from the old AGENT.md)
 

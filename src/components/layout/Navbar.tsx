@@ -24,6 +24,7 @@ export default function Navbar({ locale }: NavbarProps) {
 
   const navLinks = [
     { href: `/${locale}/browse`, label: 'Browse Games' },
+    { href: `/${locale}/join`, label: 'Join a game' },
     { href: `/${locale}/live`, label: 'Live Game' },
     { href: `/${locale}/create`,     label: t('create') },
     { href: `/${locale}/dashboard`,  label: t('dashboard') },
