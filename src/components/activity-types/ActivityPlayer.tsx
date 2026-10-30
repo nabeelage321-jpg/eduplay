@@ -2,6 +2,7 @@
 
 import { Suspense, lazy } from 'react'
 import type { Activity, Audience, SupportedLocale } from '@/types'
+import { adaptActivityItems, dbTypeOf, playerTypeKey } from '@/lib/activity-content'
 
 type PlayerComponent = React.LazyExoticComponent<React.ComponentType<{
   items: NonNullable<Activity['items']>
@@ -58,18 +59,24 @@ function LoadingSkeleton() {
 }
 
 export default function ActivityPlayer({ activity, theme, locale, onComplete }: ActivityPlayerProps) {
-  const typeSlug = activity.type_id ?? 'quiz'
+  // Live DB rows carry `type` + `content`; creator rows carry
+  // `type_id` + `items`. dbTypeOf prefers the DB fields, and the
+  // adapter translates DB content into player items (see
+  // src/lib/activity-content.ts). Without this, every programme
+  // game rendered "This activity has no items yet."
+  const dbType = dbTypeOf(activity)
+  const typeSlug = playerTypeKey(dbType)
   const Component = ACTIVITY_COMPONENTS[typeSlug]
 
   if (!Component) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-danger)' }}>
-        <p>Unknown activity type: <strong>{typeSlug}</strong></p>
+        <p>Unknown activity type: <strong>{dbType}</strong></p>
       </div>
     )
   }
 
-  const items = activity.items ?? []
+  const items = adaptActivityItems(activity)
   if (items.length === 0) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>

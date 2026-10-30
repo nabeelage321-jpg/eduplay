@@ -35,6 +35,10 @@ export interface Activity {
   title: string
   description?: string
   type_id: string
+  /** Live DB column (programme rows use this, not type_id). */
+  type?: string
+  /** Live DB JSONB column (programme rows use this, not items). */
+  content?: Record<string, unknown> | null
   locale: string
   teacher_id: string
   subject_id?: string
