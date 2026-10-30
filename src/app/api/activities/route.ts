@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
+import { resolveSessionUser } from '@/lib/auth/session-user'
 
 // Rate limiting (simple in-memory — replace with Upstash Redis in production)
 const rateLimitMap = new Map<string, { count: number; reset: number }>()
@@ -84,23 +85,35 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const supabase = createServerClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // CREATE-SAVE FIX 2026-10-30: auth is the NextAuth session, NOT
+    // supabase.auth.getUser() on the service-role client (which has no
+    // user token and therefore always 401'd). The owner id is the
+    // public.users row for the signed-in email (migration 004).
+    const sessionUser = await resolveSessionUser()
+    if (!sessionUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    if (!sessionUser.userId) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+    const supabase = createServerClient()
 
     const body = await req.json()
 
-    // Sanitize all inputs
+    // Sanitize all inputs. Field aliases: the creator UI posts
+    // type_id / locale / subject_id / grade_id / curriculum_id, while
+    // the activities table stores type / language / subject / grade /
+    // curriculum. Accept both so a real creator save is not rejected
+    // with "Activity type is required" after auth is fixed.
     const payload = {
       title: sanitize(body.title),
       description: sanitize(body.description),
-      type: sanitize(body.type),
-      language: sanitize(body.language) || 'en',
-      subject: sanitize(body.subject),
-      grade: sanitize(body.grade),
-      curriculum: sanitize(body.curriculum),
+      type: sanitize(body.type ?? body.type_id),
+      language: sanitize(body.language ?? body.locale) || 'en',
+      subject: sanitize(body.subject ?? body.subject_id),
+      grade: sanitize(body.grade ?? body.grade_id),
+      curriculum: sanitize(body.curriculum ?? body.curriculum_id),
+      teacher_id: sessionUser.userId,
       content: Array.isArray(body.items) ? { questions: body.items.map((item: Record<string, unknown>) => ({
         prompt: sanitize(item.prompt),
         answer: sanitize(item.answer),
