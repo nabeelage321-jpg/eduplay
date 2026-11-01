@@ -12,24 +12,27 @@
 // tap on that world (see ThemeIntroHost), never on page load.
 import type { KidsTheme } from '@/types'
 
-export type ThemeIntroId = 'astronaut'
+export type ThemeIntroId =
+  | 'space' | 'ocean' | 'jungle' | 'princess' | 'superhero'
+  | 'dinosaur' | 'candy' | 'farm' | 'robot' | 'magic'
+  | 'astronaut' | 'garden' | 'mountains' | 'sky' | 'waterfall'
 
 export const THEME_INTRO_BY_KIDS_THEME: Record<KidsTheme, ThemeIntroId | null> = {
-  space: null,
-  ocean: null,
-  jungle: null,
-  princess: null,
-  superhero: null,
-  dinosaur: null,
-  candy: null,
-  farm: null,
-  robot: null,
-  magic: null,
+  space: 'space',
+  ocean: 'ocean',
+  jungle: 'jungle',
+  princess: 'princess',
+  superhero: 'superhero',
+  dinosaur: 'dinosaur',
+  candy: 'candy',
+  farm: 'farm',
+  robot: 'robot',
+  magic: 'magic',
   astronaut: 'astronaut',
-  garden: null,
-  mountains: null,
-  sky: null,
-  waterfall: null,
+  garden: 'garden',
+  mountains: 'mountains',
+  sky: 'sky',
+  waterfall: 'waterfall',
 }
 
 export function getThemeIntro(kidsTheme: KidsTheme): ThemeIntroId | null {

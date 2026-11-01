@@ -18,6 +18,7 @@ import { useThemeIntroStore } from '@/lib/store/theme-intro-store'
 // page-load autoplay. Only an explicit Kids-world tap calls
 // requestIntro (see ThemeSection / ThemeSwitcher).
 const ThemeIntroOverlay = dynamic(() => import('./ThemeIntroOverlay'), { ssr: false })
+const ThemeIntroWorldOverlay = dynamic(() => import('./ThemeIntroWorldOverlay'), { ssr: false })
 
 export default function ThemeIntroHost() {
   const pendingIntro = useThemeIntroStore((s) => s.pendingIntro)
@@ -37,8 +38,8 @@ export default function ThemeIntroHost() {
     if (el instanceof HTMLElement && document.contains(el)) el.focus()
   }
 
-  // Only one intro exists so far ('astronaut'). Future intros plug
-  // in here by id, without touching the trigger surfaces.
-  if (pendingIntro !== 'astronaut') return null
-  return <ThemeIntroOverlay onDone={handleDone} />
+  // Astronaut keeps its own untouched player; every other world uses
+  // the generic player with its own storyboard (ThemeIntroWorlds).
+  if (pendingIntro === 'astronaut') return <ThemeIntroOverlay onDone={handleDone} />
+  return <ThemeIntroWorldOverlay introId={pendingIntro} onDone={handleDone} />
 }
