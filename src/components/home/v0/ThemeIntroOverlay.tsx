@@ -23,9 +23,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 // files, no audio files, no external assets, no copied characters,
 // no new dependencies.
 //
-// Duration and stop (hard rules, unchanged from v1):
-//  - The whole sequence is ~26 seconds — well under the 60-second
-//    maximum. A 60-second safety timer also ends it no matter what.
+// Duration and stop (v3 — faster, sound added):
+//  - The whole sequence is ~17 seconds (was ~26s) — well under the
+//    30-second safety timer, which ends it no matter what.
+//  - Sound is Web Audio tones generated in code only (one short cue
+//    per scene). No audio files, no downloaded music, no copyrighted
+//    music. Sound starts only because the intro was tapped, and a
+//    visible Mute button stops it instantly. On end/skip/unmount
+//    all sound stops. Reduced-motion users get no auto sound.
 //  - A visible Skip button (48px, top-right) ends it instantly.
 //  - When it ends or is skipped, onDone runs, the host clears the
 //    request, and this component UNMOUNTS — nothing keeps animating
@@ -33,9 +38,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 //  - Reduced-motion users get no moving intro: a single static
 //    SVG scene with a Continue button, and no timers at all.
 
-const STEP_MS = [4000, 6000, 5000, 4000, 4000, 3000] // total 26,000ms
+const STEP_MS = [2600, 3900, 3300, 2600, 2600, 2000] // total 17,000ms
 const TOTAL_MS = STEP_MS.reduce((a, b) => a + b, 0)
-const HARD_STOP_MS = 60_000
+const HARD_STOP_MS = 30_000
 
 // One consistent flat style, drawn in code: deep space blues,
 // warm orange rocket, teal screen glow. All art is original to
@@ -252,16 +257,158 @@ function StaticScene() {
   )
 }
 
+// --- v3 sound: Web Audio tones only, generated in code. No audio
+// files, no downloaded music, no copyrighted music, no external
+// assets. One short cue per scene, all at low volume, all stopped
+// on mute, end, skip, or unmount.
+type ToneSpec = {
+  from: number
+  to?: number
+  dur: number
+  type: OscillatorType
+  vol: number
+  delay?: number
+}
+
 export default function ThemeIntroOverlay({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState(0)
   const [reducedMotion, setReducedMotion] = useState(false)
+  const [muted, setMuted] = useState(false)
   const doneRef = useRef(false)
+  const mutedRef = useRef(false)
+  const audioRef = useRef<{ ctx: AudioContext; master: GainNode } | null>(null)
+  const sourcesRef = useRef<Set<OscillatorNode>>(new Set())
+  const noteTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  useEffect(() => {
+    mutedRef.current = muted
+  }, [muted])
+
+  const stopSound = useCallback(() => {
+    noteTimersRef.current.forEach((t) => clearTimeout(t))
+    noteTimersRef.current = []
+    sourcesRef.current.forEach((osc) => {
+      try { osc.stop() } catch { /* already stopped */ }
+    })
+    sourcesRef.current.clear()
+    const audio = audioRef.current
+    audioRef.current = null
+    if (audio) {
+      audio.ctx.close().catch(() => undefined)
+    }
+  }, [])
+
+  const ensureAudio = useCallback(() => {
+    if (typeof window === 'undefined') return null
+    if (audioRef.current) return audioRef.current
+    const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!Ctor) return null
+    const ctx = new Ctor()
+    const master = ctx.createGain()
+    master.gain.value = 0.22
+    master.connect(ctx.destination)
+    const audio = { ctx, master }
+    audioRef.current = audio
+    ctx.resume().catch(() => undefined)
+    return audio
+  }, [])
+
+  const playTone = useCallback((spec: ToneSpec) => {
+    if (mutedRef.current) return
+    const audio = ensureAudio()
+    if (!audio) return
+    const start = () => {
+      if (mutedRef.current || !audioRef.current) return
+      const { ctx, master } = audio
+      if (ctx.state === 'closed') return
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = spec.type
+      const t0 = ctx.currentTime
+      osc.frequency.setValueAtTime(spec.from, t0)
+      if (spec.to !== undefined) {
+        osc.frequency.exponentialRampToValueAtTime(Math.max(1, spec.to), t0 + spec.dur)
+      }
+      gain.gain.setValueAtTime(0, t0)
+      gain.gain.linearRampToValueAtTime(spec.vol, t0 + 0.03)
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + spec.dur)
+      osc.connect(gain)
+      gain.connect(master)
+      sourcesRef.current.add(osc)
+      osc.onended = () => sourcesRef.current.delete(osc)
+      osc.start(t0)
+      osc.stop(t0 + spec.dur + 0.05)
+    }
+    if (spec.delay && spec.delay > 0) {
+      noteTimersRef.current.push(setTimeout(start, spec.delay))
+    } else {
+      start()
+    }
+  }, [ensureAudio])
+
+  // One distinct short cue per scene. All tones are generated here;
+  // no file is ever fetched or played.
+  const playSceneCue = useCallback((sceneStep: number) => {
+    switch (sceneStep) {
+      case 0: // Launch: low rumble rising into a whoosh.
+        playTone({ from: 55, to: 140, dur: 2.2, type: 'sawtooth', vol: 0.5 })
+        playTone({ from: 220, to: 520, dur: 1.6, type: 'sine', vol: 0.25, delay: 500 })
+        break
+      case 1: // Solar system: twinkling arpeggio.
+        ;[880, 1174, 1318, 1568].forEach((freq, i) => {
+          playTone({ from: freq, dur: 0.35, type: 'sine', vol: 0.28, delay: i * 320 })
+        })
+        break
+      case 2: // Landing: soft thud.
+        playTone({ from: 130, to: 45, dur: 0.5, type: 'sine', vol: 0.6 })
+        playTone({ from: 90, to: 50, dur: 0.4, type: 'triangle', vol: 0.3, delay: 120 })
+        break
+      case 3: // Huge screen, far away: soft hum.
+        playTone({ from: 220, dur: 1.8, type: 'sine', vol: 0.2 })
+        playTone({ from: 440, dur: 1.4, type: 'sine', vol: 0.1, delay: 200 })
+        break
+      case 4: // Kid playing: playful blips.
+        ;[523, 659, 784, 659].forEach((freq, i) => {
+          playTone({ from: freq, dur: 0.22, type: 'triangle', vol: 0.3, delay: i * 240 })
+        })
+        break
+      default: // Zoom: rising sweep into the real page.
+        playTone({ from: 300, to: 1200, dur: 1.7, type: 'sine', vol: 0.3 })
+        break
+    }
+  }, [playTone])
 
   const finish = useCallback(() => {
     if (doneRef.current) return
     doneRef.current = true
+    stopSound()
     onDone()
-  }, [onDone])
+  }, [onDone, stopSound])
+
+  const toggleMute = useCallback(() => {
+    setMuted((prev) => {
+      const next = !prev
+      if (next) stopSound()
+      return next
+    })
+  }, [stopSound])
+
+  // Resume the audio context on any later tap/keypress too: some
+  // browsers start it suspended even after the theme tap.
+  useEffect(() => {
+    const resume = () => {
+      const audio = audioRef.current
+      if (audio && audio.ctx.state === 'suspended') {
+        audio.ctx.resume().catch(() => undefined)
+      }
+    }
+    window.addEventListener('pointerdown', resume)
+    window.addEventListener('keydown', resume)
+    return () => {
+      window.removeEventListener('pointerdown', resume)
+      window.removeEventListener('keydown', resume)
+    }
+  }, [])
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -278,6 +425,16 @@ export default function ThemeIntroOverlay({ onDone }: { onDone: () => void }) {
     timers.push(setTimeout(finish, HARD_STOP_MS))
     return () => timers.forEach((t) => clearTimeout(t))
   }, [finish])
+
+  // Play the cue for the current scene. No auto sound at all for
+  // reduced-motion users, and nothing while muted.
+  useEffect(() => {
+    if (reducedMotion || muted) return
+    playSceneCue(step)
+  }, [step, muted, reducedMotion, playSceneCue])
+
+  // Final safety: unmount always silences the intro.
+  useEffect(() => () => stopSound(), [stopSound])
 
   const scene = (() => {
     switch (step) {
@@ -310,9 +467,9 @@ export default function ThemeIntroOverlay({ onDone }: { onDone: () => void }) {
         @keyframes ti-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
         @keyframes ti-smoke { from { transform: translateY(0) scale(1); opacity: 0.85; } to { transform: translateY(24px) scale(1.5); opacity: 0; } }
         @keyframes ti-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
-        .ti-rise { animation: ti-rise 4s ease-out forwards; }
-        .ti-fly { animation: ti-fly 6s linear forwards; }
-        .ti-zoom { animation: ti-zoom 3s ease-in forwards; }
+        .ti-rise { animation: ti-rise 2.6s ease-out forwards; }
+        .ti-fly { animation: ti-fly 3.9s linear forwards; }
+        .ti-zoom { animation: ti-zoom 2s ease-in forwards; }
         .ti-flame { transform-origin: top center; animation: ti-flame 0.5s ease-in-out infinite; }
         .ti-twinkle { animation: ti-twinkle 1.6s ease-in-out infinite; }
         .ti-smoke { animation: ti-smoke 2s ease-out infinite; }
@@ -321,6 +478,22 @@ export default function ThemeIntroOverlay({ onDone }: { onDone: () => void }) {
           .ti-rise, .ti-fly, .ti-zoom, .ti-flame, .ti-twinkle, .ti-smoke, .ti-glow { animation: none !important; }
         }
       `}</style>
+
+      {!reducedMotion && (
+        <button
+          type="button"
+          onClick={toggleMute}
+          aria-label={muted ? 'Unmute intro sound' : 'Mute intro sound'}
+          style={{
+            position: 'absolute', top: '1rem', left: '1rem', minHeight: '48px',
+            minWidth: '48px', padding: '0 1.25rem', borderRadius: '9999px',
+            border: '2px solid #fff', background: 'rgba(255,255,255,0.15)',
+            color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
+          }}
+        >
+          {muted ? 'Sound off' : 'Sound on'}
+        </button>
+      )}
 
       <button
         type="button"
