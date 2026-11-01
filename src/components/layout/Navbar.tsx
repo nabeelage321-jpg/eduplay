@@ -10,6 +10,7 @@ import { useThemeStore } from '@/lib/store/theme-store'
 import type { Audience, SupportedLocale, KidsTheme } from '@/types'
 import { LOCALE_METADATA } from '@/types'
 import ThemeSwitcher from './ThemeSwitcher'
+import ThemeIntroHost from '@/components/home/v0/ThemeIntroHost'
 
 interface NavbarProps {
   locale: SupportedLocale
@@ -31,6 +32,7 @@ export default function Navbar({ locale }: NavbarProps) {
   ]
 
   return (
+    <>
     <header
       className="sticky top-0 z-50 w-full theme-transition"
       style={{
@@ -199,5 +201,7 @@ export default function Navbar({ locale }: NavbarProps) {
         )}
       </AnimatePresence>
     </header>
+      <ThemeIntroHost />
+    </>
   )
 }

@@ -2,6 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { CREATOR_PALETTES, useThemeStore } from '@/lib/store/theme-store'
+import { useThemeIntroStore } from '@/lib/store/theme-intro-store'
+import { getThemeIntro } from '@/lib/theme-intros'
 import type { Audience, CreatorPalette, KidsTheme, RoleTheme } from '@/types'
 
 const AUDIENCE_OPTIONS: { id: Audience; emoji: string; label: string }[] = [
@@ -42,6 +44,7 @@ const CREATOR_PALETTE_LABELS: Record<CreatorPalette, string> = {
 
 export default function ThemeSwitcher({ onClose }: { onClose: () => void }) {
   const { audience, kidsTheme, roleTheme, creatorPalette, setAudience, setKidsTheme, setRoleTheme, setCreatorPalette } = useThemeStore()
+  const requestIntro = useThemeIntroStore((s) => s.requestIntro)
 
   return (
     <div
@@ -88,7 +91,7 @@ export default function ThemeSwitcher({ onClose }: { onClose: () => void }) {
             {KIDS_THEME_OPTIONS.map((th) => (
               <button
                 key={th.id}
-                onClick={() => { setKidsTheme(th.id); onClose() }}
+                onClick={() => { setKidsTheme(th.id); const intro = getThemeIntro(th.id); if (intro) requestIntro(intro); onClose() }}
                 className="p-2 rounded-xl text-xl flex items-center justify-center transition-all"
                 style={{
                   minHeight: '48px',

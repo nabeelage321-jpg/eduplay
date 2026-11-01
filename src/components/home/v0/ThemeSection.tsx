@@ -1,6 +1,8 @@
 'use client'
 
 import { useThemeStore } from '@/lib/store/theme-store'
+import { useThemeIntroStore } from '@/lib/store/theme-intro-store'
+import { getThemeIntro } from '@/lib/theme-intros'
 import type { Audience, KidsTheme, RoleTheme } from '@/types'
 import { TILES } from './tiles'
 
@@ -43,6 +45,7 @@ const ROLES: { id: RoleTheme; emoji: string; label: string }[] = [
 
 export default function ThemeSection() {
   const { audience, kidsTheme, roleTheme, setAudience, setKidsTheme, setRoleTheme } = useThemeStore()
+  const requestIntro = useThemeIntroStore((s) => s.requestIntro)
 
   return (
     <section aria-labelledby="themes-title" style={{ margin: '0 auto', maxWidth: '80rem', padding: '4rem 1rem' }}>
@@ -96,7 +99,7 @@ export default function ThemeSection() {
       </h3>
       <p style={{ marginTop: '0.5rem', color: 'var(--color-text-secondary)' }}>
         Tap a world to switch to Kids and apply it. Tapping a world turns off a role look, so the world&apos;s own colours
-        show — a role look otherwise keeps its colours on top.
+        show — a role look otherwise keeps its colours on top. Tap Astronaut for its short intro (under a minute, Skip anytime).
       </p>
       <ul style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', listStyle: 'none', padding: 0 }} aria-label="Kids themes">
         {KIDS_THEMES.map((k, i) => {
@@ -105,7 +108,7 @@ export default function ThemeSection() {
             <li key={k.id}>
               <button
                 type="button"
-                onClick={() => { setAudience('kids'); setKidsTheme(k.id) }}
+                onClick={() => { setAudience('kids'); setKidsTheme(k.id); const intro = getThemeIntro(k.id); if (intro) requestIntro(intro) }}
                 aria-pressed={selected}
                 style={{
                   display: 'inline-flex',
