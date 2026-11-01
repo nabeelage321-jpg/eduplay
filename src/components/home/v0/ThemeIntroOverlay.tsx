@@ -2,23 +2,28 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-// Astronaut theme-intro player.
+// Astronaut theme-intro player, v2 — ORIGINAL SVG scene art, NO emoji.
 //
-// Storyboard (the owner's exact example, in order):
-//  0. A rocket launches upward.
-//  1. It flies through a solar system (stars, planets).
-//  2. It lands on a planet and enters a panel / door.
-//  3. Inside, a huge screen is seen from far away.
-//  4. On that screen a kid is working / playing a game.
-//  5. The camera focuses / zooms into that screen — and that screen
-//     becomes the real EduPlay page underneath, because the overlay
-//     removes itself and the page was there all along.
+// Storyboard (the owner's exact example, in order), told by motion,
+// not by words — there are no captions and no scene text at all:
+//  0. An original SVG rocket launches upward, flame and smoke.
+//  1. It flies across an original SVG solar system (sun, ringed
+//     planet, cratered planet, stars).
+//  2. It lands on an original planet surface and enters an
+//     original panel / door.
+//  3. Inside, an original huge screen is seen from far away.
+//  4. On that screen an original kid character sits at a desk
+//     playing a game.
+//  5. The camera zooms into that screen — and that screen becomes
+//     the real EduPlay page underneath, because the overlay removes
+//     itself and the page was there all along.
 //
-// This is a theme intro, not a game and not a video: lightweight CSS
-// animations + emoji art only. No video files, no audio files, no
-// external assets, no new dependencies.
+// This is a theme intro, not a game and not a video: inline SVG
+// art + CSS animations only. No emoji, no raster images, no video
+// files, no audio files, no external assets, no copied characters,
+// no new dependencies.
 //
-// Duration and stop (hard rules):
+// Duration and stop (hard rules, unchanged from v1):
 //  - The whole sequence is ~26 seconds — well under the 60-second
 //    maximum. A 60-second safety timer also ends it no matter what.
 //  - A visible Skip button (48px, top-right) ends it instantly.
@@ -26,20 +31,226 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 //    request, and this component UNMOUNTS — nothing keeps animating
 //    in the background, and the underlying page is untouched.
 //  - Reduced-motion users get no moving intro: a single static
-//    scene with a Continue button, and no timers at all.
+//    SVG scene with a Continue button, and no timers at all.
 
 const STEP_MS = [4000, 6000, 5000, 4000, 4000, 3000] // total 26,000ms
 const TOTAL_MS = STEP_MS.reduce((a, b) => a + b, 0)
 const HARD_STOP_MS = 60_000
 
-const CAPTIONS = [
-  'The rocket is launching!',
-  'Flying through the solar system…',
-  'Landing on a planet — and going inside!',
-  'Look — a huge screen, far away!',
-  'A kid is playing a game on that screen!',
-  'Zooming in… that screen is EduPlay!',
-]
+// One consistent flat style, drawn in code: deep space blues,
+// warm orange rocket, teal screen glow. All art is original to
+// EduPlay — simple geometric shapes, no character copied from
+// any rival or cartoon.
+
+// The rocket, drawn once and reused in the launch, flight and
+// landing scenes. `id` is a short suffix so gradient ids never
+// collide when two scenes are on screen at once (reduced motion).
+function Rocket({ id, x, y, scale = 1 }: { id: string; x: number; y: number; scale?: number }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${scale})`} aria-hidden="true">
+      <defs>
+        <linearGradient id={`rk-${id}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="100%" stopColor="#e2e8f0" />
+        </linearGradient>
+      </defs>
+      <path d="M -22 18 Q -38 34 -30 44 L -14 30 Z" fill="#f97316" />
+      <path d="M 22 18 Q 38 34 30 44 L 14 30 Z" fill="#f97316" />
+      <path d="M 0 -52 C 16 -38 20 -16 20 14 L 20 26 L -20 26 L -20 14 C -20 -16 -16 -38 0 -52 Z" fill={`url(#rk-${id})`} stroke="#cbd5e1" strokeWidth="2" />
+      <path d="M 0 -52 C 8 -44 13 -34 15 -24 L -15 -24 C -13 -34 -8 -44 0 -52 Z" fill="#f97316" />
+      <circle cx="0" cy="-4" r="11" fill="#7dd3fc" stroke="#334155" strokeWidth="2" />
+      <circle cx="-4" cy="-6" r="1.6" fill="#0f172a" />
+      <circle cx="4" cy="-6" r="1.6" fill="#0f172a" />
+      <path d="M -4 -1 Q 0 3 4 -1" fill="none" stroke="#0f172a" strokeWidth="1.6" strokeLinecap="round" />
+      <g className="ti-flame">
+        <path d="M -10 26 Q 0 52 10 26 Q 5 34 0 32 Q -5 34 -10 26 Z" fill="#f59e0b" />
+        <path d="M -5 26 Q 0 40 5 26 Q 0 31 -5 26 Z" fill="#fde68a" />
+      </g>
+    </g>
+  )
+}
+
+function Stars() {
+  return (
+    <g aria-hidden="true" fill="#e2e8f0">
+      <circle className="ti-twinkle" cx="24" cy="30" r="2.5" />
+      <circle cx="70" cy="70" r="1.8" />
+      <circle className="ti-twinkle" cx="300" cy="40" r="2.5" />
+      <circle cx="330" cy="110" r="1.8" />
+      <circle cx="50" cy="170" r="1.8" />
+      <circle className="ti-twinkle" cx="310" cy="200" r="2.2" />
+      <circle cx="180" cy="24" r="1.6" />
+      <circle cx="250" cy="150" r="1.6" />
+      <path className="ti-twinkle" d="M 150 90 l 3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z" />
+      <path d="M 90 230 l 2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 Z" />
+    </g>
+  )
+}
+
+// 0 — Launch: rocket rising from a planet, smoke curling below it.
+function LaunchScene() {
+  return (
+    <svg viewBox="0 0 360 300" width="min(88vw, 340px)" role="img" aria-label="Rocket launching">
+      <rect width="360" height="300" rx="24" fill="#0a0e2a" />
+      <Stars />
+      <ellipse cx="180" cy="288" rx="150" ry="22" fill="#334155" />
+      <ellipse cx="150" cy="282" rx="30" ry="8" fill="#475569" />
+      <ellipse cx="220" cy="286" rx="20" ry="6" fill="#475569" />
+      <g className="ti-rise">
+        <Rocket id="launch" x={180} y={150} scale={1.15} />
+      </g>
+      <g fill="#e2e8f0" opacity="0.85">
+        <circle className="ti-smoke" cx="150" cy="235" r="14" />
+        <circle className="ti-smoke" cx="205" cy="242" r="18" />
+        <circle className="ti-smoke" cx="178" cy="252" r="12" />
+      </g>
+    </svg>
+  )
+}
+
+// 1 — Solar system: sun, ringed planet, cratered planet, rocket flying across.
+function SolarScene() {
+  return (
+    <svg viewBox="0 0 360 300" width="min(88vw, 340px)" role="img" aria-label="Rocket flying through the solar system">
+      <rect width="360" height="300" rx="24" fill="#0a0e2a" />
+      <Stars />
+      <g>
+        <circle cx="52" cy="52" r="26" fill="#fbbf24" />
+        <g stroke="#fbbf24" strokeWidth="4" strokeLinecap="round">
+          <line x1="52" y1="12" x2="52" y2="22" />
+          <line x1="52" y1="82" x2="52" y2="92" />
+          <line x1="12" y1="52" x2="22" y2="52" />
+          <line x1="82" y1="52" x2="92" y2="52" />
+        </g>
+      </g>
+      <g>
+        <circle cx="268" cy="92" r="30" fill="#a78bfa" />
+        <ellipse cx="268" cy="92" rx="52" ry="13" fill="none" stroke="#c4b5fd" strokeWidth="6" transform="rotate(-18 268 92)" />
+        <circle cx="258" cy="84" r="6" fill="#8b5cf6" />
+      </g>
+      <g>
+        <circle cx="92" cy="210" r="34" fill="#fb923c" />
+        <circle cx="80" cy="200" r="7" fill="#ea580c" />
+        <circle cx="104" cy="218" r="5" fill="#ea580c" />
+        <circle cx="90" cy="226" r="4" fill="#ea580c" />
+      </g>
+      <circle cx="300" cy="220" r="18" fill="#2dd4bf" />
+      <g className="ti-fly">
+        <Rocket id="solar" x={180} y={150} scale={0.9} />
+      </g>
+    </svg>
+  )
+}
+
+// 2 — Landing: rocket on a planet surface beside a base station with a glowing door.
+function LandingScene() {
+  return (
+    <svg viewBox="0 0 360 300" width="min(88vw, 340px)" role="img" aria-label="Rocket landed beside a base station">
+      <rect width="360" height="300" rx="24" fill="#0a0e2a" />
+      <Stars />
+      <ellipse cx="180" cy="292" rx="170" ry="26" fill="#7c3aed" />
+      <ellipse cx="120" cy="284" rx="24" ry="7" fill="#6d28d9" />
+      <ellipse cx="250" cy="288" rx="18" ry="6" fill="#6d28d9" />
+      <Rocket id="land" x={104} y={176} scale={0.95} />
+      <g>
+        <rect x="196" y="168" width="110" height="104" rx="14" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="2" />
+        <path d="M 196 168 A 55 40 0 0 1 306 168 Z" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="2" />
+        <line x1="251" y1="128" x2="251" y2="104" stroke="#94a3b8" strokeWidth="3" />
+        <circle className="ti-twinkle" cx="251" cy="100" r="5" fill="#f87171" />
+        <rect x="232" y="196" width="38" height="76" rx="8" fill="#f59e0b" />
+        <rect x="240" y="206" width="22" height="56" rx="5" fill="#fde68a" />
+        <circle cx="290" cy="190" r="7" fill="#38bdf8" />
+      </g>
+    </svg>
+  )
+}
+
+// A game screen, drawn with shapes only — tiles, a star, a circle,
+// a triangle — never words. `w` is the screen width in the scene.
+function GameScreen({ x, y, w }: { x: number; y: number; w: number }) {
+  const h = w * 0.62
+  const col = (w - 70) / 3
+  const rowH = (h - 60) / 2
+  return (
+    <g>
+      <rect x={x} y={y} width={w} height={h} rx="12" fill="#0f172a" stroke="#38bdf8" strokeWidth="4" />
+      <rect x={x + 10} y={y + 10} width={w - 20} height={h - 20} rx="8" fill="#fff7ed" />
+      <rect x={x + 20} y={y + 22} width={col} height={rowH} rx="8" fill="#fda4af" />
+      <rect x={x + 30 + col} y={y + 22} width={col} height={rowH} rx="8" fill="#93c5fd" />
+      <rect x={x + 40 + 2 * col} y={y + 22} width={col} height={rowH} rx="8" fill="#86efac" />
+      <path d={`M ${x + 20 + col / 2} ${y + 28} l 5 11 12 1 -9 8 3 12 -11 -7 -11 7 3 -12 -9 -8 12 -1 Z`} fill="#fff" />
+      <circle cx={x + 30 + col * 1.5} cy={y + 22 + rowH / 2} r={10} fill="#fff" />
+      <path d={`M ${x + 40 + 2.5 * col} ${y + 30} l 11 18 -22 0 Z`} fill="#fff" />
+    </g>
+  )
+}
+
+// 3 — Huge screen, seen from far away inside a dark room.
+function HugeScreenScene() {
+  return (
+    <svg viewBox="0 0 360 300" width="min(88vw, 340px)" role="img" aria-label="A huge screen far away">
+      <rect width="360" height="300" rx="24" fill="#111827" />
+      <rect x="0" y="252" width="360" height="48" fill="#1f2937" />
+      <g className="ti-glow">
+        <GameScreen x={105} y={84} w={150} />
+      </g>
+      <rect x="165" y="180" width="30" height="52" fill="#374151" />
+      <rect x="140" y="232" width="80" height="8" rx="4" fill="#374151" />
+    </svg>
+  )
+}
+
+// 4 — A kid at a desk, playing the game on the screen.
+function KidScene() {
+  return (
+    <svg viewBox="0 0 360 300" width="min(88vw, 340px)" role="img" aria-label="A kid playing a game on a screen">
+      <rect width="360" height="300" rx="24" fill="#fef3c7" />
+      <rect x="0" y="252" width="360" height="48" fill="#fde68a" />
+      <GameScreen x={88} y={52} w={184} />
+      <rect x="168" y="168" width="24" height="40" fill="#475569" />
+      <rect x="70" y="208" width="220" height="12" rx="6" fill="#b45309" />
+      <rect x="80" y="220" width="10" height="32" fill="#92400e" />
+      <rect x="270" y="220" width="10" height="32" fill="#92400e" />
+      <g>
+        <circle cx="180" cy="186" r="26" fill="#fcd9b8" stroke="#92400e" strokeWidth="2" />
+        <path d="M 154 178 A 26 26 0 0 1 206 178 L 206 170 A 26 20 0 0 0 154 170 Z" fill="#1e293b" />
+        <circle cx="171" cy="188" r="2.4" fill="#0f172a" />
+        <circle cx="189" cy="188" r="2.4" fill="#0f172a" />
+        <path d="M 172 198 Q 180 204 188 198" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
+        <path d="M 154 208 Q 180 196 206 208 L 206 220 L 154 220 Z" fill="#38bdf8" />
+        <path d="M 154 212 Q 132 218 128 208" fill="none" stroke="#fcd9b8" strokeWidth="9" strokeLinecap="round" />
+        <path d="M 206 212 Q 228 218 232 208" fill="none" stroke="#fcd9b8" strokeWidth="9" strokeLinecap="round" />
+      </g>
+      <rect x="140" y="196" width="80" height="12" rx="4" fill="#334155" />
+    </svg>
+  )
+}
+
+// 5 — Zoom: the same game screen grows to fill the view, then the overlay ends.
+function ZoomScene() {
+  return (
+    <div className="ti-zoom" style={{ textAlign: 'center' }}>
+      <svg viewBox="0 0 360 300" width="min(92vw, 380px)" role="img" aria-label="Zooming into the game screen">
+        <rect width="360" height="300" rx="24" fill="#fff7ed" />
+        <GameScreen x={30} y={40} w={300} />
+      </svg>
+    </div>
+  )
+}
+
+// Static composite for reduced-motion users: rocket, planet, screen — no timers.
+function StaticScene() {
+  return (
+    <svg viewBox="0 0 360 300" width="min(88vw, 340px)" role="img" aria-label="Astronaut world: rocket, planets and a game screen">
+      <rect width="360" height="300" rx="24" fill="#0a0e2a" />
+      <Stars />
+      <circle cx="290" cy="70" r="26" fill="#a78bfa" />
+      <ellipse cx="290" cy="70" rx="44" ry="11" fill="none" stroke="#c4b5fd" strokeWidth="5" transform="rotate(-18 290 70)" />
+      <Rocket id="static" x={92} y={150} scale={0.9} />
+      <GameScreen x={196} y={180} w={120} />
+    </svg>
+  )
+}
 
 export default function ThemeIntroOverlay({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState(0)
@@ -57,7 +268,6 @@ export default function ThemeIntroOverlay({ onDone }: { onDone: () => void }) {
       setReducedMotion(true)
       return
     }
-    // Advance one scene at a time; every timer is cleared on unmount.
     let elapsed = 0
     const timers: ReturnType<typeof setTimeout>[] = []
     for (let i = 1; i < STEP_MS.length; i++) {
@@ -65,91 +275,18 @@ export default function ThemeIntroOverlay({ onDone }: { onDone: () => void }) {
       timers.push(setTimeout(() => setStep(i), elapsed))
     }
     timers.push(setTimeout(finish, TOTAL_MS))
-    // Hard stop: never run longer than 60 seconds, whatever happens.
     timers.push(setTimeout(finish, HARD_STOP_MS))
     return () => timers.forEach((t) => clearTimeout(t))
   }, [finish])
 
-  // Scene art: emoji composition per step. The final zoom scene
-  // scales the screen to fill the viewport and fades the overlay
-  // out, so the real page underneath is revealed.
   const scene = (() => {
     switch (step) {
-      case 0:
-        return (
-          <div style={{ textAlign: 'center' }}>
-            <div className="ti-rise" style={{ fontSize: '6rem', lineHeight: 1 }} aria-hidden="true">🚀</div>
-            <div style={{ fontSize: '3rem', marginTop: '1rem' }} aria-hidden="true">🌍</div>
-          </div>
-        )
-      case 1:
-        return (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2.5rem', letterSpacing: '0.5rem' }} aria-hidden="true">✨ ⭐ 🌟 ✨ ⭐</div>
-            <div className="ti-fly" style={{ fontSize: '5rem', margin: '1rem 0' }} aria-hidden="true">🚀</div>
-            <div style={{ fontSize: '3.5rem', letterSpacing: '1rem' }} aria-hidden="true">🪐 🌕 🔴 🟠</div>
-            <p style={{ color: '#cbd5e1' }}>Sun, planets and stars all around!</p>
-          </div>
-        )
-      case 2:
-        return (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '6rem' }} aria-hidden="true">🪐</div>
-            <div style={{ fontSize: '4rem', marginTop: '-1rem' }} aria-hidden="true">🚀</div>
-            <div
-              style={{
-                margin: '1rem auto 0', width: '10rem', padding: '1rem',
-                borderRadius: '1rem', background: '#1e293b', border: '3px solid #f59e0b',
-                fontSize: '1.25rem', fontWeight: 700, color: '#fde68a',
-              }}
-            >
-              🚪 Panel — come inside!
-            </div>
-          </div>
-        )
-      case 3:
-        return (
-          <div style={{ textAlign: 'center' }}>
-            <div
-              style={{
-                margin: '0 auto', width: '12rem', padding: '1rem', borderRadius: '1rem',
-                background: '#0f172a', border: '4px solid #38bdf8', color: '#e0f2fe',
-              }}
-            >
-              <div style={{ fontSize: '2rem' }} aria-hidden="true">🖥️</div>
-              <p style={{ marginTop: '0.5rem' }}>A huge screen… far away!</p>
-            </div>
-          </div>
-        )
-      case 4:
-        return (
-          <div style={{ textAlign: 'center' }}>
-            <div
-              style={{
-                margin: '0 auto', width: '16rem', padding: '1.25rem', borderRadius: '1rem',
-                background: '#0f172a', border: '4px solid #38bdf8', color: '#e0f2fe',
-              }}
-            >
-              <div style={{ fontSize: '3rem' }} aria-hidden="true">🧒 🎮</div>
-              <p style={{ marginTop: '0.5rem', fontWeight: 700 }}>A kid is playing a game!</p>
-              <p style={{ fontSize: '0.875rem', color: '#bae6fd' }}>Quiz • Match-Up • Fun</p>
-            </div>
-          </div>
-        )
-      default:
-        return (
-          <div className="ti-zoom" style={{ textAlign: 'center' }}>
-            <div
-              style={{
-                margin: '0 auto', width: '18rem', padding: '1.5rem', borderRadius: '1rem',
-                background: '#fff7ed', border: '4px solid #f97316', color: '#431407',
-              }}
-            >
-              <div style={{ fontSize: '3rem' }} aria-hidden="true">🎮</div>
-              <p style={{ marginTop: '0.5rem', fontWeight: 800, fontSize: '1.25rem' }}>That screen is EduPlay!</p>
-            </div>
-          </div>
-        )
+      case 0: return <LaunchScene />
+      case 1: return <SolarScene />
+      case 2: return <LandingScene />
+      case 3: return <HugeScreenScene />
+      case 4: return <KidScene />
+      default: return <ZoomScene />
     }
   })()
 
@@ -167,13 +304,21 @@ export default function ThemeIntroOverlay({ onDone }: { onDone: () => void }) {
     >
       <style>{`
         @keyframes ti-rise { from { transform: translateY(60px); } to { transform: translateY(-40px); } }
-        @keyframes ti-fly { from { transform: translateX(-60px); } to { transform: translateX(60px); } }
+        @keyframes ti-fly { from { transform: translateX(-110px); } to { transform: translateX(110px); } }
         @keyframes ti-zoom { from { transform: scale(0.6); opacity: 0.6; } to { transform: scale(1.4); opacity: 1; } }
+        @keyframes ti-flame { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.35); } }
+        @keyframes ti-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+        @keyframes ti-smoke { from { transform: translateY(0) scale(1); opacity: 0.85; } to { transform: translateY(24px) scale(1.5); opacity: 0; } }
+        @keyframes ti-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
         .ti-rise { animation: ti-rise 4s ease-out forwards; }
         .ti-fly { animation: ti-fly 6s linear forwards; }
         .ti-zoom { animation: ti-zoom 3s ease-in forwards; }
+        .ti-flame { transform-origin: top center; animation: ti-flame 0.5s ease-in-out infinite; }
+        .ti-twinkle { animation: ti-twinkle 1.6s ease-in-out infinite; }
+        .ti-smoke { animation: ti-smoke 2s ease-out infinite; }
+        .ti-glow { animation: ti-glow 2s ease-in-out infinite; }
         @media (prefers-reduced-motion: reduce) {
-          .ti-rise, .ti-fly, .ti-zoom { animation: none !important; }
+          .ti-rise, .ti-fly, .ti-zoom, .ti-flame, .ti-twinkle, .ti-smoke, .ti-glow { animation: none !important; }
         }
       `}</style>
 
@@ -189,18 +334,12 @@ export default function ThemeIntroOverlay({ onDone }: { onDone: () => void }) {
           color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
         }}
       >
-        Skip intro ✕
+        Skip intro ×
       </button>
 
       {reducedMotion ? (
         <div style={{ textAlign: 'center', maxWidth: '22rem' }}>
-          <div style={{ fontSize: '5rem' }} aria-hidden="true">🧑‍🚀 🪐 🖥️</div>
-          <p style={{ marginTop: '1rem', fontSize: '1.25rem', fontWeight: 700 }}>
-            Astronaut world — rocket, planets and a game screen.
-          </p>
-          <p style={{ marginTop: '0.5rem', color: '#cbd5e1' }}>
-            No moving intro for you — tap Continue to go straight to EduPlay.
-          </p>
+          <StaticScene />
           <button
             type="button"
             onClick={finish}
@@ -214,15 +353,7 @@ export default function ThemeIntroOverlay({ onDone }: { onDone: () => void }) {
           </button>
         </div>
       ) : (
-        <>
-          {scene}
-          <p aria-live="polite" style={{ marginTop: '2rem', fontSize: '1.25rem', fontWeight: 700, textAlign: 'center' }}>
-            {CAPTIONS[step]}
-          </p>
-          <p style={{ marginTop: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
-            Short intro — it ends on its own in under a minute.
-          </p>
-        </>
+        scene
       )}
     </div>
   )
