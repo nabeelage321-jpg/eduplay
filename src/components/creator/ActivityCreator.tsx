@@ -86,6 +86,12 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
       ...m,
       title: draft.title,
       description: draft.sourceNote.slice(0, 300),
+      // GUIDED BUILDER (2026-11-01): a guided draft carries the exact
+      // DB subject/grade the creator picked, so the saved game no
+      // longer has a blank subject/grade. Chapter drafts carry none
+      // and keep the previous values (and the amber warning below).
+      subject: draft.subject ?? m.subject,
+      grade: draft.grade ?? m.grade,
     }))
     setItems(draft.items.map((i) => ({
       prompt: i.prompt,

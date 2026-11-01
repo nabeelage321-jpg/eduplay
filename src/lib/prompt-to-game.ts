@@ -26,6 +26,14 @@ export interface PromptDraft {
   title: string
   type: PromptGameType
   items: ActivityItem[]
+  /**
+   * GUIDED BUILDER (2026-11-01): subject/grade picked in the creator
+   * (exact DB values, e.g. "Math" / "grade-2"). Set only by the
+   * approval payload in PromptToGame — never by the draft route —
+   * so ActivityCreator can save them instead of saving blank.
+   */
+  subject?: string
+  grade?: string
   /** Plain-language source, shown to the creator before approval. */
   sourceNote: string
   sourceUrl?: string

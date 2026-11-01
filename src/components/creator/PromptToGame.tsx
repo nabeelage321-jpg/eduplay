@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { PROMPT_GAME_TYPES, type PromptDraft, type PromptGameType } from '@/lib/prompt-to-game'
+import { FILTER_SUBJECTS, FILTER_GRADES } from '@/lib/filters'
 import type { ActivityItem } from '@/types'
 
 const boxStyle: React.CSSProperties = {
@@ -23,6 +24,12 @@ const fieldStyle: React.CSSProperties = {
   fontFamily: 'var(--font-body)',
   fontSize: '1rem',
   boxSizing: 'border-box',
+}
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontWeight: 700,
+  marginBottom: '0.35rem',
 }
 
 /** Editable draft list, shared by PromptToGame and ChapterScan. */
@@ -102,18 +109,91 @@ export function DraftEditor({
   )
 }
 
+/**
+ * GUIDED PROMPT BUILDER (2026-11-01) — both options live side by side:
+ * Guided (pick subject + grade, tap a recommended topic) and Free
+ * (type any prompt, with the same recommendations as suggestions).
+ * Neither removes the other; both call the same /api/prompt-to-game
+ * route and produce the same editable draft and approval flow.
+ *
+ * Recommendation chips are plain topic names only — never a claim
+ * about a curriculum, a count, or a rating. Math table chips are
+ * built locally by the existing route (f6b5cff fix), so they work
+ * even when the free trivia service is down; other topics go through
+ * that same route and show its plain error if the service is down.
+ * Subject/grade use the exact DB values from src/lib/filters.ts
+ * (e.g. "Math", not "Mathematics"; "pre-k", not "Pre-K"), so the
+ * saved game carries them instead of saving blank.
+ */
+const TOPIC_RECOMMENDATIONS: Record<string, string[]> = {
+  English: ['Animals', 'Colours', 'My family', 'Food words'],
+  Urdu: ['Urdu words for animals', 'Urdu colours', 'My family in Urdu'],
+  Science: ['Parts of a plant', 'The solar system', 'Animals and their homes', 'The water cycle'],
+  Islamiyat: ['Five Pillars of Islam', 'Good manners', 'Daily prayers'],
+  'Social Studies': ['My community', 'Maps and directions', 'Festivals'],
+  'Computer Science': ['Parts of a computer', 'Internet safety', 'Computer parts'],
+  Art: ['Colours', 'Shapes', 'Drawing tools'],
+  'Physical Education': ['Healthy habits', 'Sports', 'Exercise'],
+  Geography: ['Continents', 'Oceans', 'Maps'],
+  History: ['Famous landmarks', 'Old and new'],
+  'General Knowledge': ['Animals', 'The world around us', 'Famous places'],
+  Biology: ['Parts of a plant', 'The human body', 'Animals'],
+  Chemistry: ['Water', 'Air', 'States of matter'],
+  Physics: ['Light', 'Sound', 'Motion'],
+}
+
+const DEFAULT_CHIPS: string[] = ['Table of 2', 'Animals', 'Parts of a plant']
+
+function chipStyle(selected: boolean): React.CSSProperties {
+  return {
+    minHeight: '48px', padding: '0.5rem 1rem', borderRadius: 'var(--radius)',
+    border: `2px solid ${selected ? 'var(--color-primary)' : 'var(--color-border)'}`,
+    background: selected ? 'var(--color-primary-light)' : 'var(--color-surface)',
+    color: 'var(--color-text-primary)', cursor: 'pointer', fontWeight: 700,
+  }
+}
+
 export default function PromptToGame({
   onApprove,
 }: {
   /** Called with the edited draft. Nothing is saved or published here. */
   onApprove: (draft: PromptDraft) => void
 }) {
+  const [mode, setMode] = useState<'guided' | 'free'>('guided')
+  const [subject, setSubject] = useState('')
+  const [grade, setGrade] = useState('')
   const [prompt, setPrompt] = useState('')
   const [type, setType] = useState<PromptGameType>('quiz')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [draft, setDraft] = useState<PromptDraft | null>(null)
   const [approved, setApproved] = useState(false)
+
+  const subjectLabel = FILTER_SUBJECTS.find((s) => s.value === subject)?.label ?? subject
+  const gradeLabel = FILTER_GRADES.find((g) => g.value === grade)?.label ?? grade
+
+  /** Chips for the current subject (Math = tables 2–12, built locally
+   *  by the route; other subjects = plain topic names). No subject
+   *  picked yet → a small default set, so the free box is never bare. */
+  function currentChips(): Array<{ label: string; prompt: string }> {
+    if (subject === 'Math') {
+      return Array.from({ length: 11 }, (_, i) => {
+        const n = i + 2
+        return { label: `Table of ${n}`, prompt: `make game for a table of ${n}` }
+      })
+    }
+    const topics = subject ? TOPIC_RECOMMENDATIONS[subject] : undefined
+    if (topics) {
+      return topics.map((t) => ({
+        label: t,
+        prompt: gradeLabel ? `${t} for ${gradeLabel}` : t,
+      }))
+    }
+    return DEFAULT_CHIPS.map((t) => ({
+      label: t,
+      prompt: t === 'Table of 2' ? 'make game for a table of 2' : t,
+    }))
+  }
 
   async function makeDraft() {
     if (!prompt.trim()) return
@@ -143,9 +223,15 @@ export default function PromptToGame({
       setError('Keep at least 2 complete questions to approve this draft.')
       return
     }
-    onApprove({ ...draft, items })
+    // Guided subject/grade flow into approval, so the saved game no
+    // longer has a blank subject/grade (the amber warning from the
+    // 2026-11-01 approve fix). Free prompts with no picks keep the
+    // old behaviour: approval carries none, and the wizard warns.
+    onApprove({ ...draft, items, subject: subject || undefined, grade: grade || undefined })
     setApproved(true)
   }
+
+  const chips = currentChips()
 
   return (
     <div style={boxStyle}>
@@ -153,22 +239,146 @@ export default function PromptToGame({
         ✨ Make a game from a prompt
       </h2>
       <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: '0 0 1rem' }}>
-        Type one prompt, get an editable draft, approve it — then Preview and Save.
-        Nothing is published until you save it yourself.
+        Two ways to start — pick from lists, or type your own prompt.
+        Both make the same editable draft. Approving only fills the
+        creator — nothing is published until you save it yourself.
       </p>
 
-      <label htmlFor="prompt-game-input" style={{ display: 'block', fontWeight: 700, marginBottom: '0.35rem' }}>
-        Your prompt
-      </label>
-      <textarea
-        id="prompt-game-input"
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        placeholder="e.g. Animals for grade 3"
-        rows={2}
-        maxLength={200}
-        style={{ ...fieldStyle, marginBottom: '0.75rem', resize: 'vertical' }}
-      />
+      {/* Shared subject + grade: used by BOTH modes, so the saved game
+          carries them either way. Values are exact DB values. */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+        <div>
+          <label htmlFor="prompt-subject" style={labelStyle}>Subject</label>
+          <select
+            id="prompt-subject"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            style={{ ...fieldStyle, minHeight: '48px' }}
+          >
+            <option value="">Pick a subject…</option>
+            {FILTER_SUBJECTS.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="prompt-grade" style={labelStyle}>Grade</label>
+          <select
+            id="prompt-grade"
+            value={grade}
+            onChange={(e) => setGrade(e.target.value)}
+            style={{ ...fieldStyle, minHeight: '48px' }}
+          >
+            <option value="">Pick a grade…</option>
+            {FILTER_GRADES.map((g) => (
+              <option key={g.value} value={g.value}>{g.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {(subject || grade) && (
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
+          You picked: {subjectLabel || 'no subject yet'} · {gradeLabel || 'no grade yet'}
+          {subject && grade ? ' — these will be saved with your game when you approve it.' : ' — pick both, and they will be saved with your game.'}
+        </p>
+      )}
+
+      {/* Mode toggle — both options stay available, neither is hidden. */}
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }} role="radiogroup" aria-label="Prompt way">
+        <button
+          type="button"
+          role="radio"
+          aria-checked={mode === 'guided'}
+          onClick={() => setMode('guided')}
+          style={{
+            minHeight: '48px', padding: '0.5rem 1rem', borderRadius: 'var(--radius)',
+            border: `2px solid ${mode === 'guided' ? 'var(--color-primary)' : 'var(--color-border)'}`,
+            background: mode === 'guided' ? 'var(--gradient-btn)' : 'var(--color-surface)',
+            color: mode === 'guided' ? '#fff' : 'var(--color-text-primary)',
+            cursor: 'pointer', fontWeight: 700, flex: 1,
+          }}
+        >
+          🧭 Guided — pick from lists
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={mode === 'free'}
+          onClick={() => setMode('free')}
+          style={{
+            minHeight: '48px', padding: '0.5rem 1rem', borderRadius: 'var(--radius)',
+            border: `2px solid ${mode === 'free' ? 'var(--color-primary)' : 'var(--color-border)'}`,
+            background: mode === 'free' ? 'var(--gradient-btn)' : 'var(--color-surface)',
+            color: mode === 'free' ? '#fff' : 'var(--color-text-primary)',
+            cursor: 'pointer', fontWeight: 700, flex: 1,
+          }}
+        >
+          ✍️ Free — type my own prompt
+        </button>
+      </div>
+
+      {mode === 'guided' ? (
+        <div>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: '0 0 0.5rem' }}>
+            💡 What we recommend{subjectLabel ? ` for ${subjectLabel}` : ''}{gradeLabel ? ` · ${gradeLabel}` : ''} — tap one, it fills your prompt:
+          </p>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+            {chips.map((c) => (
+              <button
+                key={c.label}
+                type="button"
+                onClick={() => setPrompt(c.prompt)}
+                style={chipStyle(prompt === c.prompt)}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          <label htmlFor="prompt-game-input" style={labelStyle}>
+            Your prompt (filled by the chip — you can still edit it)
+          </label>
+          <textarea
+            id="prompt-game-input"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Tap a recommendation above, or type your own"
+            rows={2}
+            maxLength={200}
+            style={{ ...fieldStyle, marginBottom: '0.75rem', resize: 'vertical' }}
+          />
+        </div>
+      ) : (
+        <div>
+          <label htmlFor="prompt-game-input" style={labelStyle}>
+            Your prompt
+          </label>
+          <textarea
+            id="prompt-game-input"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="e.g. make game for a table of 2"
+            rows={2}
+            maxLength={200}
+            style={{ ...fieldStyle, marginBottom: '0.75rem', resize: 'vertical' }}
+          />
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: '0 0 0.5rem' }}>
+            💡 Or tap a suggestion — it fills the box:
+          </p>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+            {chips.map((c) => (
+              <button
+                key={c.label}
+                type="button"
+                onClick={() => setPrompt(c.prompt)}
+                style={chipStyle(prompt === c.prompt)}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }} role="radiogroup" aria-label="Game type">
         {PROMPT_GAME_TYPES.map((t) => (
           <button
