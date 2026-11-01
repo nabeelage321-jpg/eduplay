@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
   buildChapterDraft,
+  buildTableDraft,
   convertDraftItems,
   decodeHtmlEntities,
   sanitizePrompt,
@@ -51,7 +52,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ draft })
     }
 
+    // Table prompts never touch the network: a table of N is built from
+    // the prompt itself, so "make game for a table of 2" works even when
+    // the free trivia service below is down or slow (that was the live
+    // failure: a trivia-service timeout fell through to a generic 500).
+    const tableDraft = buildTableDraft(prompt, type)
+    if (tableDraft) {
+      return NextResponse.json({ draft: tableDraft })
+    }
+
     // Free content: Open Trivia Database, no key, CC BY-SA 4.0.
+    // Its failures get their own plain message — never the generic 500 —
+    // so the creator knows it is the trivia service, not their prompt.
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), 10000)
     let data: { results?: OpenTdbQuestion[] }
@@ -62,6 +74,11 @@ export async function POST(req: NextRequest) {
       })
       if (!res.ok) throw new Error(`OpenTDB ${res.status}`)
       data = await res.json()
+    } catch {
+      return NextResponse.json(
+        { error: 'The free question service did not answer. Try again in a moment — no questions were invented.' },
+        { status: 502 }
+      )
     } finally {
       clearTimeout(timer)
     }
@@ -99,6 +116,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ draft })
   } catch (err) {
     console.error('[POST /api/prompt-to-game]', err)
-    return NextResponse.json({ error: 'Could not make a draft right now' }, { status: 500 })
+    return NextResponse.json({ error: 'Could not make a draft right now. Try again in a moment.' }, { status: 500 })
   }
 }

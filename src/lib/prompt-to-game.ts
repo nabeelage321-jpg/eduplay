@@ -77,6 +77,80 @@ function cleanSentence(s: string): string {
   return s.replace(/\s+/g, ' ').trim()
 }
 
+const WORD_NUMBERS: Record<string, number> = {
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8,
+  nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14,
+  fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
+  twenty: 20,
+}
+
+/**
+ * Parse a multiplication-table number out of a prompt, e.g.
+ * "make game for a table of 2", "table of two", "2 table",
+ * "multiplication table of 3". Returns null for any other prompt.
+ * Only tables 1–20 are built, so no huge or invented table is made.
+ */
+export function parseTableNumber(prompt: string): number | null {
+  const lower = prompt.toLowerCase()
+  const num = '(\\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)'
+  const patterns = [
+    new RegExp(`\\btable\\s+of\\s+${num}\\b`),
+    new RegExp(`\\bmultiplication\\s+table\\s+(?:of\\s+)?${num}\\b`),
+    new RegExp(`\\btimes\\s+table\\s+(?:of\\s+)?${num}\\b`),
+    new RegExp(`\\b${num}\\s+table\\b`),
+  ]
+  for (const re of patterns) {
+    const m = lower.match(re)
+    if (!m) continue
+    const raw = m[1]
+    const n = /^\d+$/.test(raw) ? parseInt(raw, 10) : WORD_NUMBERS[raw]
+    if (n >= 1 && n <= 20) return n
+  }
+  return null
+}
+
+/**
+ * Build a real multiplication-table draft from the prompt itself — no
+ * external service is needed, so this works even when the free trivia
+ * service is down or slow. Every answer is basic arithmetic (n × 1 …
+ * n × 10) with plausible wrong answers, and the whole draft is editable
+ * before approval, exactly like every other draft.
+ */
+export function buildTableDraft(prompt: string, type: PromptGameType): PromptDraft | null {
+  const n = parseTableNumber(prompt)
+  if (n === null) return null
+  const items: ActivityItem[] = []
+  for (let i = 1; i <= 10; i++) {
+    const product = n * i
+    if (type === 'unjumble') {
+      // A number alone cannot be unjumbled, so unjumble the full phrase.
+      const phrase = `${n} times ${i} equals ${product}`
+      items.push({ prompt: jumbleWords(phrase), answer: phrase, hint: `What is ${n} × ${i}?` })
+      continue
+    }
+    const candidates = [product - 2, product + 2, product - 1, product + 1, product + 10, product - 10, n * (i + 1), n * (i - 1)]
+    const distractors: number[] = []
+    for (const c of candidates) {
+      if (c > 0 && c !== product && !distractors.includes(c)) distractors.push(c)
+      if (distractors.length >= 3) break
+    }
+    const options = [String(product), ...distractors.map(String)]
+    // Rotate so the correct answer is not always first (creator can edit).
+    const rotated = [...options.slice(i % options.length), ...options.slice(0, i % options.length)]
+    items.push({
+      prompt: type === 'match-up' ? `${n} × ${i}` : `What is ${n} × ${i}?`,
+      answer: String(product),
+      answers: rotated,
+    })
+  }
+  return {
+    title: `Table of ${n}`,
+    type,
+    items,
+    sourceNote: `Built from your prompt — the multiplication table of ${n}, from ${n} × 1 to ${n} × 10. Check and edit each question before you approve it.`,
+  }
+}
+
 /**
  * Build a fill-in-the-blank draft from the student's OWN chapter text.
  * Each item blanks one long word out of a real chapter sentence and
