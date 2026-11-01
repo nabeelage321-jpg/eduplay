@@ -95,7 +95,8 @@ export default function ThemeSection() {
         Kids worlds — all 15
       </h3>
       <p style={{ marginTop: '0.5rem', color: 'var(--color-text-secondary)' }}>
-        Tap a world to switch to Kids and apply it. The palette button in the top bar still works too.
+        Tap a world to switch to Kids and apply it. Tapping a world turns off a role look, so the world&apos;s own colours
+        show — a role look otherwise keeps its colours on top.
       </p>
       <ul style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', listStyle: 'none', padding: 0 }} aria-label="Kids themes">
         {KIDS_THEMES.map((k, i) => {

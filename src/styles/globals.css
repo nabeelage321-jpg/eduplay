@@ -394,6 +394,9 @@
    ROLE THEMES (UI repair batch 2026-10-30)
    [data-theme][data-role-theme] ties the kids-sub-theme specificity
    and is placed later, so a chosen role look wins. CSS variables only.
+   Exception, added with the Kids-theme-click fix: setKidsTheme in
+   the theme store clears the role look, so an explicit Kids-world
+   tap always shows the world's colours instead of the role's.
    ============================================================ */
 
 /* Teacher — calm, professional, high contrast */

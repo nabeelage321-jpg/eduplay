@@ -47,8 +47,24 @@ export const useThemeStore = create<ThemeStore>()(
         setHtmlAttr('data-theme', audience)
       },
       setKidsTheme: (kidsTheme) => {
-        set({ kidsTheme })
+        // An explicit Kids-world tap must visibly change the colours.
+        // Role looks are defined later in globals.css at the SAME
+        // specificity ([data-theme][data-role-theme] vs
+        // [data-theme="kids"][data-kids-theme]), so while a role look
+        // is set it masks every Kids colour — the stored kidsTheme
+        // changed but the page kept the role's colours, which is the
+        // reported "click does nothing" regression (e.g. Creator
+        // selected, then a Kids world tapped). Clearing the role look
+        // here makes the tap win on both surfaces that call this
+        // setter (homepage ThemeSection chips, Navbar palette grid).
+        // The creator palette attribute is left in place on purpose:
+        // its rules require data-role-theme="creator", so it is inert
+        // while no role is set and restores correctly if Creator is
+        // re-selected later. Role looks still work: selecting one
+        // again overrides until the next Kids-world tap.
+        set({ kidsTheme, roleTheme: null })
         setHtmlAttr('data-kids-theme', kidsTheme)
+        if (typeof document !== 'undefined') document.documentElement.removeAttribute('data-role-theme')
       },
       setRoleTheme: (roleTheme) => {
         set({ roleTheme })
