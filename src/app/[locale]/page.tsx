@@ -23,7 +23,9 @@ import { DB_SUBJECT_BY_SLUG, DB_TYPE_BY_SLUG } from '@/lib/seo/programmatic'
 import V0Hero from '@/components/home/v0/V0Hero'
 import V0GameCard from '@/components/home/v0/V0GameCard'
 import V0MobilePlayBar from '@/components/home/v0/V0MobilePlayBar'
-import MascotButton from '@/components/home/v0/MascotButton'
+import HelperMascot from '@/components/home/v0/HelperMascot'
+import V0CreatorsSection from '@/components/home/v0/V0CreatorsSection'
+import V0SellingSection from '@/components/home/v0/V0SellingSection'
 import ThemeSection from '@/components/home/v0/ThemeSection'
 import { TILES } from '@/components/home/v0/tiles'
 
@@ -215,7 +217,7 @@ export default async function HomePage({ params }: HomePageProps) {
         <ThemeSection />
 
         {/* Popular activities — REAL DB games only, real play links. */}
-        <section aria-labelledby="popular-title" style={sectionStyle}>
+        <section id="popular" aria-labelledby="popular-title" style={sectionStyle}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} className="md:flex-row md:items-end md:justify-between">
             <div style={{ maxWidth: '42rem' }}>
               <p style={eyebrowStyle}>Play now</p>
@@ -284,7 +286,7 @@ export default async function HomePage({ params }: HomePageProps) {
         </section>
 
         {/* How it works — V0 3 steps + friends-first callout. */}
-        <section aria-labelledby="how-title" style={sectionStyle}>
+        <section id="how-it-works" aria-labelledby="how-title" style={sectionStyle}>
           <div style={{ textAlign: 'center', maxWidth: '42rem', margin: '0 auto' }}>
             <p style={eyebrowStyle}>1 · 2 · 3</p>
             <h2 id="how-title" style={{ marginTop: '0.5rem', ...h2Style }}>How it works — in 3 steps</h2>
@@ -344,6 +346,10 @@ export default async function HomePage({ params }: HomePageProps) {
             ))}
           </ul>
         </section>
+
+        <V0CreatorsSection locale={locale} />
+
+        <V0SellingSection />
 
         {/* Curriculum — V0 layout; tags are spans, NOT links, because
             EduPlay has no /curriculum/<tag> pages for these tags. */}
@@ -421,7 +427,7 @@ export default async function HomePage({ params }: HomePageProps) {
         <div aria-hidden="true" style={{ height: '6rem' }} className="lg:hidden" />
       </main>
       <V0MobilePlayBar locale={locale} />
-      <MascotButton />
+      <HelperMascot locale={locale} />
     </div>
   )
 }

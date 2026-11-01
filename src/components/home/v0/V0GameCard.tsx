@@ -42,8 +42,21 @@ const TYPE_ICONS: Record<string, LucideIcon> = {
   'word-search': Search,
 }
 
+// V0 ZIP #2 game-card illustration, adapted: subject emoji art only.
+// No image files, no ratings, no invented plays — the tile, title and
+// real play link are unchanged from the ZIP #1 port.
+const SUBJECT_ART: Record<string, { main: string; side: [string, string] }> = {
+  history: { main: '🏛️', side: ['📜', '⏳'] },
+  'social-studies': { main: '🏙️', side: ['🚦', '🏫'] },
+  'general-knowledge': { main: '🌍', side: ['🚌', '💡'] },
+  english: { main: '📖', side: ['✏️', '🔤'] },
+  math: { main: '🔢', side: ['➕', '📐'] },
+}
+const FALLBACK_ART = { main: '🎲', side: ['⭐', '🎈'] as [string, string] }
+
 export default function V0GameCard({ game, locale, index }: { game: V0HomeGame; locale: string; index: number }) {
   const Icon = TYPE_ICONS[game.type] ?? Gamepad2
+  const art = SUBJECT_ART[game.subject.toLowerCase()] ?? FALLBACK_ART
   const tile = TILES[index % TILES.length]
   const playHref = `/${locale}/activity/${game.id}/play`
   return (
@@ -61,8 +74,13 @@ export default function V0GameCard({ game, locale, index }: { game: V0HomeGame; 
       <div style={{ position: 'relative', display: 'flex', height: '10rem', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: tile }} aria-hidden="true">
         <div style={{ position: 'absolute', top: '-1.5rem', insetInlineStart: '-1.5rem', width: '6rem', height: '6rem', borderRadius: '9999px', background: 'rgba(255,255,255,0.4)' }} />
         <div style={{ position: 'absolute', bottom: '-2rem', insetInlineEnd: '1.5rem', width: '7rem', height: '7rem', borderRadius: '9999px', background: 'rgba(255,255,255,0.3)' }} />
+        <span style={{ position: 'absolute', top: '1rem', insetInlineStart: '1.25rem', fontSize: '1.875rem', transform: 'rotate(-12deg)' }}>{art.side[0]}</span>
+        <span style={{ position: 'absolute', bottom: '1rem', insetInlineEnd: '1.5rem', fontSize: '1.875rem', transform: 'rotate(12deg)' }}>{art.side[1]}</span>
         <div style={{ position: 'relative', display: 'flex', width: '5rem', height: '5rem', alignItems: 'center', justifyContent: 'center', borderRadius: '1rem', background: 'var(--color-surface)', boxShadow: '0 6px 0 0 rgba(0,0,0,0.1)', transform: 'rotate(-6deg)' }}>
-          <Icon style={{ width: '2.5rem', height: '2.5rem', color: TILE_INK }} strokeWidth={2.25} />
+          <span style={{ fontSize: '3rem', lineHeight: 1 }}>{art.main}</span>
+          <span style={{ position: 'absolute', bottom: '-0.75rem', insetInlineEnd: '-0.75rem', display: 'flex', width: '2.5rem', height: '2.5rem', alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', border: '2px solid var(--color-surface)', background: TILE_INK }}>
+            <Icon style={{ width: '1.25rem', height: '1.25rem', color: 'var(--color-surface)' }} strokeWidth={2.25} />
+          </span>
         </div>
       </div>
       <div style={{ display: 'flex', flex: 1, flexDirection: 'column', padding: '1.25rem' }}>
