@@ -24,6 +24,7 @@ import V0Hero from '@/components/home/v0/V0Hero'
 import V0GameCard from '@/components/home/v0/V0GameCard'
 import V0MobilePlayBar from '@/components/home/v0/V0MobilePlayBar'
 import MascotButton from '@/components/home/v0/MascotButton'
+import ThemeSection from '@/components/home/v0/ThemeSection'
 import { TILES } from '@/components/home/v0/tiles'
 
 interface HomePageProps {
@@ -210,6 +211,8 @@ export default async function HomePage({ params }: HomePageProps) {
             ))}
           </div>
         </section>
+
+        <ThemeSection />
 
         {/* Popular activities — REAL DB games only, real play links. */}
         <section aria-labelledby="popular-title" style={sectionStyle}>
