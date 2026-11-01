@@ -211,8 +211,9 @@ export default function PromptToGame({
       )}
       {approved && (
         <p role="status" style={{ color: 'var(--color-success)', fontSize: '0.9rem', marginTop: '0.75rem' }}>
-          ✅ Draft approved and sent to the creator below — check Preview, then Save.
-          It stays private until you choose to make it public.
+          ✅ Draft approved — the page has moved to the Preview step below.
+          Check it there, then use “Preview and Save”. It stays private
+          until you choose to make it public.
         </p>
       )}
 

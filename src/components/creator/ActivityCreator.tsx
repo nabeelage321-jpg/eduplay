@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
@@ -52,6 +52,14 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
   const [saveOptions, setSaveOptions] = useState<SaveOptions>({ isPublic: true, tags: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // APPROVE-DRAFT FIX 2026-11-01: the old code set step 4 but never moved
+  // the viewport. The wizard sits BELOW the PromptToGame and ChapterScan
+  // boxes, so on a phone the Preview was far below the fold and the click
+  // looked like it did nothing (the only change was a small green line
+  // above the draft, in the box the user had just scrolled past). The
+  // wizardRef + approved banner below make the jump unmistakable.
+  const wizardRef = useRef<HTMLDivElement>(null)
+  const [approvedDraftTitle, setApprovedDraftTitle] = useState<string | null>(null)
 
   useEffect(() => { setCreatorRole(readStoredRole()); setRoleHydrated(true) }, [])
 
@@ -86,7 +94,14 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
       imageUrl: i.imageUrl ?? '',
     })))
     setSaveOptions((o) => ({ ...o, isPublic: false }))
+    setApprovedDraftTitle(draft.title)
     setStep(4)
+    // Move the viewport to the wizard itself, after React renders step 4.
+    // Without this, the Preview was below the fold and approval looked dead.
+    window.setTimeout(() => {
+      wizardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      wizardRef.current?.focus({ preventScroll: true })
+    }, 100)
   }
 
   async function save() {
@@ -114,6 +129,12 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
+        // APPROVE-DRAFT FIX: the API returns bare "Unauthorized" for a
+        // signed-out user, which read as a silent failure. Say plainly
+        // that sign-in is needed, instead of showing that bare word.
+        if (res.status === 401) {
+          throw new Error('Sign-in is needed to save. Use Sign in at the top of the page, then come back and click Save Activity again.')
+        }
         throw new Error(data.error || 'Failed to save activity')
       }
       const { activity } = await res.json()
@@ -169,12 +190,72 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
         ))}
       </div>
 
-      {/* Step content */}
-      <div style={{
-        background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-lg)', padding: '1.5rem',
-        boxShadow: 'var(--shadow-card)', minHeight: '400px',
-      }}>
+      {/* Step content — the scroll target for draft approval. */}
+      <div
+        ref={wizardRef}
+        tabIndex={-1}
+        id="creator-wizard"
+        style={{
+          background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-lg)', padding: '1.5rem',
+          boxShadow: 'var(--shadow-card)', minHeight: '400px',
+          outline: 'none',
+        }}
+      >
+        {/* APPROVE-DRAFT FIX: unmistakable banner on the Preview step.
+            Approval still only fills the wizard — nothing is saved here —
+            but the user must be able to SEE that it happened, what was
+            filled in, that it is private, and what to click next. */}
+        {step === 4 && approvedDraftTitle && (
+          <div
+            role="status"
+            style={{
+              background: 'color-mix(in srgb, var(--color-success) 15%, var(--color-surface))',
+              border: '2px solid var(--color-success)', borderRadius: 'var(--radius)',
+              padding: '1rem', marginBottom: '1.25rem',
+            }}
+          >
+            <p style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontWeight: 700, margin: '0 0 0.25rem' }}>
+              ✅ Draft approved: {approvedDraftTitle}
+            </p>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: '0 0 0.75rem' }}>
+              {items.filter((i) => i.prompt && i.answer).length} questions filled in below.
+              This game is 🔒 Private by default — nothing is published until you save it.
+            </p>
+            {(!meta.subject || !meta.grade) && (
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
+                ⚠️ Subject or grade is still blank. Tap “Edit details” to pick them in
+                Details (Step 2) before you save, or the game will save without them.
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setStep(5)}
+                style={{
+                  minHeight: '48px', padding: '0.5rem 1.25rem', border: 'none',
+                  borderRadius: 'var(--radius)', background: 'var(--gradient-btn)',
+                  color: '#fff', fontFamily: 'var(--font-display)', fontSize: '0.95rem',
+                  cursor: 'pointer', fontWeight: 700,
+                }}
+              >
+                Preview and Save →
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                style={{
+                  minHeight: '48px', padding: '0.5rem 1.25rem',
+                  borderRadius: 'var(--radius)', border: '2px solid var(--color-border)',
+                  background: 'var(--color-surface)', color: 'var(--color-text-primary)',
+                  fontFamily: 'var(--font-display)', fontSize: '0.95rem', cursor: 'pointer',
+                }}
+              >
+                Edit details
+              </button>
+            </div>
+          </div>
+        )}
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
@@ -201,7 +282,8 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
                   Save Activity
                 </h2>
                 <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
-                  Choose visibility and finalize
+                  Choose visibility and finalize. Saving needs a signed-in account —
+                  if you are not signed in, sign in at the top first, then save here.
                 </p>
 
                 {/* Summary */}

@@ -231,9 +231,10 @@ export default function ChapterScan({
       )}
       {approved && (
         <p role="status" style={{ color: 'var(--color-success)', fontSize: '0.9rem', marginTop: '0.75rem' }}>
-          ✅ Chapter game approved and sent to the creator below — check Preview, then Save.
-          It stays private until you choose to make it public, and sharing uses the play-page
-          link + caption (no watermark, no name or photo in the share).
+          ✅ Chapter game approved — the page has moved to the Preview step below.
+          Check it there, then use “Preview and Save”. It stays private until you
+          choose to make it public, and sharing uses the play-page link + caption
+          (no watermark, no name or photo in the share).
         </p>
       )}
 
