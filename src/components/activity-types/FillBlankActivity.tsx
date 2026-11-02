@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, shuffleArray, isRTL, getRandomFeedback } from './shared'
@@ -24,9 +24,19 @@ export default function FillBlankActivity({ items, locale, onComplete }: Activit
 
   const [before, after] = getParts(item?.prompt || '')
 
-  // Options for tap mode (4 choices)
+  // Options for tap mode (4 choices). Memoised per question CONTENT, not
+  // per render: the old render-body shuffleArray re-ran on every parent
+  // re-render (the play page ticks its elapsed timer every second), so
+  // the option order kept changing under the player. The content key
+  // (not the items array identity, which ActivityPlayer already
+  // stabilised) means a genuinely new question still reshuffles.
   const allAnswers = items.map((i) => i.answer)
-  const options = shuffleArray([item?.answer, ...shuffleArray(allAnswers.filter((a) => a !== item?.answer)).slice(0, 3)]).filter(Boolean)
+  const answersKey = allAnswers.join('\u0000')
+  const options = useMemo(
+    () => shuffleArray([item?.answer, ...shuffleArray(allAnswers.filter((a) => a !== item?.answer)).slice(0, 3)]).filter(Boolean),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentIdx, item?.prompt, item?.answer, answersKey]
+  )
 
   function submit(answer?: string) {
     const val = (answer ?? typed).trim()
