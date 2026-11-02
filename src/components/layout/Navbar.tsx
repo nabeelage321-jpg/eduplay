@@ -10,6 +10,7 @@ import { useThemeStore } from '@/lib/store/theme-store'
 import type { Audience, SupportedLocale, KidsTheme } from '@/types'
 import { LOCALE_METADATA } from '@/types'
 import ThemeSwitcher from './ThemeSwitcher'
+import SignInModal from '@/components/auth/SignInModal'
 import ThemeIntroHost from '@/components/home/v0/ThemeIntroHost'
 
 interface NavbarProps {
@@ -22,6 +23,7 @@ export default function Navbar({ locale }: NavbarProps) {
   const { audience, kidsTheme } = useThemeStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [themePanelOpen, setThemePanelOpen] = useState(false)
+  const [signInOpen, setSignInOpen] = useState(false)
 
   const navLinks = [
     { href: `/${locale}/browse`, label: 'Browse Games' },
@@ -96,11 +98,20 @@ export default function Navbar({ locale }: NavbarProps) {
             </span>
           </button>
 
-          {/* Auth buttons — AUTH batch: show session state, not dead links.
-              When signed in, Navbar shows the account email + Sign out;
-              otherwise the login/signup pages (which now exist). */}
+          {/* Auth buttons — HOMEPAGE SIGN-IN batch: "Sign in" opens the
+              SignInModal on the current page (primary path); the full
+              /[locale]/login page stays as fallback/deep link only and is
+              linked from inside the modal. When signed in, Navbar shows
+              Dashboard + account email + Sign out, and NEVER "Sign in". */}
           {session?.user?.email ? (
             <>
+              <Link
+                href={`/${locale}/dashboard`}
+                className="btn-primary text-sm py-2 px-4"
+                style={{ minHeight: '48px', display: 'inline-flex', alignItems: 'center' }}
+              >
+                {t('dashboard')}
+              </Link>
               <span className="text-sm hidden sm:inline" style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {session.user.email}
               </span>
@@ -108,21 +119,25 @@ export default function Navbar({ locale }: NavbarProps) {
                 type="button"
                 onClick={() => signOut({ callbackUrl: `/${locale}` })}
                 className="btn-ghost text-sm hidden sm:flex"
+                style={{ minHeight: '48px' }}
               >
                 {t('logout')}
               </button>
             </>
           ) : (
             <>
-              <Link
-                href={`/${locale}/login`}
-                className="btn-ghost text-sm hidden sm:flex"
+              <button
+                type="button"
+                onClick={() => setSignInOpen(true)}
+                className="btn-ghost text-sm"
+                style={{ minHeight: '48px', display: 'inline-flex', alignItems: 'center' }}
               >
                 {t('login')}
-              </Link>
+              </button>
               <Link
                 href={`/${locale}/signup`}
                 className="btn-primary text-sm py-2 px-4"
+                style={{ minHeight: '48px', display: 'inline-flex', alignItems: 'center' }}
               >
                 {t('signup')}
               </Link>
@@ -188,19 +203,31 @@ export default function Navbar({ locale }: NavbarProps) {
                   {t('logout')} ({session.user.email})
                 </button>
               ) : (
-                <Link
-                  href={`/${locale}/login`}
-                  className="btn-ghost py-3 text-base"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {t('login')}
-                </Link>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => { setMenuOpen(false); setSignInOpen(true) }}
+                    className="btn-ghost py-3 text-base"
+                    style={{ minHeight: '48px', textAlign: 'left', justifyContent: 'flex-start' }}
+                  >
+                    {t('login')}
+                  </button>
+                  <Link
+                    href={`/${locale}/signup`}
+                    className="btn-ghost py-3 text-base"
+                    style={{ minHeight: '48px' }}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {t('signup')}
+                  </Link>
+                </>
               )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
     </header>
+      <SignInModal open={signInOpen} onClose={() => setSignInOpen(false)} locale={locale} />
       <ThemeIntroHost />
     </>
   )
