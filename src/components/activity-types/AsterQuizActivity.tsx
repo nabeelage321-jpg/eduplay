@@ -103,6 +103,7 @@ export default function AsterQuizActivity({ items, locale, onComplete }: Activit
   const scoreRef = useRef(0)
   const livesRef = useRef(DEFAULT_LIVES)
   const questionsRef = useRef<AsterQuestion[]>([])
+  const resultsRef = useRef<(boolean | null)[]>([])
   const onCompleteRef = useRef(onComplete)
   const completedRef = useRef(false)
   const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -111,6 +112,7 @@ export default function AsterQuizActivity({ items, locale, onComplete }: Activit
   useEffect(() => { scoreRef.current = score })
   useEffect(() => { livesRef.current = livesLeft })
   useEffect(() => { questionsRef.current = questions })
+  useEffect(() => { resultsRef.current = results })
   useEffect(() => () => { if (advanceTimeoutRef.current) clearTimeout(advanceTimeoutRef.current) }, [])
 
   const pointsPerQuestion = questions.length > 0 ? 100 / questions.length : 0
@@ -125,7 +127,15 @@ export default function AsterQuizActivity({ items, locale, onComplete }: Activit
       setFinished(true)
       if (!completedRef.current) {
         completedRef.current = true
-        onCompleteRef.current(Math.round(scoreRef.current))
+        // Preview detail (same pattern as Riddle): the Create Preview
+        // flow replaces the player end screen with its own completion
+        // screen, so pass the totals through onComplete or they are
+        // never visible in Preview. Play itself is unchanged.
+        onCompleteRef.current(Math.round(scoreRef.current), {
+          correctCount: resultsRef.current.filter(Boolean).length,
+          totalCount: qs.length,
+          livesLeft: livesRef.current,
+        })
       }
     } else {
       setCurrent((c) => c + 1)

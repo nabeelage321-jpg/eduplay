@@ -115,6 +115,9 @@ export default function ActivityPreview({ typeSlug, meta, items }: ActivityPrevi
               {finalDetails.letterHintsUsed !== undefined && (
                 <> · {finalDetails.letterHintsUsed} letter {finalDetails.letterHintsUsed === 1 ? 'hint' : 'hints'} used</>
               )}
+              {finalDetails.livesLeft !== undefined && (
+                <> · {finalDetails.livesLeft} {finalDetails.livesLeft === 1 ? 'life' : 'lives'} left</>
+              )}
             </p>
           )}
           <motion.button
