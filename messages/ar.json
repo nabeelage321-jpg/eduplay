@@ -96,7 +96,18 @@
     "timeUp": "انتهى الوقت!",
     "gameOver": "انتهت اللعبة",
     "leaderboard": "لوحة المتصدرين",
-    "playAgain": "العب مجدداً"
+    "playAgain": "العب مجدداً",
+    "joinGame": "Join a game",
+    "enterCodeNickname": "Enter your room code and nickname",
+    "joinButton": "Join game",
+    "askTeacherCode": "Ask your teacher for the code",
+    "enterNickname": "Enter your nickname",
+    "joining": "Joining...",
+    "joinFailed": "Could not join the game. Check your room code and try again.",
+    "codeValid": "Code looks good!",
+    "back": "Back",
+    "invalidRoomCode": "Enter a valid room code",
+    "roomCode": "Room Code"
   },
   "dashboard": {
     "title": "لوحة التحكم",

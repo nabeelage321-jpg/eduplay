@@ -148,7 +148,18 @@
     "leaderboard": "Leaderboard",
     "playAgain": "Play Again",
     "finished": "Finished!",
-    "roomCode": "Room Code"
+    "roomCode": "Room Code",
+    "joinGame": "Join a game",
+    "enterCodeNickname": "Enter your room code and nickname",
+    "joinButton": "Join game",
+    "askTeacherCode": "Ask your teacher for the code",
+    "nickname": "Nickname",
+    "enterNickname": "Enter your nickname",
+    "joining": "Joining...",
+    "joinFailed": "Could not join the game. Check your room code and try again.",
+    "codeValid": "Code looks good!",
+    "back": "Back",
+    "invalidRoomCode": "Enter a valid room code"
   },
   "print": {
     "title": "🖨️ Print Worksheet",

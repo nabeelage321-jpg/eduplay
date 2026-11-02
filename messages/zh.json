@@ -96,7 +96,18 @@
     "timeUp": "时间到！",
     "gameOver": "游戏结束",
     "leaderboard": "排行榜",
-    "playAgain": "再玩一次"
+    "playAgain": "再玩一次",
+    "joinGame": "Join a game",
+    "enterCodeNickname": "Enter your room code and nickname",
+    "joinButton": "Join game",
+    "askTeacherCode": "Ask your teacher for the code",
+    "enterNickname": "Enter your nickname",
+    "joining": "Joining...",
+    "joinFailed": "Could not join the game. Check your room code and try again.",
+    "codeValid": "Code looks good!",
+    "back": "Back",
+    "invalidRoomCode": "Enter a valid room code",
+    "roomCode": "Room Code"
   },
   "dashboard": {
     "title": "控制台",

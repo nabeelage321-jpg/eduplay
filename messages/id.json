@@ -96,7 +96,18 @@
     "timeUp": "Waktu habis!",
     "gameOver": "Permainan selesai",
     "leaderboard": "Papan peringkat",
-    "playAgain": "Main lagi"
+    "playAgain": "Main lagi",
+    "joinGame": "Join a game",
+    "enterCodeNickname": "Enter your room code and nickname",
+    "joinButton": "Join game",
+    "askTeacherCode": "Ask your teacher for the code",
+    "enterNickname": "Enter your nickname",
+    "joining": "Joining...",
+    "joinFailed": "Could not join the game. Check your room code and try again.",
+    "codeValid": "Code looks good!",
+    "back": "Back",
+    "invalidRoomCode": "Enter a valid room code",
+    "roomCode": "Room Code"
   },
   "dashboard": {
     "title": "Dasbor",
