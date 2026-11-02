@@ -47,6 +47,26 @@ export default function ActivityPreview({ typeSlug, meta, items }: ActivityPrevi
     setPreviewKey((k) => k + 1)
   }
 
+  // DIALOGUE CHARACTERS ROOT-CAUSE FIX (2026-11-02): the characters
+  // line used to depend entirely on the player echoing `characters`
+  // back in its onComplete details payload. If that payload is ever
+  // absent — the pre-fix player never sent it, and any stripped
+  // details object looks exactly the same — Preview silently showed
+  // "3 of 3 lines read" with no characters line, which is the live
+  // failure signature. Characters are INPUT data, not a play result:
+  // for Dialogue they are the item prompts, in first-appearance
+  // order, and Preview already has those items. So derive them here
+  // and use them as the fallback whenever the details payload does
+  // not carry them. The player payload still wins when present, so
+  // Riddle/AsterQuiz/Dictation rendering is untouched and Dialogue
+  // play itself is unchanged.
+  const dialogueCharacters = typeSlug === 'dialogue'
+    ? Array.from(new Set((mockActivity.items ?? []).map((i) => (i.prompt || '').trim()).filter(Boolean)))
+    : []
+  const charactersToShow = finalDetails?.characters?.length
+    ? finalDetails.characters
+    : dialogueCharacters
+
   return (
     <div>
       <h2 style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', marginBottom: '0.25rem', fontSize: '1.25rem' }}>
@@ -131,9 +151,9 @@ export default function ActivityPreview({ typeSlug, meta, items }: ActivityPrevi
               )}
             </p>
           )}
-          {finalDetails && finalDetails.characters !== undefined && finalDetails.characters.length > 0 && (
+          {charactersToShow.length > 0 && (
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', marginTop: '0.25rem' }}>
-              Characters: {finalDetails.characters.join(', ')}
+              Characters: {charactersToShow.join(', ')}
             </p>
           )}
           <motion.button
