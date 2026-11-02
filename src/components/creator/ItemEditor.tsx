@@ -31,6 +31,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   hangman: { prompt: 'Hint or category', answer: 'Word to guess' },
   'random-wheel': { prompt: 'Name or topic', answer: 'Name or topic' },
   'open-box': { prompt: 'Box label', answer: 'Hidden content' },
+  dictation: { prompt: 'Passage title (optional)', answer: 'Dictation text' },
 }
 
 const fieldStyle: React.CSSProperties = {

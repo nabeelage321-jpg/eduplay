@@ -109,14 +109,22 @@ export default function ActivityPreview({ typeSlug, meta, items }: ActivityPrevi
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.1rem' }}>
             Final score: {finalScore}{finalDetails ? ' / 100' : ''}
           </p>
-          {finalDetails && finalDetails.correctCount !== undefined && finalDetails.totalCount !== undefined && (
+          {finalDetails && ((finalDetails.correctCount !== undefined && finalDetails.totalCount !== undefined) || (finalDetails.wordsCorrect !== undefined && finalDetails.totalWords !== undefined)) && (
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', marginTop: '0.25rem' }}>
-              {finalDetails.correctCount} of {finalDetails.totalCount} correct
+              {finalDetails.correctCount !== undefined && finalDetails.totalCount !== undefined && (
+                <>{finalDetails.correctCount} of {finalDetails.totalCount} correct</>
+              )}
               {finalDetails.letterHintsUsed !== undefined && (
                 <> · {finalDetails.letterHintsUsed} letter {finalDetails.letterHintsUsed === 1 ? 'hint' : 'hints'} used</>
               )}
               {finalDetails.livesLeft !== undefined && (
                 <> · {finalDetails.livesLeft} {finalDetails.livesLeft === 1 ? 'life' : 'lives'} left</>
+              )}
+              {finalDetails.wordsCorrect !== undefined && finalDetails.totalWords !== undefined && (
+                <>{finalDetails.correctCount !== undefined ? ' · ' : ''}{finalDetails.wordsCorrect} of {finalDetails.totalWords} words correct</>
+              )}
+              {finalDetails.passagesDone !== undefined && (
+                <> · {finalDetails.passagesDone} {finalDetails.passagesDone === 1 ? 'passage' : 'passages'} done</>
               )}
             </p>
           )}

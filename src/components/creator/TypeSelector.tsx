@@ -29,6 +29,7 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'jump-path',        icon: '⭐', name: 'Jump Path',        desc: 'Answer to jump along the path' },
   { slug: 'riddle',           icon: '🧩', name: 'Riddle',           desc: 'Solve the clue by typing the answer' },
   { slug: 'aster-quiz',       icon: '🚀', name: 'AsterQuiz',        desc: 'Answer to fly the ship through asteroids' },
+  { slug: 'dictation',        icon: '🎧', name: 'Dictation',        desc: 'Listen and type what you hear' },
 ]
 
 interface TypeSelectorProps {

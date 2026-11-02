@@ -104,6 +104,23 @@ export function adaptActivityItems(activity: DbActivityLike): ActivityItem[] {
         return { prompt: str(r.clue || r.question || r.prompt), answer: str(r.solution || r.answer), hint: str(r.hint) }
       }).filter((i) => i.prompt && i.answer)
 
+    case 'dictation':
+      // Dictation-shaped rows: passages[] with text/passage (+
+      // optional title/label), or questions[] with a passage/text
+      // field. The creator-save branch above already handles
+      // prompt/answer rows, so this only rescues rows stored in
+      // dictation shape.
+      if (arr(content.passages).length > 0) {
+        return arr(content.passages).map((p) => {
+          const r = isRecord(p) ? p : {}
+          return { prompt: str(r.title || r.label || ''), answer: str(r.text || r.passage || r.answer) }
+        }).filter((i) => i.answer)
+      }
+      return arr(content.questions).map((q) => {
+        const r = isRecord(q) ? q : {}
+        return { prompt: str(r.title || r.label || ''), answer: str(r.passage || r.text || r.answer) }
+      }).filter((i) => i.answer)
+
     case 'quiz':
     case 'gameshow-quiz':
     case 'jump-path':

@@ -1,7 +1,8 @@
 import type { ActivityItem, Audience, SupportedLocale } from '@/types'
 
 /** Optional extra detail a player may pass with its final score.
- *  Only Riddle (letterHintsUsed) and AsterQuiz (livesLeft) supply
+ *  Only Riddle (letterHintsUsed), AsterQuiz (livesLeft), and
+ *  Dictation (wordsCorrect / totalWords / passagesDone) supply
  *  this today; every other type keeps calling onComplete(score)
  *  with no second argument, which stays valid. */
 export interface ActivityCompletion {
@@ -9,6 +10,9 @@ export interface ActivityCompletion {
   totalCount?: number
   letterHintsUsed?: number
   livesLeft?: number
+  wordsCorrect?: number
+  totalWords?: number
+  passagesDone?: number
 }
 
 export interface ActivityProps {
