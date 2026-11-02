@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useMemo } from 'react'
 import type { Activity, Audience, SupportedLocale } from '@/types'
 import { adaptActivityItems, dbTypeOf, playerTypeKey } from '@/lib/activity-content'
 
@@ -76,7 +76,15 @@ export default function ActivityPlayer({ activity, theme, locale, onComplete }: 
     )
   }
 
-  const items = adaptActivityItems(activity)
+  // QUIZ RE-RENDER FIX (2026-11-02): adaptActivityItems maps DB
+  // content into a NEW array on every call, so calling it during
+  // render gave every player a new `items` identity on every play-page
+  // timer tick (1s), and every useEffect([items]) shuffle in the
+  // players re-ran. Memoise on the activity object itself, which the
+  // play page only replaces when a new game is fetched (or its
+  // approval status changes — content is unchanged then, and the
+  // players' content guards skip a rebuild).
+  const items = useMemo(() => adaptActivityItems(activity), [activity])
   if (items.length === 0) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>

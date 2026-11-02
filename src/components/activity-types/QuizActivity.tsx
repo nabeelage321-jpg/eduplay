@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, TIMER_DEFAULT, shuffleArray, isRTL, getRandomFeedback } from './shared'
@@ -29,7 +29,23 @@ export default function QuizActivity({ items, locale, onComplete }: ActivityProp
     if (feedback) playGameSound(feedback.type, readSoundOn())
   }, [feedback])
 
+  // QUIZ RE-RENDER FIX (2026-11-02): the play page re-renders every
+  // second for its elapsed timer, and ActivityPlayer used to rebuild a
+  // brand-new `items` array on every render (adaptActivityItems maps
+  // DB content afresh). The old effect depended on `items` identity,
+  // so it re-shuffled the whole question list every second: the
+  // question/answers the player had just tapped kept changing, the
+  // counter stayed 1/10 and the score stayed 0. Questions are now
+  // built once per question CONTENT, not per array identity: a
+  // fingerprint of prompt+answer strings. Parent re-renders that
+  // carry the same content are a no-op; a genuinely different game
+  // (different content) still rebuilds and resets progress.
+  const itemsFingerprint = items.map((i) => `${i.prompt}\u0000${i.answer ?? ''}`).join('\u0001')
+  const builtForRef = useRef<string | null>(null)
   useEffect(() => {
+    if (builtForRef.current === itemsFingerprint) return
+    builtForRef.current = itemsFingerprint
+    if (advanceTimeoutRef.current) { clearTimeout(advanceTimeoutRef.current); advanceTimeoutRef.current = null }
     const allAnswers = items.map((i) => i.answer)
     const qs: QuizQuestion[] = items.map((item) => {
       const wrong = shuffleArray(allAnswers.filter((a) => a !== item.answer)).slice(0, 3)
@@ -37,47 +53,77 @@ export default function QuizActivity({ items, locale, onComplete }: ActivityProp
       return { item, options, correctIndex: options.indexOf(item.answer) }
     })
     setQuestions(shuffleArray(qs))
-  }, [items])
+    setCurrent(0)
+    setSelected(null)
+    setScore(0)
+    setTimeLeft(TIMER_DEFAULT)
+    setFeedback(null)
+    setFinished(false)
+  }, [itemsFingerprint, items])
+
+  // Refs mirror the latest state so `advance` can be stable: the old
+  // version closed over `current`/`score`/`onComplete`, and onComplete
+  // is a new function on every play-page timer tick, so `advance`
+  // changed every second, the timer effect churned, and a tap's
+  // 1400ms timeout carried a stale score (on the last question the
+  // final correct answer's +10 was lost from onComplete).
+  const currentRef = useRef(0)
+  const scoreRef = useRef(0)
+  const questionsRef = useRef<QuizQuestion[]>([])
+  const onCompleteRef = useRef(onComplete)
+  const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timeUpRef = useRef(false)
+  useEffect(() => { onCompleteRef.current = onComplete })
+  useEffect(() => { currentRef.current = current })
+  useEffect(() => { scoreRef.current = score })
+  useEffect(() => { questionsRef.current = questions })
+  useEffect(() => () => { if (advanceTimeoutRef.current) clearTimeout(advanceTimeoutRef.current) }, [])
 
   const advance = useCallback(() => {
     setSelected(null)
     setFeedback(null)
     setTimeLeft(TIMER_DEFAULT)
-    if (current + 1 >= questions.length) {
+    timeUpRef.current = false
+    const qs = questionsRef.current
+    if (qs.length === 0) return
+    if (currentRef.current + 1 >= qs.length) {
       setFinished(true)
-      onComplete(score)
+      onCompleteRef.current(scoreRef.current)
     } else {
       setCurrent((c) => c + 1)
     }
-  }, [current, questions.length, score, onComplete])
+  }, [])
 
+  // Timer only counts down. Time-up is handled by a separate effect
+  // below: the old version called setFeedback/setTimeout from inside
+  // a setTimeLeft updater (a side effect inside a state updater, which
+  // React may run twice) and depended on the ever-changing `advance`.
   useEffect(() => {
     if (selected !== null || finished || questions.length === 0) return
-    const id = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          clearInterval(id)
-          setFeedback({ type: 'wrong', msg: "Time's up!" })
-          setTimeout(advance, 1200)
-          return 0
-        }
-        return t - 1
-      })
-    }, 1000)
+    const id = setInterval(() => setTimeLeft((t) => (t > 1 ? t - 1 : 0)), 1000)
     return () => clearInterval(id)
-  }, [selected, finished, questions.length, current, advance])
+  }, [selected, finished, questions.length, current])
+
+  useEffect(() => { timeUpRef.current = false }, [current])
+  useEffect(() => {
+    if (timeLeft !== 0 || selected !== null || finished || questions.length === 0 || timeUpRef.current) return
+    timeUpRef.current = true
+    setFeedback({ type: 'wrong', msg: "Time's up!" })
+    advanceTimeoutRef.current = setTimeout(advance, 1200)
+  }, [timeLeft, selected, finished, questions.length, advance])
 
   function handleSelect(idx: number) {
     if (selected !== null) return
-    setSelected(idx)
     const q = questions[current]
+    if (!q) return
+    setSelected(idx)
     if (idx === q.correctIndex) {
       setScore((s) => s + SCORE_PER_CORRECT)
       setFeedback({ type: 'correct', msg: getRandomFeedback('correct') })
     } else {
       setFeedback({ type: 'wrong', msg: getRandomFeedback('wrong') })
     }
-    setTimeout(advance, 1400)
+    advanceTimeoutRef.current = setTimeout(advance, 1400)
   }
 
   if (questions.length === 0) return (
