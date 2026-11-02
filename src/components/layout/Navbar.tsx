@@ -25,6 +25,17 @@ export default function Navbar({ locale }: NavbarProps) {
   const [themePanelOpen, setThemePanelOpen] = useState(false)
   const [signInOpen, setSignInOpen] = useState(false)
 
+  // UI polish — Navbar privacy: the full account email must NEVER render
+  // in the site-wide Navbar. Show a name/avatar instead: the session's
+  // first name when present, otherwise just an initial circle. No name
+  // is ever invented here — without a session name there is only the
+  // initial. The full email lives only on the Dashboard/account page.
+  const displayName = session?.user?.name?.trim() ?? ''
+  const firstName = displayName ? displayName.split(/\s+/)[0] : ''
+  // Initial comes ONLY from the session name. With no name, the circle
+  // shows a generic person glyph — never anything derived from the email.
+  const accountInitial = firstName ? firstName.charAt(0).toUpperCase() : '👤'
+
   const navLinks = [
     { href: `/${locale}/browse`, label: 'Browse Games' },
     { href: `/${locale}/join`, label: 'Join a game' },
@@ -102,7 +113,8 @@ export default function Navbar({ locale }: NavbarProps) {
               SignInModal on the current page (primary path); the full
               /[locale]/login page stays as fallback/deep link only and is
               linked from inside the modal. When signed in, Navbar shows
-              Dashboard + account email + Sign out, and NEVER "Sign in". */}
+              Dashboard + name/avatar + Sign out, and NEVER "Sign in" —
+              and NEVER the full account email (privacy fix). */}
           {session?.user?.email ? (
             <>
               <Link
@@ -112,9 +124,24 @@ export default function Navbar({ locale }: NavbarProps) {
               >
                 {t('dashboard')}
               </Link>
-              <span className="text-sm hidden sm:inline" style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {session.user.email}
-              </span>
+              <Link
+                href={`/${locale}/dashboard`}
+                className="hidden sm:inline-flex items-center gap-2 no-underline"
+                aria-label={firstName ? `${firstName}'s account` : 'Account'}
+                title={firstName || 'Account'}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{ display: 'inline-flex', width: '40px', height: '40px', alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', background: 'var(--color-primary)', color: 'white', fontSize: '1.125rem', fontWeight: 800 }}
+                >
+                  {accountInitial}
+                </span>
+                {firstName && (
+                  <span className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {firstName}
+                  </span>
+                )}
+              </Link>
               <button
                 type="button"
                 onClick={() => signOut({ callbackUrl: `/${locale}` })}
@@ -194,14 +221,30 @@ export default function Navbar({ locale }: NavbarProps) {
                 </Link>
               ))}
               {session?.user?.email ? (
-                <button
-                  type="button"
-                  onClick={() => { setMenuOpen(false); signOut({ callbackUrl: `/${locale}` }) }}
-                  className="btn-ghost py-3 text-base"
-                  style={{ textAlign: 'left' }}
-                >
-                  {t('logout')} ({session.user.email})
-                </button>
+                <>
+                  <Link
+                    href={`/${locale}/dashboard`}
+                    className="btn-ghost py-3 text-base"
+                    onClick={() => setMenuOpen(false)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textAlign: 'left' }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{ display: 'inline-flex', width: '32px', height: '32px', alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', background: 'var(--color-primary)', color: 'white', fontSize: '1rem', fontWeight: 800, flexShrink: 0 }}
+                    >
+                      {accountInitial}
+                    </span>
+                    {firstName || 'Account'}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => { setMenuOpen(false); signOut({ callbackUrl: `/${locale}` }) }}
+                    className="btn-ghost py-3 text-base"
+                    style={{ textAlign: 'left' }}
+                  >
+                    {t('logout')}
+                  </button>
+                </>
               ) : (
                 <>
                   <button

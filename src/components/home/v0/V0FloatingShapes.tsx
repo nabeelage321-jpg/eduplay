@@ -8,6 +8,9 @@ import { TILES, TILE_INK } from './tiles'
 // (already in the repo) instead of V0's Tailwind-4 animate-float classes,
 // which do not exist in EduPlay's Tailwind 3 setup. Static when the user
 // prefers reduced motion. aria-hidden, pointer-events none.
+// UI polish: the float MUST loop continuously, never play once and stop —
+// repeat: Infinity plus an explicit repeatType: 'loop' below. The
+// reduced-motion branch stays fully static (no animation at all).
 const SHAPES = [
   { Icon: Star, tile: TILES[2], className: 'hidden md:flex', top: '6%', insetInlineStart: '4%', size: 80, duration: 6, delay: 0, rotate: -8 },
   { Icon: Cloud, tile: TILES[3], className: 'hidden md:flex', top: '10%', insetInlineEnd: '6%', size: 96, duration: 8, delay: 0.6, rotate: 4 },
@@ -47,7 +50,7 @@ export default function V0FloatingShapes() {
             className={className}
             style={{ ...style, rotate }}
             animate={{ y: [0, -14, 0] }}
-            transition={{ duration, repeat: Infinity, delay, ease: 'easeInOut' }}
+            transition={{ duration, repeat: Infinity, repeatType: 'loop', delay, ease: 'easeInOut' }}
           >
             {icon}
           </motion.div>

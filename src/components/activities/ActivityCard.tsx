@@ -47,7 +47,12 @@ export default function ActivityCard({
         boxShadow: 'var(--shadow)',
       }}
     >
-      {/* Card header — colored band with type icon */}
+      {/* Card header — colored band with type icon.
+          UI polish: the old white (#fff) title on the light gradient-hero
+          band was unreadable (white-on-light-pink on /activities). Title
+          and subtitle now use the theme-aware text colours, which are
+          dark on light themes and light on dark themes, and the title
+          wraps to 2 lines instead of truncating to "...". */}
       <div style={{
         background: 'var(--gradient-hero)',
         padding: compact ? '0.75rem' : '1rem',
@@ -57,27 +62,28 @@ export default function ActivityCard({
       }}>
         <span style={{ fontSize: compact ? '1.5rem' : '2rem' }}>{typeMeta?.icon ?? '🎮'}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{
-            color: '#fff',
-            fontFamily: 'var(--font-display)',
-            fontWeight: 700,
-            fontSize: compact ? '0.85rem' : '0.95rem',
-            margin: 0,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}>
+          <p
+            className="eduplay-card-title-2line"
+            style={{
+              color: 'var(--color-text-primary)',
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: compact ? '0.85rem' : '0.95rem',
+              margin: 0,
+            }}
+          >
             {activity.title}
           </p>
-          <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.72rem', margin: 0 }}>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.72rem', margin: 0 }}>
             {typeMeta?.name ?? activity.type_id}
           </p>
         </div>
         {activity.is_public && (
           <span style={{
-            background: 'rgba(255,255,255,0.2)', color: '#fff',
+            background: 'var(--color-surface)', color: 'var(--color-text-primary)',
             fontSize: '0.65rem', padding: '0.15rem 0.4rem',
             borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-body)',
+            border: '1px solid var(--color-border)',
           }}>
             🌐
           </span>

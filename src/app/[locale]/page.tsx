@@ -27,7 +27,7 @@ import HelperMascot from '@/components/home/v0/HelperMascot'
 import V0CreatorsSection from '@/components/home/v0/V0CreatorsSection'
 import V0SellingSection from '@/components/home/v0/V0SellingSection'
 import ThemeSection from '@/components/home/v0/ThemeSection'
-import { TILES } from '@/components/home/v0/tiles'
+import { TILES, TILE_INK } from '@/components/home/v0/tiles'
 
 interface HomePageProps {
   params: { locale: string }
@@ -182,7 +182,7 @@ export default async function HomePage({ params }: HomePageProps) {
   const subStyle = { marginTop: '0.75rem', fontSize: '1.125rem', fontWeight: 600, lineHeight: 1.6, color: 'var(--color-text-secondary)' } as const
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} style={{ minHeight: '100vh', background: 'var(--color-background)' }}>
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="eduplay-home" style={{ minHeight: '100vh', background: 'var(--color-background)' }}>
       <JsonLd data={jsonLd} />
       <Navbar locale={locale as never} />
       <main>
@@ -251,15 +251,18 @@ export default async function HomePage({ params }: HomePageProps) {
           <p style={eyebrowStyle}>15 subjects</p>
           <h2 id="subjects-title" style={{ marginTop: '0.5rem', ...h2Style }}>{t('popularSubjects')}</h2>
           <p style={subStyle}>From Math to Islamiyat — find games for the lesson you are teaching this week.</p>
+          {/* UI polish: subjects are LARGE TILE CARDS (icon on top, coloured
+              tile, dark ink) — deliberately different from the small type
+              pills below. Destination unchanged: /browse?subject=<DB subject>. */}
           <ul style={{ marginTop: '2rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', listStyle: 'none', padding: 0 }} aria-label="Subjects">
             {Object.keys(DB_SUBJECT_BY_SLUG).map((slug, i) => (
               <li key={slug}>
                 <Link
                   href={`/${locale}/browse?subject=${encodeURIComponent(DB_SUBJECT_BY_SLUG[slug])}`}
-                  style={{ display: 'inline-flex', minHeight: '48px', alignItems: 'center', gap: '0.5rem', borderRadius: '9999px', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '0 1.25rem', fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-primary)' }}
+                  style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', minWidth: '132px', minHeight: '112px', borderRadius: '1rem', border: '2px solid var(--color-border)', background: TILES[i % TILES.length], padding: '1rem 1.25rem', fontSize: '1rem', fontWeight: 800, color: TILE_INK, textAlign: 'center' }}
                 >
-                  <span aria-hidden="true" style={{ width: '0.75rem', height: '0.75rem', borderRadius: '9999px', background: TILES[i % TILES.length] }} />
-                  {SUBJECT_EMOJI[slug] ?? '📚'} {DB_SUBJECT_BY_SLUG[slug]}
+                  <span aria-hidden="true" style={{ fontSize: '2rem', lineHeight: 1 }}>{SUBJECT_EMOJI[slug] ?? '📚'}</span>
+                  <span>{DB_SUBJECT_BY_SLUG[slug]}</span>
                 </Link>
               </li>
             ))}
@@ -270,14 +273,17 @@ export default async function HomePage({ params }: HomePageProps) {
           <p style={eyebrowStyle}>23 game types</p>
           <h2 id="types-title" style={{ marginTop: '0.5rem', ...h2Style }}>Browse by game type</h2>
           <p style={subStyle}>Write your questions once, then play them as a Quiz, a Match Up, a Spin Wheel — or any of the others.</p>
-          <ul style={{ marginTop: '2rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', listStyle: 'none', padding: 0 }} aria-label="Game types">
-            {Object.keys(DB_TYPE_BY_SLUG).map((slug, i) => (
+          {/* UI polish: game types are SMALL PILLS on the surface-alt
+              background, no coloured dot, smaller than the subject tiles
+              above — different shape, size and colour at a glance.
+              Destination unchanged: /activities/<type slug>. */}
+          <ul style={{ marginTop: '2rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', listStyle: 'none', padding: 0 }} aria-label="Game types">
+            {Object.keys(DB_TYPE_BY_SLUG).map((slug) => (
               <li key={slug}>
                 <Link
                   href={`/${locale}/activities/${slug}`}
-                  style={{ display: 'inline-flex', minHeight: '48px', alignItems: 'center', gap: '0.5rem', borderRadius: '9999px', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '0 1.25rem', fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-primary)' }}
+                  style={{ display: 'inline-flex', minHeight: '40px', alignItems: 'center', borderRadius: '9999px', border: '1px solid var(--color-border)', background: 'var(--color-surface-alt)', padding: '0 0.875rem', fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text-primary)' }}
                 >
-                  <span aria-hidden="true" style={{ width: '0.75rem', height: '0.75rem', borderRadius: '9999px', background: TILES[i % TILES.length] }} />
                   {humanType(slug)}
                 </Link>
               </li>

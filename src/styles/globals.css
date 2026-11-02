@@ -593,6 +593,35 @@
     letter-spacing: -0.02em;
   }
 
+  /* --- UI polish batch: playful homepage headings ---
+     Fredoka One is already in the Google Fonts import at the top of
+     this file (no new font, no font files). Body text keeps
+     var(--font-body) and is untouched. For RTL locales (Urdu/Arabic)
+     the Nastaliq font wins, so Urdu text is never forced into a
+     Latin display font. */
+  .eduplay-home h1,
+  .eduplay-home h2,
+  .eduplay-home h3 {
+    font-family: 'Fredoka One', 'Nunito', system-ui, sans-serif;
+  }
+  [dir="rtl"] .eduplay-home h1,
+  [dir="rtl"] .eduplay-home h2,
+  [dir="rtl"] .eduplay-home h3 {
+    font-family: 'Noto Nastaliq Urdu', 'Nunito', system-ui, sans-serif;
+  }
+
+  /* --- UI polish batch: Browse card titles wrap to 2 lines ---
+     Replaces the old single-line ellipsis (whiteSpace: nowrap) on
+     ActivityCard titles. The dark theme-aware colour is set inline
+     in ActivityCard; this class only handles the wrapping. */
+  .eduplay-card-title-2line {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: break-word;
+  }
+
   /* --- Theme transition overlay --- */
   .theme-transition {
     transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;

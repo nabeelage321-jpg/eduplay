@@ -71,19 +71,21 @@ export default function V0GameCard({ game, locale, index }: { game: V0HomeGame; 
         boxShadow: '0 6px 0 0 var(--color-border)',
       }}
     >
-      <div style={{ position: 'relative', display: 'flex', height: '10rem', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: tile }} aria-hidden="true">
+      {/* UI polish: tile shrunk 10rem -> 6.5rem so the card no longer
+          looks empty in the middle; title + buttons move up with it. */}
+      <div style={{ position: 'relative', display: 'flex', height: '6.5rem', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: tile }} aria-hidden="true">
         <div style={{ position: 'absolute', top: '-1.5rem', insetInlineStart: '-1.5rem', width: '6rem', height: '6rem', borderRadius: '9999px', background: 'rgba(255,255,255,0.4)' }} />
         <div style={{ position: 'absolute', bottom: '-2rem', insetInlineEnd: '1.5rem', width: '7rem', height: '7rem', borderRadius: '9999px', background: 'rgba(255,255,255,0.3)' }} />
-        <span style={{ position: 'absolute', top: '1rem', insetInlineStart: '1.25rem', fontSize: '1.875rem', transform: 'rotate(-12deg)' }}>{art.side[0]}</span>
-        <span style={{ position: 'absolute', bottom: '1rem', insetInlineEnd: '1.5rem', fontSize: '1.875rem', transform: 'rotate(12deg)' }}>{art.side[1]}</span>
-        <div style={{ position: 'relative', display: 'flex', width: '5rem', height: '5rem', alignItems: 'center', justifyContent: 'center', borderRadius: '1rem', background: 'var(--color-surface)', boxShadow: '0 6px 0 0 rgba(0,0,0,0.1)', transform: 'rotate(-6deg)' }}>
-          <span style={{ fontSize: '3rem', lineHeight: 1 }}>{art.main}</span>
+        <span style={{ position: 'absolute', top: '0.75rem', insetInlineStart: '1rem', fontSize: '1.5rem', transform: 'rotate(-12deg)' }}>{art.side[0]}</span>
+        <span style={{ position: 'absolute', bottom: '0.75rem', insetInlineEnd: '1.25rem', fontSize: '1.5rem', transform: 'rotate(12deg)' }}>{art.side[1]}</span>
+        <div style={{ position: 'relative', display: 'flex', width: '4rem', height: '4rem', alignItems: 'center', justifyContent: 'center', borderRadius: '1rem', background: 'var(--color-surface)', boxShadow: '0 6px 0 0 rgba(0,0,0,0.1)', transform: 'rotate(-6deg)' }}>
+          <span style={{ fontSize: '2.5rem', lineHeight: 1 }}>{art.main}</span>
           <span style={{ position: 'absolute', bottom: '-0.75rem', insetInlineEnd: '-0.75rem', display: 'flex', width: '2.5rem', height: '2.5rem', alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', border: '2px solid var(--color-surface)', background: TILE_INK }}>
             <Icon style={{ width: '1.25rem', height: '1.25rem', color: 'var(--color-surface)' }} strokeWidth={2.25} />
           </span>
         </div>
       </div>
-      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', padding: '1.25rem' }}>
+      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', padding: '1rem' }}>
         <h3 style={{ fontSize: '1.25rem', fontWeight: 600, lineHeight: 1.3, color: 'var(--color-text-primary)' }}>
           <Link href={playHref} style={{ color: 'inherit' }}>
             {game.title}
@@ -92,7 +94,7 @@ export default function V0GameCard({ game, locale, index }: { game: V0HomeGame; 
         <p style={{ marginTop: '0.25rem', fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
           {game.subject} · {game.grade} · {game.type}
         </p>
-        <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.5rem' }}>
+        <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
           <Link
             href={playHref}
             style={{ display: 'inline-flex', minHeight: '48px', flex: 1, alignItems: 'center', justifyContent: 'center', gap: '0.5rem', borderRadius: '9999px', background: 'var(--color-primary)', padding: '0 1rem', fontSize: '1rem', fontWeight: 800, color: 'white' }}
