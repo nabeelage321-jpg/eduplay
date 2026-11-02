@@ -33,6 +33,7 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'dialogue',         icon: '💬', name: 'Dialogue',         desc: 'Follow a conversation, line by line' },
   { slug: 'map-quiz',         icon: '📍', name: 'Map Quiz',         desc: 'Tap the map to find each point' },
   { slug: 'jigsaw-puzzle',    icon: '🧩', name: 'Jigsaw Puzzle',    desc: 'Rebuild the picture, then answer about it' },
+  { slug: 'video-quiz',       icon: '🎬', name: 'Video Quiz',       desc: 'Watch the video, answer as it plays' },
 ]
 
 interface TypeSelectorProps {

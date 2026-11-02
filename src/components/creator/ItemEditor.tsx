@@ -35,6 +35,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   dialogue: { prompt: 'Speaker (character name)', answer: 'Line spoken' },
   'map-quiz': { prompt: 'Point name (e.g. Paris)', answer: 'Position x,y in % (e.g. 42,63)' },
   'jigsaw-puzzle': { prompt: 'Final question about the picture', answer: 'Final answer (typed)' },
+  'video-quiz': { prompt: 'Question about the video', answer: 'Correct answer' },
 }
 
 const fieldStyle: React.CSSProperties = {
@@ -181,6 +182,49 @@ export default function ItemEditor({ items, onChange, activityType }: ItemEditor
             onFocus={(e) => { e.target.style.borderColor = 'var(--color-primary)' }}
             onBlur={(e) => { e.target.style.borderColor = 'var(--color-border)' }}
           />
+        </div>
+      )}
+
+      {/* VIDEO QUIZ ONLY: the video is a pasted URL, not an upload —
+          there is no teacher video-upload infrastructure in this batch.
+          The URL must be the teacher's own hosted video file, or a
+          YouTube link for embedding only (own / CC-licensed video
+          only). Nothing is extracted from YouTube — no captions, no
+          transcript. It is stored on every item's imageUrl so the
+          player (which reads the first item's imageUrl) and saved
+          games both see it. Each question's time goes in its Hint
+          field, in seconds (e.g. 45, or 1:30); a blank Hint means the
+          question is asked after the video ends. */}
+      {activityType === 'video-quiz' && (
+        <div style={{ marginBottom: '0.75rem' }}>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', margin: '0 0 0.4rem' }}>
+            Watch the video, then answer. The video pauses at each question&apos;s time; questions
+            with no time are asked after the video ends.
+          </p>
+          <label style={{ display: 'block', color: 'var(--color-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-display)', marginBottom: '0.25rem' }}>
+            Video URL — your own hosted video, or a YouTube link for embedding only (own / CC-licensed video only)
+          </label>
+          <input
+            type="url"
+            value={items[0]?.imageUrl ?? ''}
+            onChange={(e) => {
+              const url = e.target.value
+              if (items.length === 0) {
+                onChange([{ prompt: '', answer: '', hint: '', imageUrl: url }])
+              } else {
+                onChange(items.map((item) => ({ ...item, imageUrl: url })))
+              }
+            }}
+            placeholder="https://… (your own video file, or a YouTube link)"
+            aria-label="Video URL"
+            style={fieldStyle}
+            onFocus={(e) => { e.target.style.borderColor = 'var(--color-primary)' }}
+            onBlur={(e) => { e.target.style.borderColor = 'var(--color-border)' }}
+          />
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: '0.4rem 0 0' }}>
+            Put each question&apos;s time in its Hint field, in seconds (e.g. 45, or 1:30).
+            Leave the Hint blank to ask that question after the video ends.
+          </p>
         </div>
       )}
 

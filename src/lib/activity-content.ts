@@ -71,6 +71,27 @@ export function adaptActivityItems(activity: DbActivityLike): ActivityItem[] {
   const content: AnyRecord = isRecord(activity.content) ? activity.content : {}
   const type = dbTypeOf(activity)
 
+  // VIDEO QUIZ runs BEFORE the creator-save branch below: a
+  // video-shaped row ({ question, answer, time }) carries an
+  // `answer` string, so the creator branch would claim it, map its
+  // missing `prompt` to '', and drop every question. This block
+  // handles creator rows too — its fallbacks read prompt / hint /
+  // imageUrl when question / time / videoUrl are absent — so
+  // teacher-saved video games and video-shaped DB rows both play.
+  if (type === 'video-quiz' && arr(content.questions).length > 0) {
+    const video = isRecord(content.video) ? content.video : {}
+    const videoUrl = str(content.videoUrl || video.url || content.image || '')
+    return arr(content.questions).map((q) => {
+      const r = isRecord(q) ? q : {}
+      return {
+        prompt: str(r.question || r.prompt),
+        answer: str(r.answer),
+        hint: str(r.time ?? r.timestamp ?? r.hint ?? ''),
+        imageUrl: str(r.imageUrl || videoUrl),
+      }
+    }).filter((i) => i.prompt && i.answer)
+  }
+
   // CREATOR-SAVE SHAPE (teacher-game fix 2026-11-02): POST/PUT
   // /api/activities store wizard items as content.questions[] with
   // { prompt, answer, hint, imageUrl } for every type. Programme rows
