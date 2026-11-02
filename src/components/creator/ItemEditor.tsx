@@ -34,6 +34,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   dictation: { prompt: 'Passage title (optional)', answer: 'Dictation text' },
   dialogue: { prompt: 'Speaker (character name)', answer: 'Line spoken' },
   'map-quiz': { prompt: 'Point name (e.g. Paris)', answer: 'Position x,y in % (e.g. 42,63)' },
+  'jigsaw-puzzle': { prompt: 'Final question about the picture', answer: 'Final answer (typed)' },
 }
 
 const fieldStyle: React.CSSProperties = {
@@ -135,6 +136,47 @@ export default function ItemEditor({ items, onChange, activityType }: ItemEditor
             }}
             placeholder="https://… (your own or CC-licensed map image)"
             aria-label="Map image URL"
+            style={fieldStyle}
+            onFocus={(e) => { e.target.style.borderColor = 'var(--color-primary)' }}
+            onBlur={(e) => { e.target.style.borderColor = 'var(--color-border)' }}
+          />
+        </div>
+      )}
+
+      {/* JIGSAW ONLY: the picture is a pasted URL, not an upload —
+          there is no teacher image-upload infrastructure in this batch.
+          The URL must be the teacher's own or a CC-licensed image; it
+          is stored on every item's imageUrl so the player (which reads
+          the first item's imageUrl) and saved games both see it.
+          Empty = the game plays on a coloured pattern. Grid size is
+          chosen by the PLAYER at the start (Easy 2x2 or Normal 3x3):
+          the save route whitelists only prompt / answer / hint /
+          imageUrl, so a creator-stored grid size would be stripped
+          on save, and no API change is made in this batch. The first
+          item is the final question, asked when every piece is placed;
+          extra items are reserved for the later piece-quiz batch. */}
+      {activityType === 'jigsaw-puzzle' && (
+        <div style={{ marginBottom: '0.75rem' }}>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', margin: '0 0 0.4rem' }}>
+            The first item is the final question about the picture, asked when every piece is placed.
+            Grid size: the player picks Easy 2 × 2 or Normal 3 × 3 at the start of the game.
+          </p>
+          <label style={{ display: 'block', color: 'var(--color-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-display)', marginBottom: '0.25rem' }}>
+            Picture URL — your own or CC-licensed image only (leave empty for a coloured pattern)
+          </label>
+          <input
+            type="url"
+            value={items[0]?.imageUrl ?? ''}
+            onChange={(e) => {
+              const url = e.target.value
+              if (items.length === 0) {
+                onChange([{ prompt: '', answer: '', hint: '', imageUrl: url }])
+              } else {
+                onChange(items.map((item) => ({ ...item, imageUrl: url })))
+              }
+            }}
+            placeholder="https://… (your own or CC-licensed picture)"
+            aria-label="Picture URL"
             style={fieldStyle}
             onFocus={(e) => { e.target.style.borderColor = 'var(--color-primary)' }}
             onBlur={(e) => { e.target.style.borderColor = 'var(--color-border)' }}

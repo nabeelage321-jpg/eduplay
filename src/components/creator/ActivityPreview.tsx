@@ -129,7 +129,7 @@ export default function ActivityPreview({ typeSlug, meta, items }: ActivityPrevi
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.1rem' }}>
             Final score: {finalScore}{finalDetails ? ' / 100' : ''}
           </p>
-          {finalDetails && ((finalDetails.correctCount !== undefined && finalDetails.totalCount !== undefined) || (finalDetails.wordsCorrect !== undefined && finalDetails.totalWords !== undefined) || (finalDetails.linesRead !== undefined && finalDetails.totalLines !== undefined)) && (
+          {finalDetails && ((finalDetails.correctCount !== undefined && finalDetails.totalCount !== undefined) || (finalDetails.wordsCorrect !== undefined && finalDetails.totalWords !== undefined) || (finalDetails.linesRead !== undefined && finalDetails.totalLines !== undefined) || (finalDetails.piecesPlaced !== undefined && finalDetails.totalPieces !== undefined)) && (
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', marginTop: '0.25rem' }}>
               {finalDetails.correctCount !== undefined && finalDetails.totalCount !== undefined && (
                 <>{finalDetails.correctCount} of {finalDetails.totalCount} correct</>
@@ -148,6 +148,9 @@ export default function ActivityPreview({ typeSlug, meta, items }: ActivityPrevi
               )}
               {finalDetails.linesRead !== undefined && finalDetails.totalLines !== undefined && (
                 <>{finalDetails.correctCount !== undefined || finalDetails.wordsCorrect !== undefined ? ' · ' : ''}{finalDetails.linesRead} of {finalDetails.totalLines} lines read</>
+              )}
+              {finalDetails.piecesPlaced !== undefined && finalDetails.totalPieces !== undefined && (
+                <>{finalDetails.correctCount !== undefined || finalDetails.wordsCorrect !== undefined || finalDetails.linesRead !== undefined ? ' · ' : ''}{finalDetails.piecesPlaced} of {finalDetails.totalPieces} pieces placed</>
               )}
             </p>
           )}

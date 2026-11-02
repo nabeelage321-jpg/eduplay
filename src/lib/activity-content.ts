@@ -167,6 +167,32 @@ export function adaptActivityItems(activity: DbActivityLike): ActivityItem[] {
       }).filter((i) => i.prompt && i.answer)
     }
 
+    case 'jigsaw-puzzle': {
+      // Jigsaw-shaped rows: a puzzle record with image + question /
+      // answer, or questions[] with a question/answer pair. The
+      // creator-save branch above already handles prompt/answer rows
+      // (first item = final question, image URL in imageUrl), so this
+      // only rescues rows stored in jigsaw shape. Extra rows are kept
+      // whole — the player uses the first question row and reserves
+      // the rest for the later piece-quiz batch.
+      if (isRecord(content.puzzle)) {
+        const p = content.puzzle
+        const prompt = str(p.question || p.prompt)
+        const answer = str(p.answer)
+        if (prompt && answer) {
+          return [{ prompt, answer, imageUrl: str(p.imageUrl || p.image || content.image || '') }]
+        }
+      }
+      return arr(content.questions).map((q) => {
+        const r = isRecord(q) ? q : {}
+        return {
+          prompt: str(r.question || r.prompt),
+          answer: str(r.answer),
+          imageUrl: str(r.imageUrl || content.image || ''),
+        }
+      }).filter((i) => i.prompt && i.answer)
+    }
+
     case 'quiz':
     case 'gameshow-quiz':
     case 'jump-path':
