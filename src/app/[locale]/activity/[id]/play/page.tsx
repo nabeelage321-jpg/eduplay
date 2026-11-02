@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import ActivityPlayer from '@/components/activity-types/ActivityPlayer'
 import ShareGameButton from '@/components/home/ShareGameButton'
 import SoundToggle from '@/components/activity-types/SoundToggle'
@@ -55,6 +55,7 @@ export default function PlayPage() {
   const playRecorded = useRef(false)
 
   const isRTL = locale === 'ur' || locale === 'ar'
+  const reduceMotion = useReducedMotion()
 
   useEffect(() => {
     async function fetchActivity() {
@@ -115,17 +116,51 @@ export default function PlayPage() {
   }
 
   if (error || !activity) {
+    // JOIN FLOW FIX 2026-11-02 — the not-found state was a bare
+    // heading + button. It now explains what happened and carries
+    // the same light floating shapes as the Join page (static when
+    // the user prefers reduced motion). Routing is unchanged; the
+    // Join page no longer sends anyone here for a bad code.
+    const floaters = [
+      { char: '⭐', left: '10%', top: '18%', size: '2rem', delay: 0 },
+      { char: '☁️', left: '84%', top: '16%', size: '2.2rem', delay: 0.6 },
+      { char: '🎲', left: '14%', top: '70%', size: '2rem', delay: 1.1 },
+      { char: '🌈', left: '86%', top: '64%', size: '2rem', delay: 0.3 },
+    ]
     return (
       <div style={{
         minHeight: '100vh', background: 'var(--color-background)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
+        position: 'relative', overflow: 'hidden',
       }}>
-        <div style={{ textAlign: 'center', maxWidth: '400px' }}>
+        {floaters.map((f) =>
+          reduceMotion ? (
+            <span key={f.char + f.left} aria-hidden="true" style={{ position: 'absolute', left: f.left, top: f.top, fontSize: f.size, opacity: 0.7 }}>
+              {f.char}
+            </span>
+          ) : (
+            <motion.span
+              key={f.char + f.left}
+              aria-hidden="true"
+              style={{ position: 'absolute', left: f.left, top: f.top, fontSize: f.size, opacity: 0.7 }}
+              animate={{ y: [0, -12, 0] }}
+              transition={{ duration: 3.5, repeat: Infinity, delay: f.delay, ease: 'easeInOut' }}
+            >
+              {f.char}
+            </motion.span>
+          ),
+        )}
+        <div style={{ textAlign: 'center', maxWidth: '400px', position: 'relative' }}>
           <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>😕</div>
           <h1 style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', marginBottom: '0.5rem' }}>
             Activity Not Found
           </h1>
-          <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.25rem' }}>{error}</p>
+          <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.25rem' }}>
+            This game or room could not be found. Check the code or link and try again.
+          </p>
+          {error && error !== 'Activity not found' && (
+            <p style={{ color: 'var(--color-text-muted)', marginTop: '-0.75rem', marginBottom: '1.25rem', fontSize: '0.875rem' }}>{error}</p>
+          )}
           <button
             onClick={() => router.push(`/${locale}/activities`)}
             style={{

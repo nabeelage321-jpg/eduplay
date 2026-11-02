@@ -159,7 +159,14 @@
     "joinFailed": "Could not join the game. Check your room code and try again.",
     "codeValid": "Code looks good!",
     "back": "Back",
-    "invalidRoomCode": "Enter a valid room code"
+    "invalidRoomCode": "Enter a valid room code",
+    "roomNotFound": "Room not found. Check your room code with your teacher and try again.",
+    "sessionEnded": "This session has ended. Ask your teacher for a new code.",
+    "liveUnavailable": "Live games are not available right now. Ask your teacher to check the game and try again.",
+    "roomCheckFailed": "Could not check the room code. Check your connection and try again.",
+    "joinStep1": "Get the code from your teacher",
+    "joinStep2": "Type your nickname",
+    "joinStep3": "Tap Join game"
   },
   "print": {
     "title": "🖨️ ورک شیٹ پرنٹ کریں",
