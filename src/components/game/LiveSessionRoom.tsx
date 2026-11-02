@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLiveSessionPolling } from '@/lib/hooks/useLiveSessionPolling'
 
 /**
@@ -29,6 +29,34 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
   const [playerId, setPlayerId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  // TEACHER-ID / LIVE-PICK BATCH 2026-11-02. The teacher's own saved
+  // games, from the same session-scoped source as the Dashboard list
+  // (GET /api/my-activities: teacher_id = session user only). null =
+  // still loading; [] = signed out, no users row, or no saved games —
+  // all three render the same plain empty line, never an error and
+  // never fake games. Clicking a row fills the Activity id input;
+  // typing in the input still works exactly as before.
+  interface MyGame {
+    id: string
+    title: string
+    type: string | null
+    subject: string | null
+    grade: string | null
+  }
+  const [myGames, setMyGames] = useState<MyGame[] | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/my-activities')
+      .then((res) => (res.ok ? res.json() : { activities: [] }))
+      .then((data) => {
+        if (!cancelled) setMyGames(Array.isArray(data.activities) ? data.activities : [])
+      })
+      .catch(() => {
+        if (!cancelled) setMyGames([])
+      })
+    return () => { cancelled = true }
+  }, [])
   const [reportScore, setReportScore] = useState('')
 
   const { session, players, error } = useLiveSessionPolling(sessionId, 3000)
@@ -125,6 +153,46 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
 
           {mode === 'host' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {myGames !== null && myGames.length === 0 ? (
+                <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>
+                  No saved games yet — <a href={`/${locale}/create`} style={{ color: 'var(--color-primary)' }}>create one first</a>
+                </p>
+              ) : myGames !== null ? (
+                <div>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: '0 0 0.5rem' }}>
+                    Your saved games — tap one to fill the Activity id:
+                  </p>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.5rem', maxHeight: '320px', overflowY: 'auto' }}>
+                    {myGames.map((game) => {
+                      const selected = activityId === game.id
+                      return (
+                        <li key={game.id}>
+                          <button
+                            type="button"
+                            onClick={() => setActivityId(game.id)}
+                            aria-pressed={selected}
+                            style={{
+                              width: '100%', minHeight: '48px', textAlign: 'left', cursor: 'pointer',
+                              padding: '0.6rem 0.9rem', borderRadius: 'var(--radius)',
+                              border: selected ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                              background: selected
+                                ? 'color-mix(in srgb, var(--color-primary) 12%, var(--color-surface))'
+                                : 'var(--color-surface)',
+                              color: 'var(--color-text-primary)',
+                            }}
+                          >
+                            <span style={{ display: 'block', fontWeight: 700 }}>{game.title}</span>
+                            <span style={{ display: 'block', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                              {[game.subject, game.grade, game.type].filter(Boolean).join(' · ')}
+                              {selected ? ' · ✓ Selected' : ''}
+                            </span>
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              ) : null}
               <input value={activityId} onChange={(e) => setActivityId(e.target.value)} placeholder="Activity id (from a saved activity)" aria-label="Activity id" style={inputStyle} />
               <input value={teacherName} onChange={(e) => setTeacherName(e.target.value)} placeholder="Your name (optional)" aria-label="Teacher name" style={inputStyle} />
               <button onClick={createSession} disabled={busy} style={bigBtn}>{busy ? 'Creating…' : 'Create session →'}</button>

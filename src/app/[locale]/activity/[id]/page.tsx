@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { generatePageMetadata } from '@/lib/seo/metadata'
 import JsonLd from '@/components/seo/JsonLd'
 import Breadcrumb from '@/components/seo/Breadcrumb'
+import ActivityIdLine from '@/components/activity-types/ActivityIdLine'
 import { generateActivitySchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
 import { createServerClient } from '@/lib/supabase/server'
 import { adaptActivityItems, dbTypeOf } from '@/lib/activity-content'
@@ -311,6 +312,13 @@ export default async function ActivityPage({
             >
               {activity.title}
             </h1>
+
+            {/* TEACHER-ID BATCH 2026-11-02: the id was only in the URL.
+                Detail page keeps the e6cea592 live-row adapter untouched;
+                this only renders the page's own id under the title. */}
+            <div style={{ marginBottom: '1rem' }}>
+              <ActivityIdLine id={activity.id} />
+            </div>
 
             <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.25rem' }}>
               {activity.description}

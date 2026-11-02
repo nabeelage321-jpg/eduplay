@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import ActivityPlayer from '@/components/activity-types/ActivityPlayer'
+import ActivityIdLine from '@/components/activity-types/ActivityIdLine'
 import ShareGameButton from '@/components/home/ShareGameButton'
 import SoundToggle from '@/components/activity-types/SoundToggle'
 import { useThemeStore } from '@/lib/store/theme-store'
@@ -206,6 +207,8 @@ export default function PlayPage() {
           }}>
             {activity.title}
           </p>
+          {/* TEACHER-ID BATCH 2026-11-02: the id was only in the URL. */}
+          <ActivityIdLine id={id} />
         </div>
         {showShare ? (
           <ShareGameButton locale={locale} gameId={id} gameTitle={activity.title} />
