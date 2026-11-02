@@ -138,6 +138,35 @@ export function adaptActivityItems(activity: DbActivityLike): ActivityItem[] {
         return { prompt: str(r.title || r.label || ''), answer: str(r.passage || r.text || r.answer) }
       }).filter((i) => i.answer)
 
+    case 'map-quiz': {
+      // Map-shaped rows: points[] with name + x/y (+ optional image),
+      // or questions[] with a name/position pair. The creator-save
+      // branch above already handles prompt/answer rows (point name
+      // in prompt, "x,y" percent position in answer, image URL in
+      // imageUrl), so this only rescues rows stored in map shape.
+      // Labelled-diagram is untouched: it keeps its own labels case.
+      if (arr(content.points).length > 0) {
+        return arr(content.points).map((p) => {
+          const r = isRecord(p) ? p : {}
+          const x = typeof r.x === 'number' ? r.x : Number(str(r.x))
+          const y = typeof r.y === 'number' ? r.y : Number(str(r.y))
+          return {
+            prompt: str(r.name || r.label || r.prompt),
+            answer: Number.isFinite(x) && Number.isFinite(y) ? `${x},${y}` : '',
+            imageUrl: str(r.imageUrl || content.image || ''),
+          }
+        }).filter((i) => i.prompt && i.answer)
+      }
+      return arr(content.questions).map((q) => {
+        const r = isRecord(q) ? q : {}
+        return {
+          prompt: str(r.name || r.prompt),
+          answer: str(r.position || r.answer),
+          imageUrl: str(r.imageUrl || content.image || ''),
+        }
+      }).filter((i) => i.prompt && i.answer)
+    }
+
     case 'quiz':
     case 'gameshow-quiz':
     case 'jump-path':

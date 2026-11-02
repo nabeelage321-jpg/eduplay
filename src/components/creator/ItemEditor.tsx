@@ -33,6 +33,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'open-box': { prompt: 'Box label', answer: 'Hidden content' },
   dictation: { prompt: 'Passage title (optional)', answer: 'Dictation text' },
   dialogue: { prompt: 'Speaker (character name)', answer: 'Line spoken' },
+  'map-quiz': { prompt: 'Point name (e.g. Paris)', answer: 'Position x,y in % (e.g. 42,63)' },
 }
 
 const fieldStyle: React.CSSProperties = {
@@ -105,6 +106,41 @@ export default function ItemEditor({ items, onChange, activityType }: ItemEditor
           + Add Item
         </motion.button>
       </div>
+
+      {/* MAP QUIZ ONLY: the map image is a pasted URL, not an upload —
+          there is no teacher image-upload infrastructure in this batch.
+          The URL must be the teacher's own or a CC-licensed image; it
+          is stored on every item's imageUrl so the player (which reads
+          the first item's imageUrl) and saved games both see it.
+          Empty = the game plays on a plain grid background. */}
+      {activityType === 'map-quiz' && (
+        <div style={{ marginBottom: '0.75rem' }}>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', margin: '0 0 0.4rem' }}>
+            Each item is one point on the map. Players are asked “Where is X?” and tap the map.
+            Position is x,y in percent from the left and top of the map.
+          </p>
+          <label style={{ display: 'block', color: 'var(--color-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-display)', marginBottom: '0.25rem' }}>
+            Map image URL — your own or CC-licensed image only (leave empty for a plain grid)
+          </label>
+          <input
+            type="url"
+            value={items[0]?.imageUrl ?? ''}
+            onChange={(e) => {
+              const url = e.target.value
+              if (items.length === 0) {
+                onChange([{ prompt: '', answer: '', hint: '', imageUrl: url }])
+              } else {
+                onChange(items.map((item) => ({ ...item, imageUrl: url })))
+              }
+            }}
+            placeholder="https://… (your own or CC-licensed map image)"
+            aria-label="Map image URL"
+            style={fieldStyle}
+            onFocus={(e) => { e.target.style.borderColor = 'var(--color-primary)' }}
+            onBlur={(e) => { e.target.style.borderColor = 'var(--color-border)' }}
+          />
+        </div>
+      )}
 
       {/* Column headers */}
       <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 1fr 1fr 32px', gap: '0.4rem', marginBottom: '0.35rem', padding: '0 0.25rem' }}>

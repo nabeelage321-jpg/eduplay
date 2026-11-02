@@ -41,6 +41,7 @@ const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
   'aster-quiz':       lazy(() => import('./AsterQuizActivity')),
   'dictation':        lazy(() => import('./DictationActivity')),
   'dialogue':         lazy(() => import('./DialogueActivity')),
+  'map-quiz':         lazy(() => import('./MapQuizActivity')),
 }
 
 interface ActivityPlayerProps {

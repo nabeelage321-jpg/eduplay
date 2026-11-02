@@ -31,6 +31,7 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'aster-quiz',       icon: '🚀', name: 'AsterQuiz',        desc: 'Answer to fly the ship through asteroids' },
   { slug: 'dictation',        icon: '🎧', name: 'Dictation',        desc: 'Listen and type what you hear' },
   { slug: 'dialogue',         icon: '💬', name: 'Dialogue',         desc: 'Follow a conversation, line by line' },
+  { slug: 'map-quiz',         icon: '📍', name: 'Map Quiz',         desc: 'Tap the map to find each point' },
 ]
 
 interface TypeSelectorProps {
