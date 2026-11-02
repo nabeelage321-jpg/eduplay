@@ -97,6 +97,7 @@ export function adaptActivityItems(activity: DbActivityLike): ActivityItem[] {
   switch (type) {
     case 'quiz':
     case 'gameshow-quiz':
+    case 'jump-path':
       return arr(content.questions).map((q) => {
         const r = isRecord(q) ? q : {}
         const options = words(r.options)

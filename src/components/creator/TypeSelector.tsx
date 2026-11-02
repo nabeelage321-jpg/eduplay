@@ -26,6 +26,7 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'memory-match',     icon: '🧠', name: 'Memory Match',     desc: 'Flip tiles to match pairs' },
   { slug: 'typing-race',      icon: '⌨️', name: 'Typing Race',      desc: 'Type fast, build a streak' },
   { slug: 'bingo',            icon: '🎱', name: 'Bingo',            desc: 'Mark answers, complete a line' },
+  { slug: 'jump-path',        icon: '⭐', name: 'Jump Path',        desc: 'Answer to jump along the path' },
 ]
 
 interface TypeSelectorProps {
