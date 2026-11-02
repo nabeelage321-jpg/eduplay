@@ -8,6 +8,7 @@ import {
   type PromptDraft,
   type PromptGameType,
 } from '@/lib/prompt-to-game'
+import { buildGroqDraft, getGroqConfig } from '@/lib/groq'
 import type { ActivityItem } from '@/types'
 
 const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble']
@@ -22,9 +23,13 @@ interface OpenTdbQuestion {
  * POST /api/prompt-to-game — draft only, never a published game.
  * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble', chapterText? }
  * - With chapterText: the draft is built from the chapter's own sentences.
- * - Without it: free Open Trivia Database questions (CC BY-SA 4.0).
- * No paid provider, no Anthropic, no key. If no free source yields at
- * least 2 real items, this returns an error instead of inventing any.
+ * - Table prompts: built locally, never touch the network.
+ * - Other prompts: Groq first (topic-specific, see src/lib/groq.ts).
+ *   Only when NO Groq key is configured does it fall back to free
+ *   Open Trivia Database questions (CC BY-SA 4.0), clearly labelled
+ *   as general knowledge, not about the exact prompt.
+ * No Anthropic. If no source yields at least 2 real, on-topic items,
+ * this returns an error instead of inventing any.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -61,7 +66,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ draft: tableDraft })
     }
 
-    // Free content: Open Trivia Database, no key, CC BY-SA 4.0.
+    // Groq first for general prompts (topic-specific draft). Chapter
+    // and table prompts above never reach this point, so they are
+    // untouched. A configured Groq key that fails (rate limit, bad
+    // key, bad model, invalid draft) returns its own plain 502 —
+    // it does NOT silently fall back to random trivia, or the
+    // creator would see off-topic questions and think Groq worked.
+    if (getGroqConfig()) {
+      const groq = await buildGroqDraft(prompt)
+      if (groq.ok) {
+        const draft: PromptDraft = {
+          title: prompt,
+          type,
+          items: convertDraftItems(groq.items, type),
+          sourceNote: `Draft made by Groq (${groq.model}) from your exact prompt — every question was checked against your topic. It is still only a draft: check and edit each question before you approve it.`,
+        }
+        return NextResponse.json({ draft })
+      }
+      return NextResponse.json({ error: groq.error }, { status: groq.status })
+    }
+
+    // No Groq key configured: free content, Open Trivia Database,
+    // no key, CC BY-SA 4.0. Clearly labelled below as general
+    // knowledge, NOT about the exact prompt.
     // Its failures get their own plain message — never the generic 500 —
     // so the creator knows it is the trivia service, not their prompt.
     const controller = new AbortController()
