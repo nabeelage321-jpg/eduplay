@@ -5,6 +5,7 @@ import { generatePageMetadata } from '@/lib/seo/metadata'
 import JsonLd from '@/components/seo/JsonLd'
 import Breadcrumb from '@/components/seo/Breadcrumb'
 import ActivityIdLine from '@/components/activity-types/ActivityIdLine'
+import HostLiveGame from '@/components/game/HostLiveGame'
 import { generateActivitySchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
 import { createServerClient } from '@/lib/supabase/server'
 import { adaptActivityItems, dbTypeOf } from '@/lib/activity-content'
@@ -380,6 +381,13 @@ export default async function ActivityPage({
               </p>
             ) : null}
           </header>
+
+          {/* ONE-CLICK HOST 2026-11-03: one click from this page creates
+              the live room and shows the code + share + leaderboard on
+              this same page. The component itself only renders for the
+              signed-in teacher who owns this game (checked against
+              /api/my-activities); everyone else sees nothing here. */}
+          <HostLiveGame activityId={activity.id} locale={params.locale} activityTitle={activity.title} />
 
           {/* Teacher attribution — only when a real name resolved;
               no invented name, no profile link without a username. */}
