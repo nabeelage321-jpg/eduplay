@@ -109,7 +109,7 @@ export default function ActivityPreview({ typeSlug, meta, items }: ActivityPrevi
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.1rem' }}>
             Final score: {finalScore}{finalDetails ? ' / 100' : ''}
           </p>
-          {finalDetails && ((finalDetails.correctCount !== undefined && finalDetails.totalCount !== undefined) || (finalDetails.wordsCorrect !== undefined && finalDetails.totalWords !== undefined)) && (
+          {finalDetails && ((finalDetails.correctCount !== undefined && finalDetails.totalCount !== undefined) || (finalDetails.wordsCorrect !== undefined && finalDetails.totalWords !== undefined) || (finalDetails.linesRead !== undefined && finalDetails.totalLines !== undefined)) && (
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', marginTop: '0.25rem' }}>
               {finalDetails.correctCount !== undefined && finalDetails.totalCount !== undefined && (
                 <>{finalDetails.correctCount} of {finalDetails.totalCount} correct</>
@@ -125,6 +125,9 @@ export default function ActivityPreview({ typeSlug, meta, items }: ActivityPrevi
               )}
               {finalDetails.passagesDone !== undefined && (
                 <> · {finalDetails.passagesDone} {finalDetails.passagesDone === 1 ? 'passage' : 'passages'} done</>
+              )}
+              {finalDetails.linesRead !== undefined && finalDetails.totalLines !== undefined && (
+                <>{finalDetails.correctCount !== undefined || finalDetails.wordsCorrect !== undefined ? ' · ' : ''}{finalDetails.linesRead} of {finalDetails.totalLines} lines read</>
               )}
             </p>
           )}

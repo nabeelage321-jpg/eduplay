@@ -40,6 +40,7 @@ const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
   'riddle':           lazy(() => import('./RiddleActivity')),
   'aster-quiz':       lazy(() => import('./AsterQuizActivity')),
   'dictation':        lazy(() => import('./DictationActivity')),
+  'dialogue':         lazy(() => import('./DialogueActivity')),
 }
 
 interface ActivityPlayerProps {

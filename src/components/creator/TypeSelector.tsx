@@ -30,6 +30,7 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'riddle',           icon: '🧩', name: 'Riddle',           desc: 'Solve the clue by typing the answer' },
   { slug: 'aster-quiz',       icon: '🚀', name: 'AsterQuiz',        desc: 'Answer to fly the ship through asteroids' },
   { slug: 'dictation',        icon: '🎧', name: 'Dictation',        desc: 'Listen and type what you hear' },
+  { slug: 'dialogue',         icon: '💬', name: 'Dialogue',         desc: 'Follow a conversation, line by line' },
 ]
 
 interface TypeSelectorProps {

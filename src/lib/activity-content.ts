@@ -104,6 +104,23 @@ export function adaptActivityItems(activity: DbActivityLike): ActivityItem[] {
         return { prompt: str(r.clue || r.question || r.prompt), answer: str(r.solution || r.answer), hint: str(r.hint) }
       }).filter((i) => i.prompt && i.answer)
 
+    case 'dialogue':
+      // Dialogue-shaped rows: lines[] with speaker/character + text/
+      // line, or questions[] with a speaker/text pair. The creator-
+      // save branch above already handles prompt/answer rows (speaker
+      // in prompt, line in answer), so this only rescues rows stored
+      // in dialogue shape.
+      if (arr(content.lines).length > 0) {
+        return arr(content.lines).map((l) => {
+          const r = isRecord(l) ? l : {}
+          return { prompt: str(r.speaker || r.character || r.name || r.prompt), answer: str(r.text || r.line || r.answer) }
+        }).filter((i) => i.prompt && i.answer)
+      }
+      return arr(content.questions).map((q) => {
+        const r = isRecord(q) ? q : {}
+        return { prompt: str(r.speaker || r.character || r.prompt), answer: str(r.text || r.line || r.answer) }
+      }).filter((i) => i.prompt && i.answer)
+
     case 'dictation':
       // Dictation-shaped rows: passages[] with text/passage (+
       // optional title/label), or questions[] with a passage/text

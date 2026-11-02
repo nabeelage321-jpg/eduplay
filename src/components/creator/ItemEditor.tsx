@@ -32,6 +32,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'random-wheel': { prompt: 'Name or topic', answer: 'Name or topic' },
   'open-box': { prompt: 'Box label', answer: 'Hidden content' },
   dictation: { prompt: 'Passage title (optional)', answer: 'Dictation text' },
+  dialogue: { prompt: 'Speaker (character name)', answer: 'Line spoken' },
 }
 
 const fieldStyle: React.CSSProperties = {
