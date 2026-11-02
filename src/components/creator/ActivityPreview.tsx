@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import ActivityPlayer from '@/components/activity-types/ActivityPlayer'
+import type { ActivityCompletion } from '@/components/activity-types/shared'
 import type { Activity, Audience, SupportedLocale, ActivityItem } from '@/types'
 import type { ActivityMeta } from './MetaForm'
 import { ACTIVITY_TYPE_META } from './TypeSelector'
@@ -16,6 +17,7 @@ interface ActivityPreviewProps {
 export default function ActivityPreview({ typeSlug, meta, items }: ActivityPreviewProps) {
   const [previewKey, setPreviewKey] = useState(0)
   const [finalScore, setFinalScore] = useState<number | null>(null)
+  const [finalDetails, setFinalDetails] = useState<ActivityCompletion | null>(null)
 
   const typeMeta = ACTIVITY_TYPE_META.find((t) => t.slug === typeSlug)
 
@@ -41,6 +43,7 @@ export default function ActivityPreview({ typeSlug, meta, items }: ActivityPrevi
 
   function restart() {
     setFinalScore(null)
+    setFinalDetails(null)
     setPreviewKey((k) => k + 1)
   }
 
@@ -103,7 +106,17 @@ export default function ActivityPreview({ typeSlug, meta, items }: ActivityPrevi
         >
           <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎉</div>
           <h3 style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)' }}>Preview Complete!</h3>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.1rem' }}>Final score: {finalScore}</p>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.1rem' }}>
+            Final score: {finalScore}{finalDetails ? ' / 100' : ''}
+          </p>
+          {finalDetails && finalDetails.correctCount !== undefined && finalDetails.totalCount !== undefined && (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', marginTop: '0.25rem' }}>
+              {finalDetails.correctCount} of {finalDetails.totalCount} correct
+              {finalDetails.letterHintsUsed !== undefined && (
+                <> · {finalDetails.letterHintsUsed} letter {finalDetails.letterHintsUsed === 1 ? 'hint' : 'hints'} used</>
+              )}
+            </p>
+          )}
           <motion.button
             whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
             onClick={restart}
@@ -128,7 +141,7 @@ export default function ActivityPreview({ typeSlug, meta, items }: ActivityPrevi
             activity={mockActivity}
             theme="ladies"
             locale={(meta.locale as SupportedLocale) || 'en'}
-            onComplete={(score) => setFinalScore(score)}
+            onComplete={(score, details) => { setFinalScore(score); setFinalDetails(details ?? null) }}
           />
         </div>
       )}

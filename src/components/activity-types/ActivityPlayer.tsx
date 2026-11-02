@@ -2,13 +2,14 @@
 
 import { Suspense, lazy, useMemo } from 'react'
 import type { Activity, Audience, SupportedLocale } from '@/types'
+import type { ActivityCompletion } from './shared'
 import { adaptActivityItems, dbTypeOf, playerTypeKey } from '@/lib/activity-content'
 
 type PlayerComponent = React.LazyExoticComponent<React.ComponentType<{
   items: NonNullable<Activity['items']>
   theme: Audience
   locale: SupportedLocale
-  onComplete: (score: number) => void
+  onComplete: (score: number, details?: ActivityCompletion) => void
 }>>
 
 const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
@@ -43,7 +44,7 @@ interface ActivityPlayerProps {
   activity: Activity
   theme: Audience
   locale: SupportedLocale
-  onComplete: (score: number) => void
+  onComplete: (score: number, details?: ActivityCompletion) => void
 }
 
 function LoadingSkeleton() {

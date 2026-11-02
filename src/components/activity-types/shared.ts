@@ -1,10 +1,19 @@
 import type { ActivityItem, Audience, SupportedLocale } from '@/types'
 
+/** Optional extra detail a player may pass with its final score.
+ *  Only Riddle supplies this today; every other type keeps calling
+ *  onComplete(score) with no second argument, which stays valid. */
+export interface ActivityCompletion {
+  correctCount?: number
+  totalCount?: number
+  letterHintsUsed?: number
+}
+
 export interface ActivityProps {
   items: ActivityItem[]
   theme: Audience
   locale: SupportedLocale
-  onComplete: (score: number) => void
+  onComplete: (score: number, details?: ActivityCompletion) => void
 }
 
 export interface FeedbackState {

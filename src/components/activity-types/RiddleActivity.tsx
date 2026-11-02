@@ -121,6 +121,7 @@ export default function RiddleActivity({ items, locale, onComplete }: ActivityPr
   const scoreRef = useRef(0)
   const riddlesRef = useRef<RiddleItem[]>([])
   const correctRef = useRef(0)
+  const totalLetterHintsRef = useRef(0)
   const onCompleteRef = useRef(onComplete)
   const completedRef = useRef(false)
   const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -129,6 +130,7 @@ export default function RiddleActivity({ items, locale, onComplete }: ActivityPr
   useEffect(() => { scoreRef.current = score })
   useEffect(() => { riddlesRef.current = riddles })
   useEffect(() => { correctRef.current = correctCount })
+  useEffect(() => { totalLetterHintsRef.current = totalLetterHints })
   useEffect(() => () => { if (advanceTimeoutRef.current) clearTimeout(advanceTimeoutRef.current) }, [])
 
   function resetGame() {
@@ -140,6 +142,7 @@ export default function RiddleActivity({ items, locale, onComplete }: ActivityPr
     setAttempts(0)
     setLettersRevealed(0)
     setTotalLetterHints(0)
+    totalLetterHintsRef.current = 0
     setShowClueHint(false)
     setFinished(false)
     setAnswered(false)
@@ -151,7 +154,16 @@ export default function RiddleActivity({ items, locale, onComplete }: ActivityPr
       setFinished(true)
       if (!completedRef.current) {
         completedRef.current = true
-        onCompleteRef.current(finalScore)
+        // The Preview wrapper replaces the player with its own
+        // completion screen on onComplete, so the player's own end
+        // screen is never seen there — pass the detail through so
+        // the wrapper can show score /100, correct count, and
+        // letter hints used instead of a bare "Final score: 90".
+        onCompleteRef.current(finalScore, {
+          correctCount: finalCorrect,
+          totalCount: riddlesRef.current.length,
+          letterHintsUsed: totalLetterHintsRef.current,
+        })
       }
     } else {
       setCurrent((c) => c + 1)
@@ -161,7 +173,6 @@ export default function RiddleActivity({ items, locale, onComplete }: ActivityPr
       setShowClueHint(false)
       setAnswered(false)
     }
-    void finalCorrect
   }
 
   function scheduleAdvance(finalScore: number) {
@@ -199,6 +210,7 @@ export default function RiddleActivity({ items, locale, onComplete }: ActivityPr
     if (lettersRevealed >= revealable.length) return
     setLettersRevealed((n) => n + 1)
     setTotalLetterHints((n) => n + 1)
+    totalLetterHintsRef.current += 1
   }
 
   function skipRiddle() {
