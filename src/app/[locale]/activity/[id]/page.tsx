@@ -1,12 +1,22 @@
 import type { Metadata } from 'next'
+import { cache } from 'react'
 import { notFound } from 'next/navigation'
 import { generatePageMetadata } from '@/lib/seo/metadata'
 import JsonLd from '@/components/seo/JsonLd'
 import Breadcrumb from '@/components/seo/Breadcrumb'
 import { generateActivitySchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
+import { createServerClient } from '@/lib/supabase/server'
+import { adaptActivityItems, dbTypeOf } from '@/lib/activity-content'
+import { FILTER_GRADES, FILTER_SUBJECTS } from '@/lib/filters'
 
-// ─── ISR: revalidate every 24 hours ──────────────────────────────────────────
-export const revalidate = 86400
+// ─── Dynamic: teacher games are user content, not ISR material ───────────────
+export const dynamic = 'force-dynamic'
+// The old page was a Phase-5 scaffold: getActivity() only knew ONE hardcoded
+// mock id, so EVERY real activity (programme or teacher-saved) hit notFound()
+// here — which is what the ✕/Back navigation from the play page landed on
+// for the teacher-saved Table of 2 (2026-11-02). force-dynamic also keeps
+// the build's page-data collection from querying Supabase with placeholder
+// env. The page now reads the same live row /api/activities/[id] serves.
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -17,14 +27,19 @@ interface ActivityData {
   locale: string
   subject: string
   subjectEmoji: string
-  gradeMin: number
-  gradeMax: number
-  teacherName: string
-  teacherUsername: string
+  gradeLabel: string
+  gradeMin?: number
+  gradeMax?: number
+  // Resolved from public.users (migration 004) when the row has a
+  // teacher_id; null when unknown — never an invented name or profile.
+  teacherName: string | null
+  teacherUsername: string | null
   activityType: string
   activityTypeLabel: string
   playCount: number
-  likeCount: number
+  // No like_count column exists on activities (migration 001), so a DB
+  // row honestly has no like number; the chip is hidden, not shown as 0.
+  likeCount?: number
   createdAt: string
   imageUrl?: string
   items: { prompt: string; answer: string }[]
@@ -33,8 +48,19 @@ interface ActivityData {
 
 // ─── Data fetching ─────────────────────────────────────────────────────────────
 
-async function getActivity(id: string, locale: string): Promise<ActivityData | null> {
-  // In production this queries Supabase. Returning mock data for Phase 5 scaffold.
+function str(v: unknown): string {
+  return typeof v === 'string' ? v : ''
+}
+
+function typeLabel(slug: string): string {
+  return slug
+    .split('-')
+    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+    .join(' ')
+}
+
+const getActivity = cache(async (id: string, locale: string): Promise<ActivityData | null> => {
+  // The one scaffold demo id keeps rendering exactly as before.
   const mockActivities: Record<string, ActivityData> = {
     'grade-5-math-fractions-quiz': {
       id: 'grade-5-math-fractions-quiz',
@@ -43,6 +69,7 @@ async function getActivity(id: string, locale: string): Promise<ActivityData | n
       locale,
       subject: 'Mathematics',
       subjectEmoji: '🔢',
+      gradeLabel: 'Grade 5',
       gradeMin: 5,
       gradeMax: 5,
       teacherName: 'Miss Ayesha',
@@ -63,9 +90,69 @@ async function getActivity(id: string, locale: string): Promise<ActivityData | n
       ],
     },
   }
+  if (mockActivities[id]) return mockActivities[id]
 
-  return mockActivities[id] ?? null
-}
+  // Real rows: the same live `activities` row /api/activities/[id]
+  // returns, read through the SAME shared adapter the play page uses,
+  // so detail and play can never disagree about whether a game has
+  // items. Every field is guarded: a missing or differently-shaped
+  // column yields a blank/default, never a thrown exception.
+  try {
+    const supabase = createServerClient()
+    const { data: row, error } = await supabase
+      .from('activities')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (error || !row) return null
+
+    const type = dbTypeOf(row as { type?: string; type_id?: string })
+    const items = adaptActivityItems(row as { type?: string; type_id?: string; content?: unknown })
+
+    const subjectDb = str((row as Record<string, unknown>).subject)
+    const subjectLabel = FILTER_SUBJECTS.find((s) => s.value === subjectDb)?.label ?? subjectDb
+    const gradeDb = str((row as Record<string, unknown>).grade)
+    const gradeLabel = FILTER_GRADES.find((g) => g.value === gradeDb)?.label ?? gradeDb
+    const gradeNum = /^grade-(\d+)$/.exec(gradeDb)?.[1]
+    const gradeMin = gradeNum ? parseInt(gradeNum, 10) : undefined
+
+    let teacherName: string | null = null
+    const teacherId = str((row as Record<string, unknown>).teacher_id)
+    if (teacherId) {
+      const { data: user } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', teacherId)
+        .single()
+      teacherName = str((user as { name?: unknown } | null)?.name) || null
+    }
+
+    return {
+      id: str((row as Record<string, unknown>).id) || id,
+      title: str((row as Record<string, unknown>).title) || 'Untitled activity',
+      description: str((row as Record<string, unknown>).description),
+      locale,
+      subject: subjectLabel,
+      subjectEmoji: '',
+      gradeLabel,
+      gradeMin,
+      gradeMax: gradeMin,
+      teacherName,
+      teacherUsername: null,
+      activityType: type,
+      activityTypeLabel: typeLabel(type),
+      playCount: typeof (row as Record<string, unknown>).play_count === 'number'
+        ? (row as Record<string, unknown>).play_count as number
+        : 0,
+      createdAt: str((row as Record<string, unknown>).created_at),
+      imageUrl: undefined,
+      items,
+      relatedActivities: [],
+    }
+  } catch {
+    return null
+  }
+})
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
@@ -84,7 +171,7 @@ export async function generateMetadata({
     activityTitle: activity.title,
     activityDescription: activity.description,
     subjectLabel: activity.subject,
-    teacherName: activity.teacherName,
+    teacherName: activity.teacherName ?? 'an EduPlay teacher',
     imageUrl: activity.imageUrl,
   })
 }
@@ -102,21 +189,23 @@ export default async function ActivityPage({
   const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://eduplay-self.vercel.app'
   const pageUrl = `${base}/${params.locale}/activity/${activity.id}`
 
-  const activitySchema = generateActivitySchema({
-    id: activity.id,
-    title: activity.title,
-    description: activity.description,
-    locale: params.locale,
-    subject: activity.subject,
-    gradeMin: activity.gradeMin,
-    gradeMax: activity.gradeMax,
-    teacherName: activity.teacherName,
-    teacherUsername: activity.teacherUsername,
-    activityType: activity.activityType,
-    playCount: activity.playCount,
-    createdAt: activity.createdAt,
-    imageUrl: activity.imageUrl,
-  })
+  const activitySchema = activity.teacherUsername
+    ? generateActivitySchema({
+        id: activity.id,
+        title: activity.title,
+        description: activity.description,
+        locale: params.locale,
+        subject: activity.subject,
+        gradeMin: activity.gradeMin,
+        gradeMax: activity.gradeMax,
+        teacherName: activity.teacherName ?? 'EduPlay teacher',
+        teacherUsername: activity.teacherUsername,
+        activityType: activity.activityType,
+        playCount: activity.playCount,
+        createdAt: activity.createdAt,
+        imageUrl: activity.imageUrl,
+      })
+    : null
 
   const breadcrumbSchema = generateBreadcrumbSchema([
     { name: 'Home', url: `${base}/${params.locale}` },
@@ -129,7 +218,7 @@ export default async function ActivityPage({
 
   return (
     <>
-      <JsonLd data={activitySchema} />
+      {activitySchema ? <JsonLd data={activitySchema} /> : null}
       <JsonLd data={breadcrumbSchema} />
 
       <main
@@ -195,18 +284,20 @@ export default async function ActivityPage({
               >
                 {activity.activityTypeLabel}
               </span>
-              <span
-                style={{
-                  padding: '0.25rem 0.625rem',
-                  background: 'var(--color-surface-alt)',
-                  color: 'var(--color-text-secondary)',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '0.8125rem',
-                  border: '1px solid var(--color-border)',
-                }}
-              >
-                Grade {activity.gradeMin}{activity.gradeMin !== activity.gradeMax ? `–${activity.gradeMax}` : ''}
-              </span>
+              {activity.gradeLabel ? (
+                <span
+                  style={{
+                    padding: '0.25rem 0.625rem',
+                    background: 'var(--color-surface-alt)',
+                    color: 'var(--color-text-secondary)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '0.8125rem',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  {activity.gradeLabel}
+                </span>
+              ) : null}
             </div>
 
             <h1
@@ -233,11 +324,13 @@ export default async function ActivityPage({
               <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
                 ▶ {activity.playCount.toLocaleString()} plays
               </span>
+              {activity.likeCount !== undefined ? (
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+                  ❤️ {activity.likeCount.toLocaleString()} likes
+                </span>
+              ) : null}
               <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-                ❤️ {activity.likeCount.toLocaleString()} likes
-              </span>
-              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-                📋 {activity.items.length} questions
+                📋 {activity.items.length} items
               </span>
             </div>
 
@@ -273,68 +366,78 @@ export default async function ActivityPage({
                 📋 Copy &amp; Edit
               </a>
             </div>
+            {activity.items.length === 0 ? (
+              <p style={{ color: 'var(--color-text-muted)', marginTop: '1rem', marginBottom: 0 }}>
+                This activity has no items yet.
+              </p>
+            ) : null}
           </header>
 
-          {/* Teacher attribution */}
-          <section
-            style={{
-              padding: '1rem 1.25rem',
-              background: 'var(--color-surface)',
-              borderRadius: 'var(--radius)',
-              boxShadow: 'var(--shadow-card)',
-              marginBottom: '1.5rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '0.75rem',
-            }}
-            aria-label="Activity creator"
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  background: 'var(--color-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: '1rem',
-                  flexShrink: 0,
-                }}
-                aria-hidden="true"
-              >
-                {activity.teacherName.charAt(0)}
-              </div>
-              <div>
-                <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                  {activity.teacherName}
-                </div>
-                <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-                  Activity creator
-                </div>
-              </div>
-            </div>
-            <a
-              href={`/${params.locale}/teacher/${activity.teacherUsername}`}
+          {/* Teacher attribution — only when a real name resolved;
+              no invented name, no profile link without a username. */}
+          {activity.teacherName ? (
+            <section
               style={{
-                padding: '0.5rem 1rem',
-                background: 'var(--color-surface-alt)',
-                color: 'var(--color-primary)',
+                padding: '1rem 1.25rem',
+                background: 'var(--color-surface)',
                 borderRadius: 'var(--radius)',
-                textDecoration: 'none',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                border: '1px solid var(--color-border)',
+                boxShadow: 'var(--shadow-card)',
+                marginBottom: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '0.75rem',
               }}
+              aria-label="Activity creator"
             >
-              View profile →
-            </a>
-          </section>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    background: 'var(--color-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    flexShrink: 0,
+                  }}
+                  aria-hidden="true"
+                >
+                  {activity.teacherName.charAt(0)}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                    {activity.teacherName}
+                  </div>
+                  <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                    Activity creator
+                  </div>
+                </div>
+              </div>
+              {activity.teacherUsername ? (
+                <a
+                  href={`/${params.locale}/teacher/${activity.teacherUsername}`}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: 'var(--color-surface-alt)',
+                    color: 'var(--color-primary)',
+                    borderRadius: 'var(--radius)',
+                    textDecoration: 'none',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  View profile →
+                </a>
+              ) : null}
+            </section>
+          ) : null}
 
           {/* Social share */}
           <section

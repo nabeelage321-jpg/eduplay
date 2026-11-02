@@ -12,6 +12,19 @@
  * { prompt, answer } items every player component expects. It does
  * NOT change any DB row. If `items` already exist (creator-created
  * activities), they pass through untouched.
+ *
+ * TWO content shapes exist for `content.questions` and they are
+ * disjoint, so they must not be confused:
+ * - Programme rows: { question, options, correct } (see the seed data).
+ * - Creator rows (POST/PUT /api/activities, wizard items): the save
+ *   route stores EVERY type's wizard items as
+ *   { prompt, answer, hint, imageUrl } under `content.questions`,
+ *   whatever the activity type is. The quiz case below used to read
+ *   only question/options/correct from these rows, got '' for both
+ *   prompt and answer, filtered every item out, and the play page
+ *   rendered "This activity has no items yet." for a game that had
+ *   saved fine (teacher-saved Table of 2, 2026-11-02). The creator
+ *   branch below runs first so those rows play without re-saving.
  */
 
 import type { ActivityItem } from '@/types'
@@ -58,14 +71,40 @@ export function adaptActivityItems(activity: DbActivityLike): ActivityItem[] {
   const content: AnyRecord = isRecord(activity.content) ? activity.content : {}
   const type = dbTypeOf(activity)
 
+  // CREATOR-SAVE SHAPE (teacher-game fix 2026-11-02): POST/PUT
+  // /api/activities store wizard items as content.questions[] with
+  // { prompt, answer, hint, imageUrl } for every type. Programme rows
+  // never use prompt/answer keys, so this branch cannot steal a
+  // programme row's items — it only rescues creator rows, which the
+  // per-type cases below would otherwise read as empty.
+  const creatorQuestions = arr(content.questions).filter(
+    (q) => isRecord(q) && (typeof q.prompt === 'string' || typeof q.answer === 'string'),
+  )
+  if (creatorQuestions.length > 0) {
+    return creatorQuestions
+      .map((q) => {
+        const r = isRecord(q) ? q : {}
+        return {
+          prompt: str(r.prompt),
+          answer: str(r.answer),
+          hint: str(r.hint),
+          imageUrl: str(r.imageUrl),
+        }
+      })
+      .filter((i) => i.prompt && i.answer)
+  }
+
   switch (type) {
     case 'quiz':
     case 'gameshow-quiz':
       return arr(content.questions).map((q) => {
         const r = isRecord(q) ? q : {}
         const options = words(r.options)
-        const correct = typeof r.correct === 'number' ? options[r.correct] : ''
-        return { prompt: str(r.question), answer: correct, answers: options }
+        // Programme shape: options[correct]. Creator shape is handled
+        // by the branch above; the r.answer fallback here is defence
+        // in depth only, so a mixed row still yields its items.
+        const correct = typeof r.correct === 'number' ? options[r.correct] : str(r.answer)
+        return { prompt: str(r.question || r.prompt), answer: correct, answers: options }
       }).filter((i) => i.prompt && i.answer)
 
     case 'match-up':
