@@ -36,6 +36,7 @@ const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
   'typing-race':      lazy(() => import('./TypingRaceActivity')),
   'bingo':            lazy(() => import('./BingoActivity')),
   'jump-path':        lazy(() => import('./JumpPathActivity')),
+  'riddle':           lazy(() => import('./RiddleActivity')),
 }
 
 interface ActivityPlayerProps {

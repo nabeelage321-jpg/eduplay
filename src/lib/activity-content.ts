@@ -95,6 +95,15 @@ export function adaptActivityItems(activity: DbActivityLike): ActivityItem[] {
   }
 
   switch (type) {
+    case 'riddle':
+      // Riddle-shaped rows: clue + solution (+ optional hint). The
+      // creator-save branch above already handles prompt/answer rows,
+      // so this only rescues rows stored in riddle shape.
+      return arr(content.questions).map((q) => {
+        const r = isRecord(q) ? q : {}
+        return { prompt: str(r.clue || r.question || r.prompt), answer: str(r.solution || r.answer), hint: str(r.hint) }
+      }).filter((i) => i.prompt && i.answer)
+
     case 'quiz':
     case 'gameshow-quiz':
     case 'jump-path':
