@@ -3,7 +3,7 @@ import type { ActivityItem, Audience, SupportedLocale } from '@/types'
 /** Optional extra detail a player may pass with its final score.
  *  Only Riddle (letterHintsUsed), AsterQuiz (livesLeft), Dictation
  *  (wordsCorrect / totalWords / passagesDone), and Dialogue
- *  (linesRead / totalLines) supply this today; every other type
+ *  (linesRead / totalLines / characters) supply this today; every other type
  *  keeps calling onComplete(score) with no second argument, which
  *  stays valid. */
 export interface ActivityCompletion {
@@ -16,6 +16,7 @@ export interface ActivityCompletion {
   passagesDone?: number
   linesRead?: number
   totalLines?: number
+  characters?: string[]
 }
 
 export interface ActivityProps {

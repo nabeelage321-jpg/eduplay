@@ -131,6 +131,11 @@ export default function ActivityPreview({ typeSlug, meta, items }: ActivityPrevi
               )}
             </p>
           )}
+          {finalDetails && finalDetails.characters !== undefined && finalDetails.characters.length > 0 && (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', marginTop: '0.25rem' }}>
+              Characters: {finalDetails.characters.join(', ')}
+            </p>
+          )}
           <motion.button
             whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
             onClick={restart}

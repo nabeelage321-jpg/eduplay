@@ -116,6 +116,7 @@ export default function DialogueActivity({ items, locale, onComplete }: Activity
       onCompleteRef.current(100, {
         linesRead: linesRef.current.length,
         totalLines: linesRef.current.length,
+        characters: Array.from(new Set(linesRef.current.map((l) => l.speaker))),
       })
     }
   }
