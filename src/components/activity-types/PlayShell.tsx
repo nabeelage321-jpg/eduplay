@@ -49,6 +49,12 @@ interface PlayShellProps {
   // The wrapped player's real score, kept in sync by the player itself.
   score: number
   finished: boolean
+  // Optional: report the shell's elapsed seconds up to a host (e.g. the
+  // play page) so it can use the shell's time as the SINGLE elapsed
+  // time instead of running its own load-time timer alongside it.
+  // The shell's elapsed starts at 0 when play begins (after the
+  // countdown) — countdown seconds are deliberately NOT counted.
+  onElapsed?: (seconds: number) => void
   children: ReactNode
 }
 
@@ -57,7 +63,7 @@ type Phase = 'start' | 'countdown' | 'playing' | 'paused'
 const COUNTDOWN_SECONDS = 3
 const COUNTDOWN_STEP_MS = 1000
 
-export default function PlayShell({ title, score, finished, children }: PlayShellProps) {
+export default function PlayShell({ title, score, finished, onElapsed, children }: PlayShellProps) {
   const [phase, setPhase] = useState<Phase>('start')
   const [count, setCount] = useState(COUNTDOWN_SECONDS)
   const [elapsed, setElapsed] = useState(0)
@@ -74,12 +80,25 @@ export default function PlayShell({ title, score, finished, children }: PlayShel
 
   // Elapsed timer: real seconds since play started, counting up.
   // It runs only while playing and stops at finish; pausing stops it
-  // because the phase leaves 'playing'.
+  // because the phase leaves 'playing'. It is 0 throughout the
+  // Start screen and the countdown: the interval only starts once
+  // the phase becomes 'playing', so pre-start seconds are never
+  // counted (this was the 2026-11-03 timer fix — the seconds seen
+  // on the Start screen came from the play page's own load-time
+  // timer, not from this shell; that page timer is now disabled
+  // for Quiz, see the play page).
   useEffect(() => {
     if (phase !== 'playing' || finished) return
     const id = setInterval(() => setElapsed((e) => e + 1), 1000)
     return () => clearInterval(id)
   }, [phase, finished])
+
+  // Report elapsed up whenever it changes (and once on finish, when
+  // the value is final). The host uses this as its single elapsed
+  // time; reporting the same value twice is a no-op for the host.
+  useEffect(() => {
+    onElapsed?.(elapsed)
+  }, [elapsed, finished, onElapsed])
 
   const status: PlayShellStatus =
     phase === 'playing' ? 'playing' : phase === 'paused' ? 'paused' : 'idle'

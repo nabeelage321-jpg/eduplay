@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import type { ActivityProps } from './shared'
+import type { ActivityCompletion, ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, TIMER_DEFAULT, shuffleArray, isRTL, getRandomFeedback } from './shared'
 import PlayShell, { usePlayShellStatus } from './PlayShell'
 import type { ActivityItem } from '@/types'
@@ -256,9 +256,11 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
           </motion.div>
         )}
       </AnimatePresence>
-      <div style={{ marginTop: '1rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-        Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong>
-      </div>
+      {/* TIMER FIX 2026-11-03: no second Score line here anymore.
+          The shell header above already shows this same real score;
+          two score displays on one screen confused players. The
+          per-question countdown (timeLeft, above) is untouched —
+          it is real gameplay, not a duplicate display. */}
     </div>
   )
 }
@@ -266,13 +268,23 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
 export default function QuizActivity({ items, theme, locale, onComplete }: ActivityProps) {
   const [shellScore, setShellScore] = useState(0)
   const [shellFinished, setShellFinished] = useState(false)
+  // TIMER FIX 2026-11-03: the shell's elapsed seconds, kept in a ref
+  // so the finish-time value is exact even if a state update is
+  // still queued when the last question completes. It is attached to
+  // the completion details so the play page can use it as its single
+  // final Time instead of its own load-time timer.
+  const elapsedRef = useRef(0)
+  const handleElapsed = useCallback((seconds: number) => { elapsedRef.current = seconds }, [])
+  const handleComplete = useCallback((score: number, details?: ActivityCompletion) => {
+    onComplete(score, { ...details, elapsedSeconds: elapsedRef.current })
+  }, [onComplete])
   return (
-    <PlayShell title="Quiz" score={shellScore} finished={shellFinished}>
+    <PlayShell title="Quiz" score={shellScore} finished={shellFinished} onElapsed={handleElapsed}>
       <QuizGame
         items={items}
         theme={theme}
         locale={locale}
-        onComplete={onComplete}
+        onComplete={handleComplete}
         onProgress={(s, f) => { setShellScore(s); setShellFinished(f) }}
       />
     </PlayShell>

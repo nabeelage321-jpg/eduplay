@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import ActivityPlayer from '@/components/activity-types/ActivityPlayer'
+import type { ActivityCompletion } from '@/components/activity-types/shared'
+import { dbTypeOf } from '@/lib/activity-content'
 import ActivityIdLine from '@/components/activity-types/ActivityIdLine'
 import ShareGameButton from '@/components/home/ShareGameButton'
 import SoundToggle from '@/components/activity-types/SoundToggle'
@@ -51,6 +53,7 @@ export default function PlayPage() {
     )
   }
   const [finalScore, setFinalScore] = useState<number | null>(null)
+  const [finalElapsed, setFinalElapsed] = useState<number | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const playRecorded = useRef(false)
@@ -79,16 +82,34 @@ export default function PlayPage() {
     fetchActivity()
   }, [id])
 
-  // Timer
+  // TIMER FIX 2026-11-03 — one elapsed timer, not two. This page
+  // used to run its OWN timer from the moment the activity loaded:
+  // it ticked through the loading spinner, the shell's Start screen
+  // and the 3-2-1 countdown, and it kept ticking while the shell
+  // was paused (it knew nothing about pause). That was the second,
+  // top-right timer players saw next to the shell's own header
+  // timer, and the final Time it reported included pre-start
+  // seconds. For Quiz — the only type with a shell so far — this
+  // page timer is now disabled entirely: the shell's elapsed time
+  // (0 from play start, countdown excluded, frozen on pause)
+  // arrives via the completion details and is used as the final
+  // Time instead. Every other type is unchanged: it has no shell
+  // yet, so this page timer still runs for it exactly as before,
+  // and it will be unified the same way when its shell lands.
+  const isQuiz = activity ? dbTypeOf(activity) === 'quiz' : false
   useEffect(() => {
-    if (!activity || finalScore !== null) return
+    if (!activity || finalScore !== null || isQuiz) return
     timerRef.current = setInterval(() => setElapsed((t) => t + 1), 1000)
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [activity, finalScore])
+  }, [activity, finalScore, isQuiz])
 
-  function handleComplete(score: number) {
+  function handleComplete(score: number, details?: ActivityCompletion) {
     if (timerRef.current) clearInterval(timerRef.current)
     setFinalScore(score)
+    // Quiz: the shell's elapsed (0-based from play start). Other
+    // types: details carry no elapsed, so fall back to this page's
+    // own timer, exactly as before.
+    setFinalElapsed(details?.elapsedSeconds ?? elapsed)
   }
 
   function formatTime(secs: number) {
@@ -218,9 +239,14 @@ export default function PlayPage() {
           </span>
         )}
         <SoundToggle />
-        <span style={{ color: 'var(--color-text-muted)', fontFamily: 'monospace', fontSize: '1rem', flexShrink: 0 }}>
-          {formatTime(elapsed)}
-        </span>
+        {/* TIMER FIX 2026-11-03: hidden for Quiz, whose shell header
+            already shows the single elapsed time. Showing this too
+            would leave two elapsed timers on one screen again. */}
+        {!isQuiz && (
+          <span style={{ color: 'var(--color-text-muted)', fontFamily: 'monospace', fontSize: '1rem', flexShrink: 0 }}>
+            {formatTime(elapsed)}
+          </span>
+        )}
       </div>
 
       {/* Approval notice: pending games show this instead of a share prompt. */}
@@ -288,12 +314,12 @@ export default function PlayPage() {
                 Final Score: <strong style={{ color: 'var(--color-primary)' }}>{finalScore}</strong>
               </p>
               <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-                Time: {formatTime(elapsed)}
+                Time: {formatTime(finalElapsed ?? elapsed)}
               </p>
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <motion.button
                   whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                  onClick={() => { setFinalScore(null); setElapsed(0) }}
+                  onClick={() => { setFinalScore(null); setFinalElapsed(null); setElapsed(0) }}
                   style={{
                     padding: '1rem 1.75rem', borderRadius: 'var(--radius)', minHeight: '56px',
                     border: 'none', background: 'var(--gradient-btn)',

@@ -8,6 +8,11 @@ import type { ActivityItem, Audience, SupportedLocale } from '@/types'
  *  keeps calling onComplete(score) with no second argument, which
  *  stays valid. */
 export interface ActivityCompletion {
+  // TIMER FIX 2026-11-03: the play shell's elapsed seconds at finish
+  // (0-based from play start, countdown excluded), so a host page
+  // can report the shell's single elapsed time instead of its own
+  // load-time timer. Only Quiz reports this so far.
+  elapsedSeconds?: number
   correctCount?: number
   totalCount?: number
   letterHintsUsed?: number
