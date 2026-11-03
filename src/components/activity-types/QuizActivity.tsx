@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, TIMER_DEFAULT, shuffleArray, isRTL, getRandomFeedback } from './shared'
+import PlayShell, { usePlayShellStatus } from './PlayShell'
 import type { ActivityItem } from '@/types'
 import { playGameSound, readSoundOn } from '@/lib/game-sound'
 
@@ -13,7 +14,16 @@ interface QuizQuestion {
   correctIndex: number
 }
 
-export default function QuizActivity({ items, locale, onComplete }: ActivityProps) {
+// PLAY SHELL (2026-11-03): Quiz is the first type wrapped in the
+// shared PlayShell. The inner game below reads the shell status so
+// its own per-question countdown and feedback advance freeze while
+// paused; the thin wrapper underneath lifts the real score and the
+// finished flag up to the shell header. Every other type is untouched.
+interface QuizGameProps extends ActivityProps {
+  onProgress: (score: number, finished: boolean) => void
+}
+
+function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [current, setCurrent] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
@@ -22,6 +32,10 @@ export default function QuizActivity({ items, locale, onComplete }: ActivityProp
   const [feedback, setFeedback] = useState<{ type: 'correct' | 'wrong'; msg: string } | null>(null)
   const [finished, setFinished] = useState(false)
   const rtl = isRTL(locale)
+  const shellStatus = usePlayShellStatus()
+  const onProgressRef = useRef(onProgress)
+  useEffect(() => { onProgressRef.current = onProgress })
+  useEffect(() => { onProgressRef.current(score, finished) }, [score, finished])
 
   // Sound is an extra layer only (colour + icon + text already signal
   // correct/wrong). Default is muted; the play-page sound button turns it on.
@@ -46,6 +60,7 @@ export default function QuizActivity({ items, locale, onComplete }: ActivityProp
     if (builtForRef.current === itemsFingerprint) return
     builtForRef.current = itemsFingerprint
     if (advanceTimeoutRef.current) { clearTimeout(advanceTimeoutRef.current); advanceTimeoutRef.current = null }
+    pendingAdvanceRef.current = false
     const allAnswers = items.map((i) => i.answer)
     const qs: QuizQuestion[] = items.map((item) => {
       const wrong = shuffleArray(allAnswers.filter((a) => a !== item.answer)).slice(0, 3)
@@ -73,6 +88,10 @@ export default function QuizActivity({ items, locale, onComplete }: ActivityProp
   const onCompleteRef = useRef(onComplete)
   const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const timeUpRef = useRef(false)
+  // True while a feedback advance timeout is armed (set when arming,
+  // cleared when it fires). The pause effect below uses it to re-arm
+  // the full feedback window on resume instead of dropping the advance.
+  const pendingAdvanceRef = useRef(false)
   useEffect(() => { onCompleteRef.current = onComplete })
   useEffect(() => { currentRef.current = current })
   useEffect(() => { scoreRef.current = score })
@@ -80,6 +99,7 @@ export default function QuizActivity({ items, locale, onComplete }: ActivityProp
   useEffect(() => () => { if (advanceTimeoutRef.current) clearTimeout(advanceTimeoutRef.current) }, [])
 
   const advance = useCallback(() => {
+    pendingAdvanceRef.current = false
     setSelected(null)
     setFeedback(null)
     setTimeLeft(TIMER_DEFAULT)
@@ -99,18 +119,35 @@ export default function QuizActivity({ items, locale, onComplete }: ActivityProp
   // a setTimeLeft updater (a side effect inside a state updater, which
   // React may run twice) and depended on the ever-changing `advance`.
   useEffect(() => {
-    if (selected !== null || finished || questions.length === 0) return
+    // The per-question countdown runs only while the shell is playing:
+    // during Start/countdown the game is not visible yet, and while
+    // paused the player's answer time must not drain away.
+    if (selected !== null || finished || questions.length === 0 || shellStatus !== 'playing') return
     const id = setInterval(() => setTimeLeft((t) => (t > 1 ? t - 1 : 0)), 1000)
     return () => clearInterval(id)
-  }, [selected, finished, questions.length, current])
+  }, [selected, finished, questions.length, current, shellStatus])
 
   useEffect(() => { timeUpRef.current = false }, [current])
   useEffect(() => {
-    if (timeLeft !== 0 || selected !== null || finished || questions.length === 0 || timeUpRef.current) return
+    if (timeLeft !== 0 || selected !== null || finished || questions.length === 0 || timeUpRef.current || shellStatus !== 'playing') return
     timeUpRef.current = true
     setFeedback({ type: 'wrong', msg: "Time's up!" })
     advanceTimeoutRef.current = setTimeout(advance, 1200)
-  }, [timeLeft, selected, finished, questions.length, advance])
+    pendingAdvanceRef.current = true
+  }, [timeLeft, selected, finished, questions.length, advance, shellStatus])
+
+  // PLAY-SHELL PAUSE: a feedback advance timeout armed before pausing
+  // would otherwise fire mid-pause and move the game on. Clear it on
+  // pause and re-arm the full feedback window on resume, so resuming
+  // continues exactly where play paused — never less answer time,
+  // never a skipped question.
+  useEffect(() => {
+    if (shellStatus === 'paused') {
+      if (advanceTimeoutRef.current) { clearTimeout(advanceTimeoutRef.current); advanceTimeoutRef.current = null }
+    } else if (shellStatus === 'playing' && pendingAdvanceRef.current && advanceTimeoutRef.current === null && !finished) {
+      advanceTimeoutRef.current = setTimeout(advance, 1400)
+    }
+  }, [shellStatus, finished, advance])
 
   function handleSelect(idx: number) {
     if (selected !== null) return
@@ -124,6 +161,7 @@ export default function QuizActivity({ items, locale, onComplete }: ActivityProp
       setFeedback({ type: 'wrong', msg: getRandomFeedback('wrong') })
     }
     advanceTimeoutRef.current = setTimeout(advance, 1400)
+    pendingAdvanceRef.current = true
   }
 
   if (questions.length === 0) return (
@@ -222,5 +260,21 @@ export default function QuizActivity({ items, locale, onComplete }: ActivityProp
         Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong>
       </div>
     </div>
+  )
+}
+
+export default function QuizActivity({ items, theme, locale, onComplete }: ActivityProps) {
+  const [shellScore, setShellScore] = useState(0)
+  const [shellFinished, setShellFinished] = useState(false)
+  return (
+    <PlayShell title="Quiz" score={shellScore} finished={shellFinished}>
+      <QuizGame
+        items={items}
+        theme={theme}
+        locale={locale}
+        onComplete={onComplete}
+        onProgress={(s, f) => { setShellScore(s); setShellFinished(f) }}
+      />
+    </PlayShell>
   )
 }
