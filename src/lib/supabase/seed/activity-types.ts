@@ -428,6 +428,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Video Quiz',
     description_en: 'Watch the video, answer as it plays',
   },
+  {
+    slug: 'letter-wheel',
+    icon: '🔠',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Letter Wheel',
+    name_ur: 'Letter Wheel',
+    name_ar: 'Letter Wheel',
+    name_hi: 'Letter Wheel',
+    name_es: 'Letter Wheel',
+    name_fr: 'Letter Wheel',
+    description_en: 'Answer one definition per letter on the wheel',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

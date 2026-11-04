@@ -65,7 +65,8 @@ export const DB_TYPE_BY_SLUG: Record<string, string> = {
   'typing-race': 'typing-race',
   bingo: 'bingo',
   // Queue types added 2026-11-02/03 (Jump Path, Riddle, AsterQuiz,
-  // Dictation, Dialogue, Map Quiz, Jigsaw Puzzle, Video Quiz).
+  // Dictation, Dialogue, Map Quiz, Jigsaw Puzzle, Video Quiz),
+  // plus Letter Wheel (2026-11-04, first of the 9 types toward 40).
   // Creator-saved games store the TypeSelector slug as the type
   // value, so slug == DB value for all eight, exactly as for the
   // original 23 (only 'wordsearch' differs, see above).
@@ -77,6 +78,7 @@ export const DB_TYPE_BY_SLUG: Record<string, string> = {
   'map-quiz': 'map-quiz',
   'jigsaw-puzzle': 'jigsaw-puzzle',
   'video-quiz': 'video-quiz',
+  'letter-wheel': 'letter-wheel',
 }
 
 export interface ProgrammaticActivity {

@@ -34,6 +34,7 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'map-quiz',         icon: '📍', name: 'Map Quiz',         desc: 'Tap the map to find each point' },
   { slug: 'jigsaw-puzzle',    icon: '🧩', name: 'Jigsaw Puzzle',    desc: 'Rebuild the picture, then answer about it' },
   { slug: 'video-quiz',       icon: '🎬', name: 'Video Quiz',       desc: 'Watch the video, answer as it plays' },
+  { slug: 'letter-wheel',     icon: '🔠', name: 'Letter Wheel',     desc: 'Answer one definition per letter on the wheel' },
 ]
 
 /**

@@ -36,6 +36,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'map-quiz': { prompt: 'Point name (e.g. Paris)', answer: 'Position x,y in % (e.g. 42,63)' },
   'jigsaw-puzzle': { prompt: 'Final question about the picture', answer: 'Final answer (typed)' },
   'video-quiz': { prompt: 'Question about the video', answer: 'Correct answer' },
+  'letter-wheel': { prompt: 'Definition for this letter', answer: 'Word that fits the definition' },
 }
 
 const fieldStyle: React.CSSProperties = {
