@@ -53,7 +53,7 @@ export async function PUT(
     // which predate the column) has no owner and is therefore NOT
     // editable by anyone — returning 403 for it protects the programme.
     // APPROVAL BATCH 2026-10-30: also read approval_status, falling back
-    // to 'approved' if migration 007 has not been run yet.
+    // to 'approved' if migration 008 has not been run yet.
     let existing: { teacher_id: string | null; approval_status?: string | null } | null = null
     {
       const withStatus = await supabase
@@ -82,9 +82,10 @@ export async function PUT(
 
     const body = await req.json()
 
-    // APPROVAL BATCH 2026-10-30: a student without the Creator badge may
-    // NOT flip a pending game public — rejected, not silently forced.
-    const studentGated = needsApproval(sessionUser.role, sessionUser.creatorBadge)
+    // SOCIAL APPROVAL 2026-11-04: a student may NOT flip a pending
+    // game public — rejected, not silently forced. The Creator badge
+    // never bypasses this (badge is display only).
+    const studentGated = needsApproval(sessionUser.role)
     if (studentGated && existing.approval_status === 'pending' && body.is_public === true) {
       return NextResponse.json(
         { error: 'Waiting for teacher/parent approval. This game cannot go public yet.' },
@@ -137,6 +138,17 @@ export async function PUT(
       updates.is_public = false
     }
 
+    // SOCIAL APPROVAL 2026-11-04: a gated game whose content changed
+    // must be re-tested from scratch — approvals given to the older
+    // version do not carry over. Same for a rejected (removed) game
+    // resubmitted by an edit. The delete below runs after a successful
+    // update and is best-effort: before migration 008 the table does
+    // not exist and there is nothing to clear.
+    const clearStaleTestApprovals =
+      studentGated &&
+      editedContent &&
+      (existing.approval_status === 'pending' || existing.approval_status === 'rejected')
+
     let { data: activity, error } = await supabase
       .from('activities')
       .update(updates)
@@ -144,7 +156,15 @@ export async function PUT(
       .select()
       .single()
 
-    // Pre-migration fallback: retry without approval columns if 007
+    if (clearStaleTestApprovals && !error && activity) {
+      try {
+        await supabase.from('game_test_approvals').delete().eq('game_id', params.id)
+      } catch {
+        // Best-effort only: a missing table (pre-008) is not an error.
+      }
+    }
+
+    // Pre-migration fallback: retry without approval columns if 008
     // has not been run yet, so editing does not break.
     if (error && /approval_status|approved_by|approved_at/i.test(error.message ?? '')) {
       const { approval_status: _s, approved_by: _b, approved_at: _a, ...legacyUpdates } = updates

@@ -9,6 +9,7 @@ import PrintWorksheetButton from '@/components/activities/PrintWorksheetButton'
 import ConvertToType from '@/components/activity-types/ConvertToType'
 import HostLiveGame from '@/components/game/HostLiveGame'
 import ChallengeMaker from '@/components/game/ChallengeMaker'
+import ApprovalStatusBox from '@/components/game/ApprovalStatusBox'
 import { generateActivitySchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
 import { createServerClient } from '@/lib/supabase/server'
 import { adaptActivityItems, dbTypeOf, playerTypeKey } from '@/lib/activity-content'
@@ -471,6 +472,14 @@ export default async function ActivityPage({
               teacher who owns this game; everyone else sees nothing here.
               No server persistence in v1 — see src/lib/challenges.ts. */}
           <ChallengeMaker activityId={activity.id} locale={params.locale} activityTitle={activity.title} />
+
+          {/* KIDS SOCIAL APPROVAL v1 (2026-11-04): owner box (pending
+              count + test link, published, removed) for a student-gated
+              game, plus the teacher/parent Remove button on a live
+              student-gated game. Renders nothing for everyone else —
+              teachers/creators see nothing here, and the component
+              never decides: the server routes enforce every rule. */}
+          <ApprovalStatusBox activityId={activity.id} locale={params.locale} />
 
           {/* Teacher attribution — only when a real name resolved;
               no invented name, no profile link without a username. */}

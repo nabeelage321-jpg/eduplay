@@ -140,15 +140,16 @@ export async function POST(req: NextRequest) {
         // only, so this sibling key changes no gameplay.
         ...(validatedCurriculumTag ? { curriculum: validatedCurriculumTag } : {}),
       } : { questions: [] },
-      // APPROVAL BATCH 2026-10-30: server-enforced, never client-chosen.
-      // A student without the Creator badge gets a pending, private game
-      // no matter what is_public the client sent. Client-sent approval
-      // fields are ignored outright. A badge holder publishes like a
-      // teacher: approved, and public if they asked for it.
-      is_public: needsApproval(sessionUser.role, sessionUser.creatorBadge)
+      // SOCIAL APPROVAL 2026-11-04: server-enforced, never client-chosen.
+      // A student gets a pending, private game no matter what is_public
+      // the client sent — the Creator badge NEVER bypasses this (badge
+      // is display only). Client-sent approval fields are ignored
+      // outright. Teachers, parents and creators publish directly:
+      // approved, and public if they asked for it.
+      is_public: needsApproval(sessionUser.role)
         ? false
         : body.is_public === true,
-      approval_status: needsApproval(sessionUser.role, sessionUser.creatorBadge)
+      approval_status: needsApproval(sessionUser.role)
         ? 'pending'
         : 'approved',
       approved_by: null,
@@ -165,9 +166,12 @@ export async function POST(req: NextRequest) {
       .select()
       .single()
 
-    // Pre-migration fallback: if migration 007 has not been run yet, the
+    // Pre-migration fallback: if migration 008 has not been run yet, the
     // approval columns do not exist and the insert fails. Retry without
     // them so creating does not break — and say so in the response.
+    // Note: the retried row still saves private for a student (the
+    // is_public=false above survives the retry), so the safe default
+    // holds even before 008 — only the pending label is missing.
     let migrationWarning: string | null = null
     if (error && /approval_status|approved_by|approved_at/i.test(error.message ?? '')) {
       const { approval_status: _s, approved_by: _b, approved_at: _a, ...legacyPayload } = payload
@@ -176,7 +180,7 @@ export async function POST(req: NextRequest) {
       error = retry.error
       if (!retry.error) {
         migrationWarning =
-          'Approval is not set up yet (migration 007 has not been run). This game was saved without approval status.'
+          'Approval is not set up yet (migration 008 has not been run). This game was saved without approval status.'
       }
     }
 

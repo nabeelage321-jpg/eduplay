@@ -1,25 +1,28 @@
-// ─── Teacher/parent approval gate + Kid Creator badge ─────────────────────
-// APPROVAL BATCH 2026-10-30. One place for every approval rule, so the
-// owner can change the badge threshold (15 → 20) by editing ONE constant.
-//
-// Server-enforced rules (the API routes use these; the UI never decides):
-//   * A signed-in creator whose recorded users.role is 'student' and who
-//     does NOT hold the Creator badge: new games are 'pending' and forced
-//     private. A public toggle on a pending game is REJECTED (403), not
-//     silently flipped.
-//   * Only a recorded 'teacher' or 'parent' (never the creator) can
-//     approve or reject, and only a teacher/parent can revoke a badge.
-//   * A student who earns 15 approved games automatically gains
-//     users.creator_badge. A badge holder may publish without per-game
-//     approval. Revoking the badge returns them to per-game approval.
+// ─── Kids social approval gate + Kid Creator badge (display only) ───────
+// APPROVAL BATCH 2026-10-30 (teacher/parent gate) SUPERSEDED 2026-11-04
+// by the agreed kids social model (see src/lib/social-approval.ts):
+//   * The gate applies to KIDS ONLY (recorded role 'student'). A kid's
+//     game stays private and pending until 3 testers approve it, then
+//     it goes public automatically. Teachers, parents and creators
+//     bypass the gate entirely.
+//   * The Creator badge (15 approved games) is ACHIEVEMENT DISPLAY
+//     ONLY. It never gates anything: a student with the badge still
+//     needs 3 test approvals on every new game. The old rule ("a badge
+//     holder may publish without per-game approval") is REMOVED —
+//     needsApproval() no longer takes a badge argument at all, so no
+//     call site can reintroduce the bypass by accident.
+//   * Teachers/parents may REMOVE a bad item AFTER it is live (see
+//     /api/activities/[id]/remove). They do NOT approve games any
+//     more: the old /approve route answers 410 Gone.
 //   * Roles in code: UserRole = 'teacher' | 'student' | 'parent' | 'admin'
 //     (src/types/index.ts). There is NO 'kid'/'child' role in code —
 //     'student' IS the kid-creator role for this gate.
-//   * users.role did not exist before migration 007 (the old RolePicker
-//     was localStorage-only, display-only). A user with NO recorded role
-//     (NULL) is treated as a non-student, so existing teacher games do
-//     not change. The gate only fires once a role is recorded — see the
-//     report for the first-setup limitation.
+//   * users.role arrives with migration 008 (the 007 file was never
+//     run, and must not be run — 008 covers the columns it would have
+//     added, minus the stored creator_badge column, which the display
+//     -only badge does not need). A user with NO recorded role (NULL)
+//     is treated as a non-student, so existing teacher games do not
+//     change. The gate only fires once a role is recorded.
 
 /** Approved games a student needs before the Creator badge is earned. */
 export const APPROVED_GAMES_FOR_CREATOR_BADGE = 15
@@ -35,12 +38,13 @@ export function isStudentRole(role: string | null | undefined): boolean {
   return role === 'student'
 }
 
-/** True when this creator's new games must wait for approval. */
-export function needsApproval(
-  role: string | null | undefined,
-  creatorBadge: boolean | null | undefined,
-): boolean {
-  return isStudentRole(role) && !creatorBadge
+/**
+ * True when this creator's new games must wait for approval.
+ * SOCIAL APPROVAL 2026-11-04: the badge NEVER bypasses the gate, so
+ * this takes no badge argument — a student is gated, full stop.
+ */
+export function needsApproval(role: string | null | undefined): boolean {
+  return isStudentRole(role)
 }
 
 export function approvalLabel(status: string | null | undefined): string {

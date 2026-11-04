@@ -4,7 +4,10 @@ import { redirect } from 'next/navigation'
 import { resolveSessionUser } from '@/lib/auth/session-user'
 import { createServerClient } from '@/lib/supabase/server'
 import { approvalLabel, APPROVED_GAMES_FOR_CREATOR_BADGE } from '@/lib/approval'
+import { hasCreatorBadgeDisplay } from '@/lib/social-approval'
 import RoleSetup from '@/components/dashboard/RoleSetup'
+import ParentInviteCard from '@/components/dashboard/ParentInviteCard'
+import ParentKidGames from '@/components/dashboard/ParentKidGames'
 import type { SupportedLocale } from '@/types'
 
 interface Props {
@@ -49,6 +52,7 @@ export default async function DashboardPage({ params }: Props) {
 
   let activities: MyActivity[] = []
   let myCount: number | null = null
+  let approvedCount: number | null = null
   let listUnavailable = false
 
   if (!sessionUser.userId) {
@@ -67,6 +71,15 @@ export default async function DashboardPage({ params }: Props) {
     if (!withStatus.error) {
       activities = (withStatus.data ?? []) as MyActivity[]
       myCount = withStatus.count ?? activities.length
+      // SOCIAL APPROVAL 2026-11-04: the Creator badge is computed live
+      // from real approved games (display only, never a gate), not read
+      // from a stored column.
+      const { count: approved } = await supabase
+        .from('activities')
+        .select('id', { count: 'exact', head: true })
+        .eq('teacher_id', sessionUser.userId)
+        .eq('approval_status', 'approved')
+      approvedCount = approved ?? 0
     } else if (/approval_status/i.test(withStatus.error.message ?? '')) {
       const legacy = await supabase
         .from('activities')
@@ -94,12 +107,13 @@ export default async function DashboardPage({ params }: Props) {
         <p style={{ color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
           Signed in as {sessionUser.email}
           {sessionUser.role ? ` · Role: ${sessionUser.role}` : ''}
-          {sessionUser.creatorBadge ? ' · ⭐ Creator badge' : ''}
+          {approvedCount !== null && hasCreatorBadgeDisplay(approvedCount) ? ' · ⭐ Creator badge' : ''}
         </p>
-        {sessionUser.creatorBadge ? (
+        {approvedCount !== null && hasCreatorBadgeDisplay(approvedCount) ? (
           <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem' }}>
-            You have earned the Creator badge ({APPROVED_GAMES_FOR_CREATOR_BADGE} approved games) —
-            your new games can go public without per-game approval.
+            You have earned the Creator badge ({approvedCount} approved games, threshold{' '}
+            {APPROVED_GAMES_FOR_CREATOR_BADGE}) — an achievement only. Every new game still
+            needs 3 test approvals before it can go public.
           </p>
         ) : sessionUser.role === null ? (
           <div style={{ marginBottom: '1.5rem' }}>
@@ -108,7 +122,7 @@ export default async function DashboardPage({ params }: Props) {
         ) : (
           <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem' }}>
             {sessionUser.role === 'student'
-              ? 'Your games wait for teacher/parent approval before they can go public.'
+              ? 'Your games wait for 3 test approvals before they can go public. Share each game\'s test link with 12 friends — if 3 approve, it goes public.'
               : ''}
           </p>
         )}
@@ -121,6 +135,12 @@ export default async function DashboardPage({ params }: Props) {
             Browse games
           </Link>
         </div>
+
+        {/* KIDS SOCIAL APPROVAL v1 (2026-11-04): kid creators invite a
+            parent; parents see their linked kids' games. Both cards
+            render their own empty/setup states. */}
+        {sessionUser.role === 'student' ? <ParentInviteCard locale={locale} /> : null}
+        {sessionUser.role === 'parent' ? <ParentKidGames locale={locale} /> : null}
 
         <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
           My activities{myCount !== null ? ` (${myCount})` : ''}
