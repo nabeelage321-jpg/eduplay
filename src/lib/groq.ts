@@ -161,6 +161,219 @@ export function parseGroqQuestions(raw: unknown, prompt: string): ActivityItem[]
   return items
 }
 
+
+/**
+ * Chapter paraphrase guard — the copyright rule for chapter games.
+ *
+ * A chapter draft must use the chapter's FACTS in NEW words, never the
+ * book's exact sentences. "Verbatim" here means a whole chapter
+ * sentence, or 8 or more consecutive words copied from one. Shorter
+ * matches are terms and names (a single word, a place, a person) —
+ * those are facts, not sentences, and no question can be written
+ * without them, so they are allowed. Anything at or above the
+ * threshold is dropped, never kept as a "close enough" question.
+ */
+function normalizeWords(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+}
+
+function chapterSentences(chapterText: string): string[][] {
+  return chapterText
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => normalizeWords(s))
+    .filter((w) => w.length >= 3)
+}
+
+function chapterNgrams(chapterText: string, n: number): Set<string> {
+  const grams = new Set<string>()
+  for (const words of chapterSentences(chapterText)) {
+    for (let i = 0; i + n <= words.length; i++) {
+      grams.add(words.slice(i, i + n).join(' '))
+    }
+  }
+  return grams
+}
+
+/** True if `field` reproduces chapter wording at or above the threshold. */
+export function isVerbatimChapterText(field: string, chapterText: string): boolean {
+  const words = normalizeWords(field)
+  if (words.length === 0) return false
+  const joined = words.join(' ')
+  const sentences = chapterSentences(chapterText)
+  for (const sw of sentences) {
+    const sJoined = sw.join(' ')
+    if (joined === sJoined) return true
+    // A whole chapter sentence (5+ words) embedded in a longer field.
+    if (sw.length >= 5 && joined.includes(sJoined)) return true
+  }
+  if (words.length < 8) return false
+  const grams = chapterNgrams(chapterText, 8)
+  for (let i = 0; i + 8 <= words.length; i++) {
+    if (grams.has(words.slice(i, i + 8).join(' '))) return true
+  }
+  return false
+}
+
+/** Drop any item whose question, answer, or option is verbatim chapter text. */
+export function filterVerbatimChapterItems(
+  items: ActivityItem[],
+  chapterText: string
+): ActivityItem[] {
+  return items.filter((it) => {
+    const fields = [it.prompt, it.answer, ...(it.answers ?? [])]
+    return !fields.some((f) => isVerbatimChapterText(String(f ?? ''), chapterText))
+  })
+}
+
+/**
+ * Parse + validate a Groq chapter draft, then drop every verbatim item.
+ * Structural rules match parseGroqQuestions (question/correct/incorrect,
+ * dedupe, correct must not repeat the question). There is NO topic-
+ * keyword filter here: a chapter prompt like "chapter three" carries
+ * no keywords, and the facts come from the chapter itself, which the
+ * system prompt already restricts the model to.
+ */
+export function parseGroqChapterQuestions(raw: unknown, chapterText: string): ActivityItem[] {
+  if (typeof raw !== 'object' || raw === null) return []
+  const questions = (raw as { questions?: unknown }).questions
+  if (!Array.isArray(questions)) return []
+  const seen = new Set<string>()
+  const items: ActivityItem[] = []
+  for (const [i, q] of questions.entries()) {
+    const r = q as RawGroqQuestion
+    const question = asNonEmptyString(r.question, 300)
+    const correct = asNonEmptyString(r.correct, 120)
+    if (!question || !correct) continue
+    if (question.toLowerCase() === correct.toLowerCase()) continue
+    if (!Array.isArray(r.incorrect)) continue
+    const incorrect: string[] = []
+    for (const d of r.incorrect) {
+      const s = asNonEmptyString(d, 120)
+      if (s && s.toLowerCase() !== correct.toLowerCase() && !incorrect.some((x) => x.toLowerCase() === s.toLowerCase())) {
+        incorrect.push(s)
+      }
+      if (incorrect.length >= 3) break
+    }
+    if (incorrect.length < 2) continue
+    const key = question.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    const options = [...incorrect]
+    options.splice(i % (options.length + 1), 0, correct)
+    items.push({ prompt: question, answer: correct, answers: options } as ActivityItem)
+    if (items.length >= 10) break
+  }
+  return filterVerbatimChapterItems(items, chapterText)
+}
+
+/**
+ * One Groq call for a PARAPHRASED chapter draft. `fetchImpl` exists only
+ * so tests can inject a mock — the route always passes the real fetch.
+ * Never throws for a provider failure and NEVER falls back to verbatim
+ * chapter sentences: a failure returns a distinct error the route turns
+ * into a plain message, and the teacher makes the game manually instead.
+ */
+export async function buildGroqChapterDraft(
+  chapterText: string,
+  prompt: string,
+  fetchImpl: typeof fetch = fetch
+): Promise<GroqDraftResult> {
+  const config = getGroqConfig()
+  if (!config) {
+    return { ok: false, status: 503, error: 'GROQ_NOT_CONFIGURED' }
+  }
+  // The chapter sent to the model is capped so the call stays inside a
+  // sane input budget; the teacher reviews the draft either way, and a
+  // longer chapter still yields a draft from its opening portion.
+  const chapterForModel = chapterText.slice(0, 8000)
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS)
+  try {
+    const body: Record<string, unknown> = {
+      model: config.model,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are a school teacher making quiz questions FROM a chapter, in your OWN words. ' +
+            'COPYRIGHT RULE — NEVER copy a sentence from the chapter word for word. Rewrite every fact as a NEW question in different words. ' +
+            'A question that repeats a chapter sentence, even with one word blanked out, is forbidden. ' +
+            'Use ONLY facts and concepts that actually appear in the chapter — never invent dates, statistics, names, or facts that are not in it. ' +
+            'If you cannot state a fact in new words with confidence, leave that question out instead of guessing or copying. ' +
+            'CRITICAL — the correct answer must DIRECTLY answer its own question. Before returning each question, read it back and check: if a teacher read only the question and this answer, would they mark it correct? ' +
+            'Wrong answers must be plausible but clearly wrong, of the same kind as the correct answer, and different from it. ' +
+            'Return ONLY a JSON object, no markdown, no extra text: {"questions": [{"question": "...", "correct": "...", "incorrect": ["...", "...", "..."]}]}. ' +
+            'Up to 10 questions.',
+        },
+        {
+          role: 'user',
+          content:
+            `Game title / prompt: ${prompt}\n\nChapter text (use ONLY facts from this chapter, in your own words — never copy its sentences):\n${chapterForModel}`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+      max_completion_tokens: GROQ_MAX_COMPLETION_TOKENS,
+    }
+    if (config.model.startsWith('openai/gpt-oss')) {
+      body.reasoning_effort = 'low'
+    }
+    const res = await fetchImpl(GROQ_API_URL, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify(body),
+    })
+    if (res.status === 429) {
+      return { ok: false, status: 502, error: 'Groq is rate-limited right now. Try again in a moment — no questions were invented and no chapter sentences were copied.' }
+    }
+    if (res.status === 401 || res.status === 403) {
+      return { ok: false, status: 502, error: 'Groq did not accept the API key. Check the key in Vercel — no questions were invented and no chapter sentences were copied.' }
+    }
+    if (res.status === 404) {
+      return { ok: false, status: 502, error: `Groq model ${config.model} is not available. Check GROQ_MODEL in Vercel — no questions were invented and no chapter sentences were copied.` }
+    }
+    if (!res.ok) {
+      return { ok: false, status: 502, error: 'Groq did not answer. Try again in a moment — no questions were invented and no chapter sentences were copied.' }
+    }
+    const data = (await res.json()) as { choices?: Array<{ message?: { content?: unknown } }> }
+    const content = data.choices?.[0]?.message?.content
+    if (typeof content !== 'string' || !content.trim()) {
+      return { ok: false, status: 502, error: 'Groq returned an empty draft. Try again — no questions were invented and no chapter sentences were copied.' }
+    }
+    const parsed = extractJson(content)
+    if (parsed === null) {
+      return { ok: false, status: 502, error: 'Groq returned a draft that could not be read. Try again — no questions were invented and no chapter sentences were copied.' }
+    }
+    const parsedItems = parseGroqChapterQuestions(parsed, chapterText)
+    // Same answer-consistency self-check as the general route. A failed
+    // or incomplete check falls back to the parsed items — it never
+    // invents questions, and every parsed item already passed the
+    // verbatim filter, so the fallback cannot reintroduce copied text.
+    const verified = parsedItems.length > 0
+      ? await verifyGroqAnswers(parsedItems, fetchImpl, config)
+      : null
+    const items = verified ?? parsedItems
+    if (items.length < 2) {
+      return { ok: false, status: 502, error: 'Groq could not make a paraphrased chapter draft from this text without copying its sentences. Add more chapter text, or make the game manually with your own questions — no verbatim chapter sentences were kept.' }
+    }
+    return { ok: true, model: config.model, items }
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      return { ok: false, status: 502, error: 'Groq took too long to answer. Try again in a moment — no questions were invented and no chapter sentences were copied.' }
+    }
+    return { ok: false, status: 502, error: 'Groq did not answer. Try again in a moment — no questions were invented and no chapter sentences were copied.' }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 function extractJson(text: string): unknown | null {
   try {
     return JSON.parse(text) as unknown

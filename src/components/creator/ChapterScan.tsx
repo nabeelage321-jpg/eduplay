@@ -47,7 +47,7 @@ const smallButtonStyle: React.CSSProperties = {
  *   Photos are read on the device and are never uploaded anywhere.
  *   The scanned text is shown for checking FIRST — the game is only
  *   made after the user confirms the corrected text.
- * - The game is built from that chapter's own sentences — no invented facts.
+ * - The game is built from that chapter's facts, reworded in new words — never the book's exact sentences, no invented facts. (Comment only; the OCR upload/review flow itself is unchanged.)
  * What does NOT work yet, stated plainly in the UI:
  * - PDF text extraction: PDF-to-image OCR is a separate later batch.
  *   A PDF can be attached, but its text is NOT read.

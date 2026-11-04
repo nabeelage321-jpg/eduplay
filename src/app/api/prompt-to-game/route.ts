@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
-  buildChapterDraft,
   buildTableDraft,
   convertDraftItems,
   decodeHtmlEntities,
@@ -8,7 +7,7 @@ import {
   type PromptDraft,
   type PromptGameType,
 } from '@/lib/prompt-to-game'
-import { buildGroqDraft, getGroqConfig } from '@/lib/groq'
+import { buildGroqChapterDraft, buildGroqDraft, getGroqConfig } from '@/lib/groq'
 import type { ActivityItem } from '@/types'
 
 const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble']
@@ -22,7 +21,11 @@ interface OpenTdbQuestion {
 /**
  * POST /api/prompt-to-game — draft only, never a published game.
  * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble', chapterText? }
- * - With chapterText: the draft is built from the chapter's own sentences.
+ * - With chapterText: the draft is PARAPHRASED from the chapter via Groq —
+ *   the same facts in new words, never the book's exact sentences.
+ *   No verbatim fallback exists: if paraphrasing fails, or no Groq key
+ *   is configured, the route returns a plain error and the teacher
+ *   makes the game manually instead.
  * - Table prompts: built locally, never touch the network.
  * - Other prompts: Groq first (topic-specific, see src/lib/groq.ts).
  *   Only when NO Groq key is configured does it fall back to free
@@ -44,15 +47,30 @@ export async function POST(req: NextRequest) {
     }
 
     if (chapterText.trim().length >= 100) {
-      const draft = buildChapterDraft(chapterText, prompt, type)
-      if (!draft) {
+      // COPYRIGHT RULE: chapter drafts are paraphrased, never copied.
+      // The old local verbatim fill-in-the-blank builder was removed
+      // in this batch — there is no code path left that can produce a
+      // verbatim chapter draft. Without a Groq key, or if paraphrasing
+      // fails, return a plain error; never fall back to verbatim text.
+      if (!getGroqConfig()) {
         return NextResponse.json(
           {
             error:
-              'That chapter text is too short or has too few usable sentences to make a game. Add more chapter text and try again — no questions were invented.',
+              'Chapter games are now made in new words, not copied from the chapter, and that paraphrasing needs the Groq key. Check the Groq key in Vercel, or make the game manually with your own questions — the chapter text itself is never copied into a game.',
           },
-          { status: 422 }
+          { status: 502 }
         )
+      }
+      const chapter = await buildGroqChapterDraft(chapterText, prompt)
+      if (!chapter.ok) {
+        return NextResponse.json({ error: chapter.error }, { status: chapter.status })
+      }
+      const draft: PromptDraft = {
+        title: prompt,
+        type,
+        items: convertDraftItems(chapter.items, type),
+        sourceNote:
+          'Made from your chapter in NEW words — the same facts, reworded into new questions, never the book\'s exact sentences. This is not official book material: check and edit each question before you approve it, and keep the game private until a teacher or parent has checked it.',
       }
       return NextResponse.json({ draft })
     }
