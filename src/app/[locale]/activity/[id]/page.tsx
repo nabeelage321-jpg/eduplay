@@ -419,6 +419,28 @@ export default async function ActivityPage({
                   non-printable type renders a plain note instead.
                   The detail page itself never renders item contents,
                   so this button is the only print path from here. */}
+              {/* VERTICAL VIDEO MODE v1 (2026-11-04, section C):
+                  a link only — no item data is rendered here. The
+                  mode page itself gates private games to their owner
+                  and Quiz games only; other types get a plain
+                  message there, never a forced video. */}
+              {activity.items.length > 0 ? (
+                <a
+                  href={`/${params.locale}/activity/${activity.id}/video`}
+                  style={{
+                    padding: '0.875rem 1.25rem',
+                    background: 'var(--color-surface-alt)',
+                    color: 'var(--color-primary)',
+                    borderRadius: 'var(--radius)',
+                    textDecoration: 'none',
+                    fontWeight: 600,
+                    border: '2px solid var(--color-primary)',
+                  }}
+                  aria-label={`Open ${activity.title} in vertical video mode`}
+                >
+                  📱 Vertical video
+                </a>
+              ) : null}
               {activity.items.length > 0 ? (
                 <PrintWorksheetButton
                   activity={{
