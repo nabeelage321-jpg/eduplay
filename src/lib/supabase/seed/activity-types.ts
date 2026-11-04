@@ -1,6 +1,13 @@
 /**
  * Seed data for the `activity_types` table.
- * All 20 activity types with icons and multilingual names.
+ * All 31 activity types with icons and multilingual names.
+ * The 8 queue types added 2026-11-04 carry their English name in
+ * every locale slot: that is an explicit fallback (getActivityTypeLabel
+ * falls back to name_en anyway), NOT a translated name. Real
+ * translations for those 8 are still open, not invented here.
+ * supports_live is true for all 8 (each has an ActivityPlayer player,
+ * so live sessions can play it); supports_print is false (no print
+ * format has been built for any of the 8).
  */
 
 export interface ActivityTypeSeed {
@@ -316,6 +323,110 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_es: 'Bingo',
     name_fr: 'Bingo',
     description_en: 'Mark answers on your bingo card and complete a line',
+  },
+  {
+    slug: 'jump-path',
+    icon: '⭐',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Jump Path',
+    name_ur: 'Jump Path',
+    name_ar: 'Jump Path',
+    name_hi: 'Jump Path',
+    name_es: 'Jump Path',
+    name_fr: 'Jump Path',
+    description_en: 'Answer to jump along the path',
+  },
+  {
+    slug: 'riddle',
+    icon: '🧩',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Riddle',
+    name_ur: 'Riddle',
+    name_ar: 'Riddle',
+    name_hi: 'Riddle',
+    name_es: 'Riddle',
+    name_fr: 'Riddle',
+    description_en: 'Solve the clue by typing the answer',
+  },
+  {
+    slug: 'aster-quiz',
+    icon: '🚀',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'AsterQuiz',
+    name_ur: 'AsterQuiz',
+    name_ar: 'AsterQuiz',
+    name_hi: 'AsterQuiz',
+    name_es: 'AsterQuiz',
+    name_fr: 'AsterQuiz',
+    description_en: 'Answer to fly the ship through asteroids',
+  },
+  {
+    slug: 'dictation',
+    icon: '🎧',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Dictation',
+    name_ur: 'Dictation',
+    name_ar: 'Dictation',
+    name_hi: 'Dictation',
+    name_es: 'Dictation',
+    name_fr: 'Dictation',
+    description_en: 'Listen and type what you hear',
+  },
+  {
+    slug: 'dialogue',
+    icon: '💬',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Dialogue',
+    name_ur: 'Dialogue',
+    name_ar: 'Dialogue',
+    name_hi: 'Dialogue',
+    name_es: 'Dialogue',
+    name_fr: 'Dialogue',
+    description_en: 'Follow a conversation, line by line',
+  },
+  {
+    slug: 'map-quiz',
+    icon: '📍',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Map Quiz',
+    name_ur: 'Map Quiz',
+    name_ar: 'Map Quiz',
+    name_hi: 'Map Quiz',
+    name_es: 'Map Quiz',
+    name_fr: 'Map Quiz',
+    description_en: 'Tap the map to find each point',
+  },
+  {
+    slug: 'jigsaw-puzzle',
+    icon: '🧩',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Jigsaw Puzzle',
+    name_ur: 'Jigsaw Puzzle',
+    name_ar: 'Jigsaw Puzzle',
+    name_hi: 'Jigsaw Puzzle',
+    name_es: 'Jigsaw Puzzle',
+    name_fr: 'Jigsaw Puzzle',
+    description_en: 'Rebuild the picture, then answer about it',
+  },
+  {
+    slug: 'video-quiz',
+    icon: '🎬',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Video Quiz',
+    name_ur: 'Video Quiz',
+    name_ar: 'Video Quiz',
+    name_hi: 'Video Quiz',
+    name_es: 'Video Quiz',
+    name_fr: 'Video Quiz',
+    description_en: 'Watch the video, answer as it plays',
   },
 ]
 

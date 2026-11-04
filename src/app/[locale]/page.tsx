@@ -58,6 +58,9 @@ const SUBJECT_EMOJI: Record<string, string> = {
 }
 
 function humanType(slug: string): string {
+  // TypeSelector spells this one as a single word; the generic
+  // hyphen-to-space title-casing would wrongly give 'Aster Quiz'.
+  if (slug === 'aster-quiz') return 'AsterQuiz'
   return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
@@ -203,7 +206,7 @@ export default async function HomePage({ params }: HomePageProps) {
             {[
               { value: total > 0 ? total.toLocaleString() : '—', label: t('statsActivities'), tile: TILES[2] },
               { value: '15', label: t('statsSubjects'), tile: TILES[1] },
-              { value: '23', label: t('statsTypes'), tile: TILES[0] },
+              { value: String(Object.keys(DB_TYPE_BY_SLUG).length), label: t('statsTypes'), tile: TILES[0] },
               { value: '11', label: t('statsLanguages'), tile: TILES[3] },
             ].map((s) => (
               <div key={s.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', padding: '1.5rem 1rem', background: s.tile }}>
@@ -270,7 +273,7 @@ export default async function HomePage({ params }: HomePageProps) {
         </section>
 
         <section aria-labelledby="types-title" style={{ ...sectionStyle, background: 'var(--color-surface-alt)' }}>
-          <p style={eyebrowStyle}>23 game types</p>
+          <p style={eyebrowStyle}>{Object.keys(DB_TYPE_BY_SLUG).length} game types</p>
           <h2 id="types-title" style={{ marginTop: '0.5rem', ...h2Style }}>Browse by game type</h2>
           <p style={subStyle}>Write your questions once, then play them as a Quiz, a Match Up, a Spin Wheel — or any of the others.</p>
           {/* UI polish: game types are SMALL PILLS on the surface-alt
