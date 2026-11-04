@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { PROMPT_GAME_TYPES, type PromptDraft, type PromptGameType } from '@/lib/prompt-to-game'
 import { DraftEditor } from './PromptToGame'
+import { combineOcrPages, recognizeImages, type OcrProgress } from '@/lib/ocr'
 
 const boxStyle: React.CSSProperties = {
   background: 'var(--color-surface)',
@@ -25,17 +26,34 @@ const fieldStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 }
 
+const smallButtonStyle: React.CSSProperties = {
+  minHeight: '48px',
+  padding: '0.5rem 1rem',
+  borderRadius: 'var(--radius)',
+  border: '2px solid var(--color-border)',
+  background: 'var(--color-surface)',
+  color: 'var(--color-text-primary)',
+  cursor: 'pointer',
+  fontWeight: 700,
+}
+
 /**
  * Student chapter-scan → prompt-to-game.
  *
- * What actually works in this batch:
+ * What works in this batch:
  * - Paste chapter text, or upload a .txt/.md file (read in the browser).
+ * - NEW: scan chapter pages with the phone camera, or upload several
+ *   photos, and read them with free on-device OCR (Tesseract.js).
+ *   Photos are read on the device and are never uploaded anywhere.
+ *   The scanned text is shown for checking FIRST — the game is only
+ *   made after the user confirms the corrected text.
  * - The game is built from that chapter's own sentences — no invented facts.
  * What does NOT work yet, stated plainly in the UI:
- * - Photo/PDF text extraction (OCR) is not installed in this batch: no
- *   OCR library and no paid OCR key are used. A photo/PDF can be
- *   attached as a reference, but its text is NOT read — paste the
- *   chapter text or upload a .txt file instead.
+ * - PDF text extraction: PDF-to-image OCR is a separate later batch.
+ *   A PDF can be attached, but its text is NOT read.
+ * - Printed English reads well; handwriting reads poorly; Urdu
+ *   Nastaliq reads poorly with this free reader (a paid cloud OCR
+ *   service is a later option, not a silent failure here).
  * Student games are private by default (see ActivityCreator approval
  * path) and are only shareable after the creator saves them; the share
  * link is the game's play page + ready caption, never a watermark and
@@ -50,33 +68,90 @@ export default function ChapterScan({
   const [prompt, setPrompt] = useState('')
   const [type, setType] = useState<PromptGameType>('quiz')
   const [fileName, setFileName] = useState('')
-  const [photoNote, setPhotoNote] = useState(false)
+  const [pdfNote, setPdfNote] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [draft, setDraft] = useState<PromptDraft | null>(null)
   const [approved, setApproved] = useState(false)
   const textFileRef = useRef<HTMLInputElement>(null)
-  const photoFileRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
+  const photoRef = useRef<HTMLInputElement>(null)
+  const pdfRef = useRef<HTMLInputElement>(null)
+
+  // --- Photo OCR state ---
+  // Photos are kept in upload order. Scanned text lives in ocrText
+  // ONLY until the user confirms it — it never reaches chapterText
+  // (and therefore never reaches game-making) before confirmation.
+  const [photos, setPhotos] = useState<File[]>([])
+  const [ocrProgress, setOcrProgress] = useState<OcrProgress | null>(null)
+  const [ocrText, setOcrText] = useState<string | null>(null)
+  const [ocrFailed, setOcrFailed] = useState<string[]>([])
+  const [ocrUsed, setOcrUsed] = useState(false)
 
   function handleTextFile(file: File | undefined) {
     if (!file) return
     setFileName(file.name)
-    setPhotoNote(false)
+    setPdfNote(false)
     const reader = new FileReader()
     reader.onload = () => setChapterText(String(reader.result ?? ''))
     reader.readAsText(file)
   }
 
-  function handlePhotoFile(file: File | undefined) {
+  function handlePhotos(files: FileList | null) {
+    if (!files || files.length === 0) return
+    const images = Array.from(files).filter((f) => f.type.startsWith('image/'))
+    if (images.length === 0) {
+      setError('Those files are not photos. Choose image files, or use the camera.')
+      return
+    }
+    setError(null)
+    setPhotos((prev) => [...prev, ...images])
+  }
+
+  function handlePdfFile(file: File | undefined) {
     if (!file) return
     setFileName(file.name)
-    // Honest limit: no OCR in this batch, so the file's text is not read.
-    setPhotoNote(true)
+    // Honest limit: PDF-to-image OCR is a later batch, so PDF text is NOT read.
+    setPdfNote(true)
+  }
+
+  async function runOcr() {
+    if (photos.length === 0) return
+    setError(null)
+    setOcrText(null)
+    setOcrFailed([])
+    setOcrUsed(false)
+    try {
+      const pages = await recognizeImages(photos, setOcrProgress)
+      const { text, failedNames } = combineOcrPages(pages)
+      setOcrFailed(failedNames)
+      if (!text) {
+        setError(
+          'No text could be read from these photos. Try again with a straighter, ' +
+            'better-lit photo of printed text, or paste the chapter text instead.',
+        )
+        return
+      }
+      // Review screen opens: nothing is used until the user confirms it below.
+      setOcrText(text)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not read the photos.')
+    } finally {
+      setOcrProgress(null)
+    }
+  }
+
+  function useOcrText() {
+    if (ocrText === null) return
+    setChapterText(ocrText)
+    setOcrText(null)
+    setOcrUsed(true)
+    setError(null)
   }
 
   async function makeChapterGame() {
     if (chapterText.trim().length < 100) {
-      setError('Add at least a few sentences of chapter text first (paste it, or upload a .txt file).')
+      setError('Add at least a few sentences of chapter text first (paste it, upload a .txt file, or scan photos and use their text).')
       return
     }
     if (!prompt.trim()) {
@@ -113,6 +188,9 @@ export default function ChapterScan({
     setApproved(true)
   }
 
+  const ocrReading = ocrProgress !== null
+  const reviewOpen = ocrText !== null
+
   return (
     <div style={boxStyle}>
       <h2 style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontSize: '1.25rem', margin: '0 0 0.25rem' }}>
@@ -144,25 +222,39 @@ export default function ChapterScan({
           onChange={(e) => handleTextFile(e.target.files?.[0])}
         />
         <input
-          ref={photoFileRef}
+          ref={cameraRef}
           type="file"
-          accept="image/*,.pdf"
+          accept="image/*"
+          capture="environment"
           style={{ display: 'none' }}
-          onChange={(e) => handlePhotoFile(e.target.files?.[0])}
+          onChange={(e) => { handlePhotos(e.target.files); e.target.value = '' }}
         />
-        <button
-          type="button"
-          onClick={() => textFileRef.current?.click()}
-          style={{ minHeight: '48px', padding: '0.5rem 1rem', borderRadius: 'var(--radius)', border: '2px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)', cursor: 'pointer', fontWeight: 700 }}
-        >
+        <input
+          ref={photoRef}
+          type="file"
+          accept="image/*"
+          multiple
+          style={{ display: 'none' }}
+          onChange={(e) => { handlePhotos(e.target.files); e.target.value = '' }}
+        />
+        <input
+          ref={pdfRef}
+          type="file"
+          accept=".pdf"
+          style={{ display: 'none' }}
+          onChange={(e) => handlePdfFile(e.target.files?.[0])}
+        />
+        <button type="button" onClick={() => textFileRef.current?.click()} style={smallButtonStyle}>
           📄 Upload chapter (.txt)
         </button>
-        <button
-          type="button"
-          onClick={() => photoFileRef.current?.click()}
-          style={{ minHeight: '48px', padding: '0.5rem 1rem', borderRadius: 'var(--radius)', border: '2px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)', cursor: 'pointer', fontWeight: 700 }}
-        >
-          🖼️ Upload photo / PDF
+        <button type="button" onClick={() => cameraRef.current?.click()} style={smallButtonStyle}>
+          📷 Take photo
+        </button>
+        <button type="button" onClick={() => photoRef.current?.click()} style={smallButtonStyle}>
+          🖼️ Upload photos
+        </button>
+        <button type="button" onClick={() => pdfRef.current?.click()} style={smallButtonStyle}>
+          📄 Upload PDF
         </button>
       </div>
       {fileName && (
@@ -170,11 +262,116 @@ export default function ChapterScan({
           File: {fileName}
         </p>
       )}
-      {photoNote && (
+      <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
+        Photos are read on this device with a free reader — they are never uploaded
+        anywhere. Printed English reads well. Handwriting reads poorly. Urdu
+        Nastaliq reads poorly with this free reader, so for an Urdu chapter paste
+        the text instead for now.
+      </p>
+      {photos.length > 0 && (
+        <div style={{ marginBottom: '0.75rem' }}>
+          <p style={{ fontWeight: 700, margin: '0 0 0.35rem' }}>
+            {photos.length} photo{photos.length > 1 ? 's' : ''} added, in this order:
+          </p>
+          <ul style={{ margin: 0, paddingLeft: '1.25rem', color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>
+            {photos.map((photo, i) => (
+              <li key={`${photo.name}-${i}`}>
+                Page {i + 1}: {photo.name}{' '}
+                <button
+                  type="button"
+                  aria-label={`Remove ${photo.name}`}
+                  onClick={() => setPhotos((prev) => prev.filter((_, j) => j !== i))}
+                  style={{ border: 'none', background: 'none', color: 'var(--color-danger)', cursor: 'pointer', fontWeight: 700 }}
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={runOcr}
+            disabled={ocrReading}
+            className="eduplay-primary-action"
+            style={{
+              marginTop: '0.5rem', border: 'none', borderRadius: 'var(--radius)',
+              background: ocrReading ? 'var(--color-text-muted)' : 'var(--gradient-btn)',
+              color: '#fff', fontFamily: 'var(--font-display)', fontSize: '1rem',
+              cursor: ocrReading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {ocrReading
+              ? `⏳ Reading photo ${ocrProgress?.current} of ${ocrProgress?.total}…`
+              : '🔍 Read my photos'}
+          </button>
+        </div>
+      )}
+      {pdfNote && (
         <p role="alert" style={{ color: 'var(--color-warning)', fontSize: '0.9rem', margin: '0 0 0.75rem' }}>
-          ⚠️ Photo/PDF text is not read in this version — no OCR is installed and no paid
-          key is used. Paste the chapter text above (or upload a .txt file) and the game
-          will be made from that text only.
+          ⚠️ PDF text is not read in this version — PDF-to-image reading is a later
+          step. For now, take photos of the pages instead, or paste the chapter text
+          above (or upload a .txt file) and the game will be made from that text only.
+        </p>
+      )}
+
+      {reviewOpen && (
+        <div
+          role="region"
+          aria-label="Check the scanned text"
+          style={{ border: '2px solid var(--color-primary)', borderRadius: 'var(--radius)', padding: '1rem', marginBottom: '0.75rem' }}
+        >
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', margin: '0 0 0.25rem' }}>
+            🔍 Check the scanned text
+          </h3>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: '0 0 0.5rem' }}>
+            The reader can misread words — a blurry photo, glare, or a tilted page can
+            change letters. Read every word below and fix anything wrong before you
+            continue. Nothing is used for your game until you press “Use this text”.
+          </p>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: '0 0 0.5rem' }}>
+            Your chapter game stays private until you save it and choose to make it
+            public. Textbook pages are copyrighted — never publish a scanned chapter
+            game as public without a teacher or parent checking it.
+          </p>
+          {ocrFailed.length > 0 && (
+            <p role="alert" style={{ color: 'var(--color-warning)', fontSize: '0.9rem', margin: '0 0 0.5rem' }}>
+              ⚠️ These photos could not be read and were left out: {ocrFailed.join(', ')}.
+              Try straighter, better-lit photos of those pages.
+            </p>
+          )}
+          <textarea
+            aria-label="Scanned chapter text — check and correct it"
+            value={ocrText ?? ''}
+            onChange={(e) => setOcrText(e.target.value)}
+            rows={8}
+            style={{ ...fieldStyle, marginBottom: '0.75rem', resize: 'vertical' }}
+          />
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={useOcrText}
+              className="eduplay-primary-action"
+              style={{
+                border: 'none', borderRadius: 'var(--radius)',
+                background: 'var(--gradient-btn)', color: '#fff',
+                fontFamily: 'var(--font-display)', fontSize: '1rem', cursor: 'pointer',
+              }}
+            >
+              ✅ Use this text
+            </button>
+            <button type="button" onClick={runOcr} style={smallButtonStyle}>
+              ↺ Read photos again
+            </button>
+            <button type="button" onClick={() => { setOcrText(null); setOcrFailed([]) }} style={smallButtonStyle}>
+              ✕ Discard scanned text
+            </button>
+          </div>
+        </div>
+      )}
+      {ocrUsed && (
+        <p role="status" style={{ color: 'var(--color-success)', fontSize: '0.9rem', margin: '0 0 0.75rem' }}>
+          ✅ Scanned text added — check it in the Chapter text box above, then give a
+          prompt and make your game.
         </p>
       )}
 
@@ -212,17 +409,22 @@ export default function ChapterScan({
       <button
         type="button"
         onClick={makeChapterGame}
-        disabled={loading}
+        disabled={loading || reviewOpen}
         className="eduplay-primary-action"
         style={{
           width: '100%', border: 'none', borderRadius: 'var(--radius)',
-          background: loading ? 'var(--color-text-muted)' : 'var(--gradient-btn)',
+          background: loading || reviewOpen ? 'var(--color-text-muted)' : 'var(--gradient-btn)',
           color: '#fff', fontFamily: 'var(--font-display)', fontSize: '1rem',
-          cursor: loading ? 'not-allowed' : 'pointer',
+          cursor: loading || reviewOpen ? 'not-allowed' : 'pointer',
         }}
       >
         {loading ? '⏳ Making your chapter game…' : '📖 Make my chapter game'}
       </button>
+      {reviewOpen && (
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+          Confirm or discard the scanned text above before making your game.
+        </p>
+      )}
 
       {error && (
         <p role="alert" style={{ color: 'var(--color-danger)', fontSize: '0.9rem', marginTop: '0.75rem' }}>
