@@ -27,6 +27,10 @@ import HelperMascot from '@/components/home/v0/HelperMascot'
 import V0CreatorsSection from '@/components/home/v0/V0CreatorsSection'
 import V0SellingSection from '@/components/home/v0/V0SellingSection'
 import ThemeSection from '@/components/home/v0/ThemeSection'
+// STREAK v1 (2026-11-04, master-list part 7): small device-local badge
+// only — no homepage restyle, no new section. Fresh devices show no
+// streak number, only the honest starter line (see StreakBadge).
+import { StreakBadge } from '@/components/activity-types/StreakBadge'
 import { TILES, TILE_INK } from '@/components/home/v0/tiles'
 
 interface HomePageProps {
@@ -217,6 +221,10 @@ export default async function HomePage({ params }: HomePageProps) {
             ))}
           </div>
         </section>
+
+        {/* STREAK BADGE v1: device-local only, small line under the stats.
+            A fresh device shows no streak number (see StreakBadge). */}
+        <StreakBadge />
 
         <ThemeSection />
 

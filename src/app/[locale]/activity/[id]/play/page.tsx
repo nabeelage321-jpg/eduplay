@@ -11,6 +11,11 @@ import ConvertToType from '@/components/activity-types/ConvertToType'
 import ActivityIdLine from '@/components/activity-types/ActivityIdLine'
 import ShareGameButton from '@/components/home/ShareGameButton'
 import SoundToggle from '@/components/activity-types/SoundToggle'
+// STREAK v1 (2026-11-04, master-list part 7): device-local streak +
+// levels, recorded only here, on a real finish. Preview has its own
+// handler and never touches this; game scoring is never altered.
+import { recordFinish, type FinishResult } from '@/lib/streak'
+import { StreakFinishLine } from '@/components/activity-types/StreakBadge'
 import { useThemeStore } from '@/lib/store/theme-store'
 import type { Activity, SupportedLocale } from '@/types'
 
@@ -126,6 +131,12 @@ function PlayPageInner() {
   }
   const [finalScore, setFinalScore] = useState<number | null>(null)
   const [finalElapsed, setFinalElapsed] = useState<number | null>(null)
+  // STREAK v1: the finish just recorded (null until a finish). The ref
+  // guards one finish against a player calling onComplete twice for
+  // the same completion; it resets only on Play Again, when a genuinely
+  // new finish begins. It never touches the game's own score.
+  const [streakResult, setStreakResult] = useState<FinishResult | null>(null)
+  const streakRecordedRef = useRef(false)
   const [elapsed, setElapsed] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const playRecorded = useRef(false)
@@ -182,6 +193,14 @@ function PlayPageInner() {
 
   function handleComplete(score: number, details?: ActivityCompletion) {
     if (timerRef.current) clearInterval(timerRef.current)
+    // STREAK v1: record ONLY a real finish (this handler fires when a
+    // player completes, never on page open, game start, or preview).
+    // Same-day finishes add points but not streak days, and a missed
+    // day wipes the old streak — see src/lib/streak.ts for the rules.
+    if (!streakRecordedRef.current) {
+      streakRecordedRef.current = true
+      setStreakResult(recordFinish(score))
+    }
     setFinalScore(score)
     // Quiz: the shell's elapsed (0-based from play start). Other
     // types: details carry no elapsed, so fall back to this page's
@@ -402,13 +421,18 @@ function PlayPageInner() {
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.1rem', marginBottom: '0.25rem' }}>
                 Final Score: <strong style={{ color: 'var(--color-primary)' }}>{finalScore}</strong>
               </p>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>
                 Time: {formatTime(finalElapsed ?? elapsed)}
               </p>
+              {streakResult ? (
+                <div style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
+                  <StreakFinishLine result={streakResult} />
+                </div>
+              ) : null}
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <motion.button
                   whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                  onClick={() => { setFinalScore(null); setFinalElapsed(null); setElapsed(0) }}
+                  onClick={() => { setFinalScore(null); setFinalElapsed(null); setElapsed(0); setStreakResult(null); streakRecordedRef.current = false }}
                   style={{
                     padding: '1rem 1.75rem', borderRadius: 'var(--radius)', minHeight: '56px',
                     border: 'none', background: 'var(--gradient-btn)',
