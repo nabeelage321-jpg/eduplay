@@ -14,7 +14,7 @@ import {
   Type,
   type LucideIcon,
 } from 'lucide-react'
-import ShareGameButton from '@/components/home/ShareGameButton'
+import HomeGameShare from '@/components/home/HomeGameShare'
 import { TILES, TILE_INK } from './tiles'
 
 export interface V0HomeGame {
@@ -23,6 +23,12 @@ export interface V0HomeGame {
   subject: string
   grade: string
   type: string
+  /**
+   * Data-driven share gate: the homepage query only selects public
+   * games, and the card shows a share control ONLY when this is true.
+   * A non-public game gets no share control at all.
+   */
+  isPublic: boolean
 }
 
 // V0 game-card port. CRITICAL difference from V0: V0 linked cards to
@@ -102,8 +108,16 @@ export default function V0GameCard({ game, locale, index }: { game: V0HomeGame; 
             <Play style={{ width: '1.25rem', height: '1.25rem', fill: 'currentColor' }} aria-hidden="true" />
             Play
           </Link>
-          <ShareGameButton locale={locale} gameId={game.id} gameTitle={game.title} />
         </div>
+        {/* Homepage share row (2026-11-04): WhatsApp, Facebook, copy
+            link, copy-for-Instagram and the device share sheet, for
+            public games only. The play-page ShareGameButton is NOT
+            used here and is left untouched. */}
+        {game.isPublic ? (
+          <div style={{ marginTop: '0.5rem' }}>
+            <HomeGameShare locale={locale} gameId={game.id} gameTitle={game.title} isPublic={game.isPublic} />
+          </div>
+        ) : null}
       </div>
     </article>
   )

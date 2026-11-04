@@ -70,6 +70,7 @@ interface HomeGame {
   subject: string
   grade: string
   type: string
+  is_public: boolean
 }
 
 async function fetchHomeGames(): Promise<{ games: HomeGame[]; total: number }> {
@@ -81,7 +82,7 @@ async function fetchHomeGames(): Promise<{ games: HomeGame[]; total: number }> {
       .eq('is_public', true)
     const { data } = await supabase
       .from('activities')
-      .select('id, title, subject, grade, type')
+      .select('id, title, subject, grade, type, is_public')
       .eq('is_public', true)
       .order('play_count', { ascending: false })
       .order('created_at', { ascending: false })
@@ -242,7 +243,21 @@ export default async function HomePage({ params }: HomePageProps) {
             <ul style={{ marginTop: '2.5rem', display: 'grid', gap: '1.5rem', listStyle: 'none', padding: 0 }} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {games.map((game, i) => (
                 <li key={game.id}>
-                  <V0GameCard game={game} locale={locale} index={i} />
+                  {/* The card's share gate is driven by the DB value,
+                      not assumed: the query above already filters to
+                      public games, and isPublic carries that value. */}
+                  <V0GameCard
+                    game={{
+                      id: game.id,
+                      title: game.title,
+                      subject: game.subject,
+                      grade: game.grade,
+                      type: game.type,
+                      isPublic: game.is_public,
+                    }}
+                    locale={locale}
+                    index={i}
+                  />
                 </li>
               ))}
             </ul>
