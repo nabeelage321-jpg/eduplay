@@ -176,6 +176,17 @@ export default function ChallengeView({ locale, gameId, pin, group, deadline }: 
 
       <section aria-label="Challenge results" style={{ marginTop: '2.5rem' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Results</h2>
+        {/* Reports v1 (master list part 5): the same leaderboard rows,
+            plus summary maths, on the public report route. Nothing
+            else about this view changes. */}
+        {pin ? (
+          <a
+            href={`/${locale}/report?pin=${encodeURIComponent(pin)}`}
+            style={{ display: 'inline-block', marginTop: '0.5rem', fontWeight: 700, color: 'var(--color-primary)' }}
+          >
+            View report →
+          </a>
+        ) : null}
         {results.kind === 'loading' ? (
           <p style={{ color: 'var(--color-text-secondary)' }}>Loading results…</p>
         ) : results.kind === 'none' ? (
