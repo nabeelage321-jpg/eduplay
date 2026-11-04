@@ -82,6 +82,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'maze-run', label: 'Maze Run' },
   { value: 'speed-judge', label: 'Speed Judge' },
   { value: 'spell-it', label: 'Spell It' },
+  { value: 'picture-answer', label: 'Picture Answer' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

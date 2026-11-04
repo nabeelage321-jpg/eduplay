@@ -84,6 +84,7 @@ export const DB_TYPE_BY_SLUG: Record<string, string> = {
   'maze-run': 'maze-run',
   'speed-judge': 'speed-judge',
   'spell-it': 'spell-it',
+  'picture-answer': 'picture-answer',
 }
 
 export interface ProgrammaticActivity {

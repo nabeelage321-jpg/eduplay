@@ -19,7 +19,7 @@
  *   with a plain reason, and the play page shows that message instead
  *   of the player — never a mangled game.
  * - The target list mirrors ACTIVITY_TYPE_META (TypeSelector) and
- *   ActivityPlayer's component map (35 types). If a type is added to
+ *   ActivityPlayer's component map (36 types). If a type is added to
  *   either, it must be added here with a compatibility decision, or
  *   it will fall into the incompatible default below — which is the
  *   safe direction (message, not mangled play).
@@ -69,6 +69,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'maze-run',         icon: '🌀', name: 'Maze Run' },
   { slug: 'speed-judge',      icon: '⚡', name: 'Speed Judge' },
   { slug: 'spell-it',         icon: '🔡', name: 'Spell It' },
+  { slug: 'picture-answer',   icon: '🖼️', name: 'Picture Answer' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -173,6 +174,12 @@ export function canConvertTo(
     case 'missing-word':
     case 'riddle':
     case 'dictation':
+    // Picture Answer shows the prompt/clue plus options built
+    // from the game's own answers, with the item's picture
+    // when it carries one and an honest no-picture state when
+    // it does not — so it plays every prompt/answer item
+    // as-is, drops nothing, and invents no picture.
+    case 'picture-answer':
       return { ok: true, reason: '' }
 
     // Hangman guesses the answer letter by letter; Letter Wheel

@@ -10,6 +10,7 @@ import {
   stableShuffle,
 } from '@/lib/print-worksheet'
 import { buildSpeedJudgeRounds } from '@/lib/speed-judge'
+import { buildPictureAnswerRounds } from '@/lib/picture-answer'
 import { spellItCells } from '@/lib/spell-it'
 
 export { isPrintableWorksheetType, normalizeWorksheetTypeSlug }
@@ -78,6 +79,18 @@ export function generatePrintHTML(activity: Activity): string {
   const speedJudgeRounds = slug === 'speed-judge'
     ? buildSpeedJudgeRounds(items, { deterministic: true })
     : []
+  // Picture Answer worksheet: rounds are DETERMINISTIC
+  // (original order, stored option order), so the student
+  // sheet and the answer key below are built from the exact
+  // same rounds and can never drift apart. The picture is
+  // the teacher's own URL printed from that URL; an item
+  // with no picture gets a plain "No picture" line — never
+  // a fake picture. Options are blank checkboxes with
+  // NOTHING marking the correct one; the answer lives ONLY
+  // in the key.
+  const pictureAnswerRounds = slug === 'picture-answer'
+    ? buildPictureAnswerRounds(items, { deterministic: true })
+    : []
   const orderPositionOf = new Map<Item, number>()
   items.forEach((it, i) => {
     orderPositionOf.set(it, i + 1)
@@ -123,6 +136,24 @@ export function generatePrintHTML(activity: Activity): string {
             <span class="tf-box">Correct ☐</span>
             <span class="tf-box">Wrong ☐</span>
           </div>
+        </div>`,
+        )
+        .join('')}`
+  } else if (slug === 'picture-answer') {
+    itemsHTML = `
+      <p class="match-intro">Look at the picture, read the question, and tick the answer that fits. A question with no picture says so — answer it from the question alone.</p>
+      ${pictureAnswerRounds
+        .map(
+          (round, i) => `
+        <div class="item">
+          <div class="question-num">${i + 1}.</div>
+          ${round.imageUrl
+            ? `<img src="${esc(round.imageUrl)}" alt="" style="display:block;max-width:100%;max-height:280px;object-fit:cover;border-radius:6px;margin-bottom:0.5rem;">`
+            : `<p style="font-size:0.875rem;color:#666;margin-bottom:0.5rem;">🖼️ No picture for this question — answer from the question.</p>`}
+          <p class="prompt">${esc(round.prompt)}</p>
+          <div class="options">${round.options
+            .map((opt, oi) => `<span class="opt">☐ ${String.fromCharCode(65 + oi)}) ${esc(opt)}</span>`)
+            .join('')}</div>
         </div>`,
         )
         .join('')}`

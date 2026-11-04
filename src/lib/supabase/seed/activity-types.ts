@@ -482,6 +482,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Spell It',
     description_en: 'Spell the answer word, letter by letter',
   },
+  {
+    slug: 'picture-answer',
+    icon: '🖼️',
+    supports_live: true,
+    supports_print: true,
+    name_en: 'Picture Answer',
+    name_ur: 'Picture Answer',
+    name_ar: 'Picture Answer',
+    name_hi: 'Picture Answer',
+    name_es: 'Picture Answer',
+    name_fr: 'Picture Answer',
+    description_en: 'Answer the question about the picture',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

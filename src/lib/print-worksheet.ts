@@ -42,7 +42,13 @@ export function normalizeWorksheetTypeSlug(slug: string | undefined | null): str
  *   correct judgement per round, never the judgement on the
  *   student sheet. spell-it: clue + letter blanks (spaces as
  *   gaps, non-letters shown), key lists the word — never on
- *   the student sheet.
+ *   the student sheet. picture-answer: the item's picture
+ *   when it carries one (a plain "No picture" line when it
+ *   does not — never a fake picture) + clue + option
+ *   checkboxes, key lists the answer — never on the student
+ *   sheet. A printed picture is the teacher's own URL, so a
+ *   printed sheet only shows pictures the teacher already
+ *   supplied; the browser prints the image from its URL.
  */
 export const PRINTABLE_WORKSHEET_TYPES: ReadonlySet<string> = new Set([
   'quiz',
@@ -70,6 +76,7 @@ export const PRINTABLE_WORKSHEET_TYPES: ReadonlySet<string> = new Set([
   'aster-quiz',
   'speed-judge',
   'spell-it',
+  'picture-answer',
 ])
 
 /** Deliberately NOT printable in v1, and why (shown as a plain note, never a printout). */

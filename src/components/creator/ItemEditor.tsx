@@ -40,6 +40,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'maze-run': { prompt: 'Question for this maze', answer: 'Correct answer tile' },
   'speed-judge': { prompt: 'Question (the claim is about this)', answer: 'Correct answer (true claims use this)' },
   'spell-it': { prompt: 'Clue or question', answer: 'Word to spell' },
+  'picture-answer': { prompt: 'Question about the picture', answer: 'Correct answer' },
 }
 
 const fieldStyle: React.CSSProperties = {
@@ -348,6 +349,50 @@ export default function ItemEditor({ items, onChange, activityType }: ItemEditor
         }}>
           <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📝</div>
           Click "Add Item" to get started
+        </div>
+      )}
+
+      {/* PICTURE ANSWER ONLY: one picture per question, pasted as a
+          URL — not an upload, and NOT a shared picture for all
+          items (unlike Map Quiz / Jigsaw, where one image serves
+          the whole game: here each round shows its own item's
+          picture). The URL must be the teacher's own or a
+          CC-licensed image. It is stored on that item's imageUrl
+          (the save route whitelists it), so the player — which
+          reads each round's own imageUrl — and saved games both
+          see it. Empty = that round plays clue-only, with an
+          honest no-picture state; no picture is ever invented
+          for it. This section sits below the item rows on
+          purpose: the rows keep their drag/reorder grid, and
+          pictures are attached per question here. */}
+      {activityType === 'picture-answer' && items.length > 0 && (
+        <div style={{ marginTop: '1rem' }}>
+          <h3 style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontSize: '1rem', margin: '0 0 0.25rem' }}>
+            Pictures — one per question
+          </h3>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', margin: '0 0 0.5rem' }}>
+            Paste a picture URL for each question — your own or CC-licensed image only. Leave it empty and that
+            question plays from its clue alone, with a plain no-picture note. No picture is ever invented for you.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {items.map((item, idx) => (
+              <div key={idx}>
+                <label style={{ display: 'block', color: 'var(--color-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-display)', marginBottom: '0.25rem' }}>
+                  Picture for question {idx + 1}{item.prompt ? ` — ${item.prompt}` : ''}
+                </label>
+                <input
+                  type="url"
+                  value={item.imageUrl ?? ''}
+                  onChange={(e) => update(idx, 'imageUrl', e.target.value)}
+                  placeholder="https://… (your own or CC-licensed picture, or leave empty)"
+                  aria-label={`Picture URL for question ${idx + 1}`}
+                  style={fieldStyle}
+                  onFocus={(e) => { e.target.style.borderColor = 'var(--color-primary)' }}
+                  onBlur={(e) => { e.target.style.borderColor = 'var(--color-border)' }}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
