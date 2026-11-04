@@ -5,10 +5,11 @@ import { generatePageMetadata } from '@/lib/seo/metadata'
 import JsonLd from '@/components/seo/JsonLd'
 import Breadcrumb from '@/components/seo/Breadcrumb'
 import ActivityIdLine from '@/components/activity-types/ActivityIdLine'
+import ConvertToType from '@/components/activity-types/ConvertToType'
 import HostLiveGame from '@/components/game/HostLiveGame'
 import { generateActivitySchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
 import { createServerClient } from '@/lib/supabase/server'
-import { adaptActivityItems, dbTypeOf } from '@/lib/activity-content'
+import { adaptActivityItems, dbTypeOf, playerTypeKey } from '@/lib/activity-content'
 import { FILTER_GRADES, FILTER_SUBJECTS } from '@/lib/filters'
 
 // ─── Dynamic: teacher games are user content, not ISR material ───────────────
@@ -381,6 +382,22 @@ export default async function ActivityPage({
               </p>
             ) : null}
           </header>
+
+          {/* PLAY AS ANOTHER TYPE (convert, 2026-11-04): links only —
+              no item data is rendered here, so this section cannot leak
+              a game's questions. Picking a type goes to the play page
+              with ?as=<type>, where compatibility is decided and the
+              same questions are played in that type's existing player
+              (or a plain cannot-play message is shown). A game with
+              no items gets no control — there is nothing to convert. */}
+          {activity.items.length > 0 ? (
+            <ConvertToType
+              locale={params.locale}
+              activityId={activity.id}
+              originalSlug={playerTypeKey(activity.activityType)}
+              currentTarget={null}
+            />
+          ) : null}
 
           {/* ONE-CLICK HOST 2026-11-03: one click from this page creates
               the live room and shows the code + share + leaderboard on

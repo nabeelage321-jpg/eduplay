@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useState, useEffect, useRef, useMemo, Suspense } from 'react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import ActivityPlayer from '@/components/activity-types/ActivityPlayer'
 import type { ActivityCompletion } from '@/components/activity-types/shared'
-import { dbTypeOf } from '@/lib/activity-content'
+import { adaptActivityItems, dbTypeOf } from '@/lib/activity-content'
+import { canConvertTo, convertTargetLabel, resolveConvertTarget } from '@/lib/convert'
+import ConvertToType from '@/components/activity-types/ConvertToType'
 import ActivityIdLine from '@/components/activity-types/ActivityIdLine'
 import ShareGameButton from '@/components/home/ShareGameButton'
 import SoundToggle from '@/components/activity-types/SoundToggle'
@@ -13,8 +15,23 @@ import { useThemeStore } from '@/lib/store/theme-store'
 import type { Activity, SupportedLocale } from '@/types'
 
 export default function PlayPage() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <p style={{ color: 'var(--color-text-muted)' }}>Loading activity…</p>
+        </div>
+      }
+    >
+      <PlayPageInner />
+    </Suspense>
+  )
+}
+
+function PlayPageInner() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { audience } = useThemeStore()
   const locale = (params?.locale as SupportedLocale) ?? 'en'
   const id = params?.id as string
@@ -30,6 +47,61 @@ export default function PlayPage() {
   const isPending = approvalStatus === 'pending'
   const isRejected = approvalStatus === 'rejected'
   const showShare = !isPending && !isRejected
+
+  // ─── PLAY AS ANOTHER TYPE (convert, 2026-11-04) ─────────────────────
+  // ?as=<type> is a PLAY-TIME view only. The original activity object
+  // is never mutated and never re-saved: the converted view is a
+  // shallow copy whose type is overridden and whose items are the
+  // original game's own adapted items, passed verbatim. ActivityPlayer
+  // returns activity.items untouched when non-empty, so the target
+  // type's existing player never re-reads the original content shape.
+  // If the target cannot play every item as-is, the player is NOT
+  // rendered at all — a plain cannot-play message is shown instead.
+  const originalSlug = activity ? dbTypeOf(activity) : 'quiz'
+  const convertTarget = activity ? resolveConvertTarget(searchParams.get('as'), originalSlug) : null
+  const originalItems = useMemo(() => (activity ? adaptActivityItems(activity) : []), [activity])
+  const convertCheck = convertTarget ? canConvertTo(originalItems, convertTarget) : null
+
+  // Private-game gate for CONVERT ONLY (same ownership check
+  // HostLiveGame uses: GET /api/my-activities lists the signed-in
+  // user's own games; signed out, or viewing someone else's game,
+  // yields no match). Convert adds no new data path: it reuses the
+  // activity this page already loaded, and a private game's
+  // converted view is refused to anyone but its owner. The original
+  // play behaviour above is untouched — fixing the pre-existing
+  // GET /api/activities/[id] route (which serves any id) is a
+  // separate security batch, not this one, and is flagged in the
+  // batch report rather than silently widened or narrowed here.
+  const needsOwnerCheck = convertTarget !== null && activity !== null && activity.is_public === false
+  const [convertOwner, setConvertOwner] = useState<boolean | null>(null)
+  useEffect(() => {
+    if (!needsOwnerCheck || !activity) {
+      setConvertOwner(null)
+      return
+    }
+    let cancelled = false
+    setConvertOwner(null)
+    fetch('/api/my-activities')
+      .then((res) => (res.ok ? res.json() : { activities: [] }))
+      .then((data) => {
+        if (cancelled) return
+        const list = Array.isArray(data.activities) ? data.activities : []
+        setConvertOwner(list.some((g: { id?: string }) => g.id === activity.id))
+      })
+      .catch(() => {
+        if (!cancelled) setConvertOwner(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [needsOwnerCheck, activity])
+
+  const convertBlockedPrivate = needsOwnerCheck && convertOwner === false
+  const convertCheckingOwner = needsOwnerCheck && convertOwner === null
+  const effectiveActivity: Activity | null =
+    activity && convertTarget && convertCheck?.ok && !convertBlockedPrivate && !convertCheckingOwner
+      ? { ...activity, type: convertTarget, type_id: convertTarget, items: originalItems, content: null }
+      : activity
 
   async function decideApproval(action: 'approve' | 'reject') {
     setApprovalMessage(null)
@@ -96,7 +168,12 @@ export default function PlayPage() {
   // Time instead. Every other type is unchanged: it has no shell
   // yet, so this page timer still runs for it exactly as before,
   // and it will be unified the same way when its shell lands.
-  const isQuiz = activity ? dbTypeOf(activity) === 'quiz' : false
+  // Converted Quiz must behave exactly like original Quiz (single
+  // shell timer), and converted FROM Quiz must behave like its new
+  // type (page timer, as that type normally runs). The effective
+  // type — not the saved type — decides, so converting can never
+  // resurrect the double timer the 2026-11-03 fix removed.
+  const isQuiz = effectiveActivity ? dbTypeOf(effectiveActivity) === 'quiz' : false
   useEffect(() => {
     if (!activity || finalScore !== null || isQuiz) return
     timerRef.current = setInterval(() => setElapsed((t) => t + 1), 1000)
@@ -293,6 +370,18 @@ export default function PlayPage() {
 
       {/* Game area */}
       <div style={{ padding: '1rem 0.5rem', maxWidth: '700px', margin: '0 auto' }}>
+        <ConvertToType locale={locale} activityId={id} originalSlug={originalSlug} currentTarget={convertTarget} />
+        {convertTarget && !convertBlockedPrivate && convertCheck?.ok ? (
+          <p style={{
+            maxWidth: '700px', margin: '0 auto 1rem', padding: '0.75rem 1rem',
+            background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius)', color: 'var(--color-text-secondary)', textAlign: 'center',
+          }}>
+            Playing as <strong style={{ color: 'var(--color-text-primary)' }}>{convertTargetLabel(convertTarget)}</strong>
+            {' '}— the same {originalItems.length} questions as the original game.
+            The original game is not changed.
+          </p>
+        ) : null}
         <AnimatePresence mode="wait">
           {finalScore !== null ? (
             <motion.div
@@ -345,12 +434,51 @@ export default function PlayPage() {
             </motion.div>
           ) : (
             <motion.div key="playing" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <ActivityPlayer
-                activity={activity}
-                theme={audience}
-                locale={locale}
-                onComplete={handleComplete}
-              />
+              {convertTarget && convertCheckingOwner ? (
+                <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>
+                  Checking who owns this private game…
+                </p>
+              ) : convertTarget && convertBlockedPrivate ? (
+                <div style={{
+                  textAlign: 'center', padding: '2rem 1rem',
+                  background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)',
+                  border: '2px solid var(--color-border)',
+                }}>
+                  <p style={{ color: 'var(--color-text-primary)', fontWeight: 700, marginBottom: '0.5rem' }}>
+                    This private game can only be played as another type by its owner.
+                  </p>
+                  <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
+                    The original game is unchanged. Play it in its original type instead.
+                  </p>
+                  <a href={`/${locale}/activity/${id}/play`} style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                    ← Back to the original type
+                  </a>
+                </div>
+              ) : convertTarget && convertCheck && !convertCheck.ok ? (
+                <div style={{
+                  textAlign: 'center', padding: '2rem 1rem',
+                  background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)',
+                  border: '2px solid var(--color-border)',
+                }}>
+                  <p style={{ color: 'var(--color-text-primary)', fontWeight: 700, marginBottom: '0.5rem' }}>
+                    {convertTargetLabel(convertTarget)} cannot play these questions.
+                  </p>
+                  <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
+                    {convertCheck.reason} No questions were changed, dropped, or invented to force it —
+                    the original game is unchanged.
+                  </p>
+                  <a href={`/${locale}/activity/${id}/play`} style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                    ← Back to the original type
+                  </a>
+                </div>
+              ) : (
+                <ActivityPlayer
+                  activity={effectiveActivity ?? activity}
+                  theme={audience}
+                  locale={locale}
+                  onComplete={handleComplete}
+                />
+              )}
             </motion.div>
           )}
         </AnimatePresence>
