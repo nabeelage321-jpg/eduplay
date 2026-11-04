@@ -10,6 +10,7 @@ import {
   stableShuffle,
 } from '@/lib/print-worksheet'
 import { buildSpeedJudgeRounds } from '@/lib/speed-judge'
+import { spellItCells } from '@/lib/spell-it'
 
 export { isPrintableWorksheetType, normalizeWorksheetTypeSlug }
 
@@ -149,6 +150,16 @@ export function generatePrintHTML(activity: Activity): string {
             <span class="tf-box">True ☐</span>
             <span class="tf-box">False ☐</span>
           </div>
+        </div>`
+        }
+        if (slug === 'spell-it') {
+          const blanks = spellItCells(item.answer)
+            .map((c) => (c.kind === 'letter' ? '_' : c.kind === 'gap' ? '&nbsp;&nbsp;' : esc(c.char)))
+            .join(' ')
+          return `
+        <div class="item">
+          <div class="question-num">${i + 1}. <em>${esc(item.prompt)}</em></div>
+          <p class="blanks">${blanks}</p>
         </div>`
         }
         if (slug === 'hangman') {

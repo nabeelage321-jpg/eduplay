@@ -19,7 +19,7 @@
  *   with a plain reason, and the play page shows that message instead
  *   of the player — never a mangled game.
  * - The target list mirrors ACTIVITY_TYPE_META (TypeSelector) and
- *   ActivityPlayer's component map (34 types). If a type is added to
+ *   ActivityPlayer's component map (35 types). If a type is added to
  *   either, it must be added here with a compatibility decision, or
  *   it will fall into the incompatible default below — which is the
  *   safe direction (message, not mangled play).
@@ -68,6 +68,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'letter-wheel',     icon: '🔠', name: 'Letter Wheel' },
   { slug: 'maze-run',         icon: '🌀', name: 'Maze Run' },
   { slug: 'speed-judge',      icon: '⚡', name: 'Speed Judge' },
+  { slug: 'spell-it',         icon: '🔡', name: 'Spell It' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -177,8 +178,12 @@ export function canConvertTo(
     // Hangman guesses the answer letter by letter; Letter Wheel
     // types the answer for a letter (its own code drops items with
     // no letter, so we refuse up front instead of dropping any).
+    // Spell It spells the answer word letter by letter, so it
+    // needs the same guard: a number-only answer has nothing to
+    // spell, and refusing up front beats a free revealed round.
     case 'hangman':
     case 'letter-wheel':
+    case 'spell-it':
       return every((i) => hasLetter(i.answer))
         ? { ok: true, reason: '' }
         : {

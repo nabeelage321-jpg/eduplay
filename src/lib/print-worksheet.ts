@@ -40,7 +40,9 @@ export function normalizeWorksheetTypeSlug(slug: string | undefined | null): str
  *   (prompt + claimed answer, deterministic so worksheet and
  *   key agree) + Correct / Wrong checkboxes; the key lists the
  *   correct judgement per round, never the judgement on the
- *   student sheet.
+ *   student sheet. spell-it: clue + letter blanks (spaces as
+ *   gaps, non-letters shown), key lists the word — never on
+ *   the student sheet.
  */
 export const PRINTABLE_WORKSHEET_TYPES: ReadonlySet<string> = new Set([
   'quiz',
@@ -67,6 +69,7 @@ export const PRINTABLE_WORKSHEET_TYPES: ReadonlySet<string> = new Set([
   'jump-path',
   'aster-quiz',
   'speed-judge',
+  'spell-it',
 ])
 
 /** Deliberately NOT printable in v1, and why (shown as a plain note, never a printout). */

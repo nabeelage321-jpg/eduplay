@@ -469,6 +469,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Speed Judge',
     description_en: 'Judge true or false claims fast',
   },
+  {
+    slug: 'spell-it',
+    icon: '🔡',
+    supports_live: true,
+    supports_print: true,
+    name_en: 'Spell It',
+    name_ur: 'Spell It',
+    name_ar: 'Spell It',
+    name_hi: 'Spell It',
+    name_es: 'Spell It',
+    name_fr: 'Spell It',
+    description_en: 'Spell the answer word, letter by letter',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

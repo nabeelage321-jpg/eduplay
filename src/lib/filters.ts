@@ -81,6 +81,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'letter-wheel', label: 'Letter Wheel' },
   { value: 'maze-run', label: 'Maze Run' },
   { value: 'speed-judge', label: 'Speed Judge' },
+  { value: 'spell-it', label: 'Spell It' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

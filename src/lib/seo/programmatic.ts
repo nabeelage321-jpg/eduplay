@@ -83,6 +83,7 @@ export const DB_TYPE_BY_SLUG: Record<string, string> = {
   'letter-wheel': 'letter-wheel',
   'maze-run': 'maze-run',
   'speed-judge': 'speed-judge',
+  'spell-it': 'spell-it',
 }
 
 export interface ProgrammaticActivity {

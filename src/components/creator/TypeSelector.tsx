@@ -37,6 +37,7 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'letter-wheel',     icon: '🔠', name: 'Letter Wheel',     desc: 'Answer one definition per letter on the wheel' },
   { slug: 'maze-run',         icon: '🌀', name: 'Maze Run',         desc: 'Run the maze to the correct answer tile' },
   { slug: 'speed-judge',      icon: '⚡', name: 'Speed Judge',      desc: 'Judge true or false claims fast' },
+  { slug: 'spell-it',         icon: '🔡', name: 'Spell It',         desc: 'Spell the answer word, letter by letter' },
 ]
 
 /**
