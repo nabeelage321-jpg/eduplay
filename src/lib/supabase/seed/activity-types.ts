@@ -521,6 +521,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Claim Line',
     description_en: 'Answer to claim squares — first line wins',
   },
+  {
+    slug: 'opinion-cloud',
+    icon: '☁️',
+    supports_live: true,
+    supports_print: true,
+    name_en: 'Opinion Cloud',
+    name_ur: 'Opinion Cloud',
+    name_ar: 'Opinion Cloud',
+    name_hi: 'Opinion Cloud',
+    name_es: 'Opinion Cloud',
+    name_fr: 'Opinion Cloud',
+    description_en: 'Share your opinion — no right or wrong answers',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

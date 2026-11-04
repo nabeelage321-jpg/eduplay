@@ -85,6 +85,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'picture-answer', label: 'Picture Answer' },
   { value: 'memory-recall', label: 'Memory Recall' },
   { value: 'claim-line', label: 'Claim Line' },
+  { value: 'opinion-cloud', label: 'Opinion Cloud' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

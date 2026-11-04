@@ -51,6 +51,7 @@ const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
   'picture-answer':   lazy(() => import('./PictureAnswerActivity')),
   'memory-recall':    lazy(() => import('./MemoryRecallActivity')),
   'claim-line':       lazy(() => import('./ClaimLineActivity')),
+  'opinion-cloud':    lazy(() => import('./OpinionCloudActivity')),
 }
 
 interface ActivityPlayerProps {

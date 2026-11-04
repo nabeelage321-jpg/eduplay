@@ -43,6 +43,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'picture-answer': { prompt: 'Question about the picture', answer: 'Correct answer' },
   'memory-recall': { prompt: 'Prompt to remember', answer: 'Answer to recall' },
   'claim-line': { prompt: 'Question', answer: 'Correct answer' },
+  'opinion-cloud': { prompt: 'Statement to react to', answer: 'Not shown — opinions have no right answer' },
 }
 
 const fieldStyle: React.CSSProperties = {

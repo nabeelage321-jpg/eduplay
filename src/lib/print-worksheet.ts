@@ -62,6 +62,12 @@ export function normalizeWorksheetTypeSlug(slug: string | undefined | null): str
  *   computer opponent has no paper equivalent, so the
  *   sheet says plainly to play with a friend, taking
  *   turns, or on your own.
+ * - opinion-cloud: a KEYLESS opinion sheet — statements
+ *   with Agree / Disagree / Not sure checkboxes and a
+ *   plain "no right answers" note. There is deliberately
+ *   NO answer key page for this type: opinions have no
+ *   right answers, so a key would be a lie; the final
+ *   page states plainly that there is no key.
  */
 export const PRINTABLE_WORKSHEET_TYPES: ReadonlySet<string> = new Set([
   'quiz',
@@ -92,6 +98,7 @@ export const PRINTABLE_WORKSHEET_TYPES: ReadonlySet<string> = new Set([
   'picture-answer',
   'memory-recall',
   'claim-line',
+  'opinion-cloud',
 ])
 
 /** Deliberately NOT printable in v1, and why (shown as a plain note, never a printout). */
