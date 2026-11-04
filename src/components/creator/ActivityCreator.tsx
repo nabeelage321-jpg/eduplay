@@ -10,6 +10,7 @@ import MetaForm, { type ActivityMeta } from './MetaForm'
 import ItemEditor from './ItemEditor'
 import ActivityPreview from './ActivityPreview'
 import type { PromptDraft } from '@/lib/prompt-to-game'
+import { curriculumTagLabel, resolveCurriculumTag, type CurriculumTag } from '@/lib/curricula'
 import type { ActivityItem, SupportedLocale } from '@/types'
 
 // Lazy-loaded so the creator's first paint stays light; these panels
@@ -85,6 +86,12 @@ export default function ActivityCreator({ locale, initialType }: ActivityCreator
   // wizardRef + approved banner below make the jump unmistakable.
   const wizardRef = useRef<HTMLDivElement>(null)
   const [approvedDraftTitle, setApprovedDraftTitle] = useState<string | null>(null)
+  // WORLDWIDE CURRICULUM v1 (2026-11-04): country + syllabus tags from
+  // the approved prompt draft (validated against the seed). Null =
+  // General, no syllabus claim. Set ONLY by approveDraft below: a
+  // chapter approval (which carries no pick) resets it to null, so a
+  // chapter game can never inherit a prompt draft's syllabus tag.
+  const [curriculumTag, setCurriculumTag] = useState<CurriculumTag | null>(null)
 
   useEffect(() => { setCreatorRole(readStoredRole()); setRoleHydrated(true) }, [])
 
@@ -134,6 +141,7 @@ export default function ActivityCreator({ locale, initialType }: ActivityCreator
       imageUrl: i.imageUrl ?? '',
     })))
     setSaveOptions((o) => ({ ...o, isPublic: false }))
+    setCurriculumTag(resolveCurriculumTag(draft.countryCode, draft.syllabusSlug))
     setApprovedDraftTitle(draft.title)
     setStep(4)
     // Move the viewport to the wizard itself, after React renders step 4.
@@ -161,6 +169,11 @@ export default function ActivityCreator({ locale, initialType }: ActivityCreator
         items: items.filter((i) => i.prompt && i.answer),
         is_public: saveOptions.isPublic,
         tags: meta.tags.split(',').map((t) => t.trim()).filter(Boolean),
+        // WORLDWIDE CURRICULUM v1: the validated country + syllabus
+        // tags. The server re-validates them against the seed and
+        // stores them inside the game's content record (no migration,
+        // no new table). Absent = General, no syllabus claim.
+        ...(curriculumTag ? { curriculum_tag: curriculumTag } : {}),
       }
       const res = await fetch('/api/activities', {
         method: 'POST',
@@ -294,6 +307,11 @@ export default function ActivityCreator({ locale, initialType }: ActivityCreator
               🎮 Playing as: {ACTIVITY_TYPE_META.find((t) => t.slug === typeSlug)?.name ?? typeSlug ?? '—'}
               {typeSlug ? ' — change it in Step 1 (Type) if you want a different game.' : ''}
             </p>
+            {curriculumTag && curriculumTagLabel(curriculumTag) && (
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: '0 0 0.75rem' }}>
+                🌍 {curriculumTagLabel(curriculumTag)}
+              </p>
+            )}
             {(!meta.subject || !meta.grade) && (
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
                 ⚠️ Subject or grade is still blank. Tap “Edit details” to pick them in

@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { resolveSessionUser } from '@/lib/auth/session-user'
 import { normalizeSubjectFilter, normalizeGradeFilter, normalizeTypeFilter } from '@/lib/filters'
 import { needsApproval } from '@/lib/approval'
+import { resolveCurriculumTag } from '@/lib/curricula'
 
 // Rate limiting (simple in-memory — replace with Upstash Redis in production)
 const rateLimitMap = new Map<string, { count: number; reset: number }>()
@@ -110,6 +111,11 @@ export async function POST(req: NextRequest) {
     // the activities table stores type / language / subject / grade /
     // curriculum. Accept both so a real creator save is not rejected
     // with "Activity type is required" after auth is fixed.
+    // Curriculum tag validated once against the seed (see content).
+    const validatedCurriculumTag = resolveCurriculumTag(
+      body.curriculum_tag?.countryCode,
+      body.curriculum_tag?.syllabusSlug
+    )
     const payload = {
       title: sanitize(body.title),
       description: sanitize(body.description),
@@ -119,12 +125,21 @@ export async function POST(req: NextRequest) {
       grade: sanitize(body.grade ?? body.grade_id),
       curriculum: sanitize(body.curriculum ?? body.curriculum_id),
       teacher_id: sessionUser.userId,
-      content: Array.isArray(body.items) ? { questions: body.items.map((item: Record<string, unknown>) => ({
-        prompt: sanitize(item.prompt),
-        answer: sanitize(item.answer),
-        hint: sanitize(item.hint),
-        imageUrl: typeof item.imageUrl === 'string' ? item.imageUrl.slice(0, 500) : '',
-      })) } : { questions: [] },
+      content: Array.isArray(body.items) ? {
+        questions: body.items.map((item: Record<string, unknown>) => ({
+          prompt: sanitize(item.prompt),
+          answer: sanitize(item.answer),
+          hint: sanitize(item.hint),
+          imageUrl: typeof item.imageUrl === 'string' ? item.imageUrl.slice(0, 500) : '',
+        })),
+        // WORLDWIDE CURRICULUM v1 (2026-11-04): country + syllabus
+        // tags, validated against the seed above — never trusted from
+        // the client. Stored inside the existing content JSON, so no
+        // migration and no new table. Absent/invalid = General, no
+        // syllabus claim. The play adapter reads content.questions
+        // only, so this sibling key changes no gameplay.
+        ...(validatedCurriculumTag ? { curriculum: validatedCurriculumTag } : {}),
+      } : { questions: [] },
       // APPROVAL BATCH 2026-10-30: server-enforced, never client-chosen.
       // A student without the Creator badge gets a pending, private game
       // no matter what is_public the client sent. Client-sent approval

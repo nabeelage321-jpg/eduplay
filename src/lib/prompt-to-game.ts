@@ -36,6 +36,15 @@ export interface PromptDraft {
    */
   subject?: string
   grade?: string
+  /**
+   * WORLDWIDE CURRICULUM v1 (2026-11-04): country + syllabus picked
+   * in the creator (validated against src/lib/curricula.ts). Set only
+   * by the approval payload in PromptToGame — never by the draft route
+   * — so ActivityCreator can save them as tags instead of saving
+   * blank. Absent = "Not sure / General": no syllabus claim stored.
+   */
+  countryCode?: string
+  syllabusSlug?: string
   /** Plain-language source, shown to the creator before approval. */
   sourceNote: string
   sourceUrl?: string

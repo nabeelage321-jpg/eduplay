@@ -13,6 +13,7 @@ import { generateActivitySchema, generateBreadcrumbSchema } from '@/lib/seo/sche
 import { createServerClient } from '@/lib/supabase/server'
 import { adaptActivityItems, dbTypeOf, playerTypeKey } from '@/lib/activity-content'
 import { FILTER_GRADES, FILTER_SUBJECTS } from '@/lib/filters'
+import { curriculumTagLabel, resolveCurriculumTag } from '@/lib/curricula'
 
 // ─── Dynamic: teacher games are user content, not ISR material ───────────────
 export const dynamic = 'force-dynamic'
@@ -54,6 +55,10 @@ interface ActivityData {
   // for its private-game gate. The print button uses this, never
   // the row's questions, to decide who may print.
   isPublic: boolean
+  // WORLDWIDE CURRICULUM v1 (2026-11-04): the mandatory not-official
+  // label for a syllabus-tagged game, resolved from the seed. Null =
+  // General (no syllabus claim) — no label is shown at all.
+  curriculumLabel: string | null
 }
 
 // ─── Data fetching ─────────────────────────────────────────────────────────────
@@ -98,6 +103,7 @@ const getActivity = cache(async (id: string, locale: string): Promise<ActivityDa
         { id: 'grade-5-math-decimals-quiz', title: 'Grade 5 Decimals Quiz', type: 'Quiz' },
         { id: 'grade-5-math-fractions-match', title: 'Fractions Match Up', type: 'Match Up' },
       ],
+      curriculumLabel: null,
       isPublic: true,
     },
   }
@@ -138,10 +144,24 @@ const getActivity = cache(async (id: string, locale: string): Promise<ActivityDa
       teacherName = str((user as { name?: unknown } | null)?.name) || null
     }
 
+    // WORLDWIDE CURRICULUM v1 (2026-11-04): the syllabus tag lives in
+    // content.curriculum (written by POST /api/activities, validated
+    // against the seed). Re-validated here, so a hand-edited row can
+    // never display a syllabus label it did not earn. General games
+    // carry no tag and show no label at all.
+    const content = (row as Record<string, unknown>).content as
+      | { curriculum?: { countryCode?: unknown; syllabusSlug?: unknown } }
+      | null
+      | undefined
+    const curriculumLabel = curriculumTagLabel(
+      resolveCurriculumTag(content?.curriculum?.countryCode, content?.curriculum?.syllabusSlug)
+    )
+
     return {
       id: str((row as Record<string, unknown>).id) || id,
       title: str((row as Record<string, unknown>).title) || 'Untitled activity',
       description: str((row as Record<string, unknown>).description),
+      curriculumLabel,
       locale,
       subject: subjectLabel,
       subjectEmoji: '',
@@ -334,6 +354,12 @@ export default async function ActivityPage({
             <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.25rem' }}>
               {activity.description}
             </p>
+
+            {activity.curriculumLabel && (
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '1.25rem' }}>
+                🌍 {activity.curriculumLabel}
+              </p>
+            )}
 
             {/* Stats */}
             <div

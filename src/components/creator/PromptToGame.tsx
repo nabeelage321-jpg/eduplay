@@ -3,6 +3,13 @@
 import { useState } from 'react'
 import { PROMPT_GAME_TYPES, type PromptDraft, type PromptGameType } from '@/lib/prompt-to-game'
 import { FILTER_SUBJECTS, FILTER_GRADES } from '@/lib/filters'
+import {
+  CURRICULUM_COUNTRIES,
+  CURRICULUM_KIND_LABELS,
+  curriculumTagLabel,
+  getCurriculumCountry,
+  resolveCurriculumTag,
+} from '@/lib/curricula'
 import type { ActivityItem } from '@/types'
 
 const boxStyle: React.CSSProperties = {
@@ -163,6 +170,29 @@ export default function PromptToGame({
   const [subject, setSubject] = useState('')
   const [grade, setGrade] = useState('')
   const [prompt, setPrompt] = useState('')
+  // WORLDWIDE CURRICULUM v1 (2026-11-04): country + syllabus are
+  // OPTIONAL and default to General — the minimal-input rule survives:
+  // a free prompt of a few words with no country/syllabus choice still
+  // drafts exactly as before and stores no syllabus claim. The country
+  // box is a searchable text input (datalist): typing filters the
+  // list natively, and only an exact country name counts as a pick —
+  // anything else is General, never a guessed country.
+  const [countryInput, setCountryInput] = useState('')
+  const [countryCode, setCountryCode] = useState('')
+  const [syllabusSlug, setSyllabusSlug] = useState('')
+  const pickedCountry = countryCode ? getCurriculumCountry(countryCode) : undefined
+  const pickedSyllabus = pickedCountry?.syllabuses.find((s) => s.slug === syllabusSlug)
+  const curriculumTag = resolveCurriculumTag(countryCode || undefined, syllabusSlug || undefined)
+  const syllabusLabel = curriculumTag ? curriculumTagLabel(curriculumTag) : null
+
+  function pickCountry(text: string) {
+    setCountryInput(text)
+    const match = CURRICULUM_COUNTRIES.find(
+      (c) => c.name.toLowerCase() === text.trim().toLowerCase()
+    )
+    setCountryCode(match ? match.code : '')
+    setSyllabusSlug('')
+  }
   const [type, setType] = useState<PromptGameType>('quiz')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -204,7 +234,16 @@ export default function PromptToGame({
       const res = await fetch('/api/prompt-to-game', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt.trim(), type }),
+        // Syllabus context only: the route validates this pair against
+        // the seed and uses the syllabus NAME as Groq style context.
+        // General (no pick) sends nothing — no claim, no context.
+        body: JSON.stringify({
+          prompt: prompt.trim(),
+          type,
+          ...(curriculumTag
+            ? { countryCode: curriculumTag.countryCode, syllabusSlug: curriculumTag.syllabusSlug }
+            : {}),
+        }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || 'Could not make a draft')
@@ -227,7 +266,17 @@ export default function PromptToGame({
     // longer has a blank subject/grade (the amber warning from the
     // 2026-11-01 approve fix). Free prompts with no picks keep the
     // old behaviour: approval carries none, and the wizard warns.
-    onApprove({ ...draft, items, subject: subject || undefined, grade: grade || undefined })
+    // Same rule for curriculum: a validated pick flows into approval
+    // as tags; General flows as nothing, never a guessed claim.
+    onApprove({
+      ...draft,
+      items,
+      subject: subject || undefined,
+      grade: grade || undefined,
+      ...(curriculumTag
+        ? { countryCode: curriculumTag.countryCode, syllabusSlug: curriculumTag.syllabusSlug }
+        : {}),
+    })
     setApproved(true)
   }
 
@@ -246,6 +295,77 @@ export default function PromptToGame({
         Both make the same editable draft. Approving only fills the
         creator — nothing is published until you save it yourself.
       </p>
+
+      {/* WORLDWIDE CURRICULUM v1 (2026-11-04): country FIRST, then its
+          syllabus, then the existing subject/grade/prompt flow. Both
+          are optional: leaving them on General keeps the old behaviour
+          exactly, with no syllabus claim stored. Syllabus options come
+          only from the curated seed — never typed, never invented. */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+        <div>
+          <label htmlFor="prompt-country" style={labelStyle}>Country (optional)</label>
+          <input
+            id="prompt-country"
+            list="curriculum-country-list"
+            value={countryInput}
+            onChange={(e) => pickCountry(e.target.value)}
+            placeholder="Type to search… or leave General"
+            style={{ ...fieldStyle, minHeight: '48px' }}
+          />
+          <datalist id="curriculum-country-list">
+            {CURRICULUM_COUNTRIES.map((c) => (
+              <option key={c.code} value={c.name} />
+            ))}
+          </datalist>
+        </div>
+        <div>
+          <label htmlFor="prompt-syllabus" style={labelStyle}>Syllabus (optional)</label>
+          <select
+            id="prompt-syllabus"
+            value={syllabusSlug}
+            onChange={(e) => setSyllabusSlug(e.target.value)}
+            style={{ ...fieldStyle, minHeight: '48px' }}
+          >
+            <option value="">Not sure / General</option>
+            {pickedCountry?.syllabuses.filter((s) => s.isMain).map((s) => (
+              <option key={s.slug} value={s.slug}>
+                {s.name} ({CURRICULUM_KIND_LABELS[s.kind]})
+              </option>
+            ))}
+            {pickedCountry && pickedCountry.syllabuses.some((s) => !s.isMain) && (
+              <optgroup label="More / Other">
+                {pickedCountry.syllabuses.filter((s) => !s.isMain).map((s) => (
+                  <option key={s.slug} value={s.slug}>
+                    {s.name} ({CURRICULUM_KIND_LABELS[s.kind]})
+                  </option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+        </div>
+      </div>
+      {pickedCountry && !pickedCountry.verified && (
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
+          The syllabus list for {pickedCountry.name} is still being verified, so only General is
+          available for now — or pick International above for IB / Cambridge / Edexcel / OxfordAQA.
+        </p>
+      )}
+      {pickedSyllabus?.note && (
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
+          {pickedSyllabus.note}
+        </p>
+      )}
+      {pickedCountry?.gradeLabel && pickedCountry.gradeLabel !== 'Grade' && (
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
+          In {pickedCountry.name}, the school level is called “{pickedCountry.gradeLabel}”.
+        </p>
+      )}
+      {syllabusLabel && (
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
+          {syllabusLabel} Groq can only write questions in this syllabus&apos;s style — it cannot
+          fetch or verify the official syllabus.
+        </p>
+      )}
 
       {/* Shared subject + grade: used by BOTH modes, so the saved game
           carries them either way. Values are exact DB values. */}
@@ -438,6 +558,11 @@ export default function PromptToGame({
           <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
             Edit anything below. Approving only fills the creator — it does not publish.
           </p>
+          {syllabusLabel && (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
+              {syllabusLabel}
+            </p>
+          )}
           <DraftEditor draft={draft} onChange={setDraft} />
           <button
             type="button"

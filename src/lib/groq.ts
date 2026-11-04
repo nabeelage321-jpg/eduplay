@@ -474,10 +474,19 @@ export async function verifyGroqAnswers(
  * tests can inject a mock — the route always passes the real fetch.
  * Never throws for a provider failure: it returns a distinct result
  * the route can turn into an honest error.
+ *
+ * WORLDWIDE CURRICULUM v1 (2026-11-04): `syllabusContext` is an
+ * optional, server-validated syllabus NAME (never a client string —
+ * the route resolves it from src/lib/curricula.ts). It is CONTEXT
+ * ONLY for question style: Groq cannot fetch a syllabus, verify
+ * alignment, or reproduce official material, and the system prompt
+ * says so. The game still carries the mandatory "Not official …
+ * material" label, and the teacher still checks every question.
  */
 export async function buildGroqDraft(
   prompt: string,
-  fetchImpl: typeof fetch = fetch
+  fetchImpl: typeof fetch = fetch,
+  syllabusContext?: string
 ): Promise<GroqDraftResult> {
   const config = getGroqConfig()
   if (!config) {
@@ -501,7 +510,11 @@ export async function buildGroqDraft(
             'If you cannot give the direct answer with confidence, leave that question out instead of guessing. ' +
             'Never invent dates, statistics, names, or facts you are unsure of — leave such a question out instead. ' +
             'Wrong answers must be plausible but clearly wrong, of the same kind as the correct answer, and different from it. ' +
-            'Do not repeat the same correct answer for questions that ask different things.',
+            'Do not repeat the same correct answer for questions that ask different things.' +
+            (syllabusContext
+              ? ` Write the questions in the style typical for ${syllabusContext} topics, at the level the prompt implies. ` +
+                'This is style context only: you cannot fetch, verify, or reproduce that syllabus, and you must never claim a question is official syllabus material.'
+              : ''),
         },
         { role: 'user', content: prompt },
       ],

@@ -8,6 +8,7 @@ import {
   type PromptGameType,
 } from '@/lib/prompt-to-game'
 import { buildGroqChapterDraft, buildGroqDraft, getGroqConfig } from '@/lib/groq'
+import { getSyllabus, resolveCurriculumTag } from '@/lib/curricula'
 import type { ActivityItem } from '@/types'
 
 const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble']
@@ -41,6 +42,15 @@ export async function POST(req: NextRequest) {
     const type: PromptGameType = ALLOWED_TYPES.includes(body.type) ? body.type : 'quiz'
     const chapterText =
       typeof body.chapterText === 'string' ? body.chapterText.slice(0, 20000) : ''
+    // WORLDWIDE CURRICULUM v1 (2026-11-04): the client may send a
+    // country + syllabus pick. It is validated against the seed —
+    // never trusted as a name — and used ONLY as Groq style context
+    // on the general-prompt path below. An invalid or General pick
+    // simply means no context, never an error, never a claim.
+    const curriculumTag = resolveCurriculumTag(body.countryCode, body.syllabusSlug)
+    const syllabusContext = curriculumTag
+      ? getSyllabus(curriculumTag.countryCode, curriculumTag.syllabusSlug)?.name
+      : undefined
 
     if (!prompt) {
       return NextResponse.json({ error: 'A prompt is required' }, { status: 400 })
@@ -91,7 +101,7 @@ export async function POST(req: NextRequest) {
     // it does NOT silently fall back to random trivia, or the
     // creator would see off-topic questions and think Groq worked.
     if (getGroqConfig()) {
-      const groq = await buildGroqDraft(prompt)
+      const groq = await buildGroqDraft(prompt, fetch, syllabusContext)
       if (groq.ok) {
         const draft: PromptDraft = {
           title: prompt,
