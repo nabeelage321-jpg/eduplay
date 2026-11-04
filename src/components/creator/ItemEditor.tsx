@@ -38,6 +38,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'video-quiz': { prompt: 'Question about the video', answer: 'Correct answer' },
   'letter-wheel': { prompt: 'Definition for this letter', answer: 'Word that fits the definition' },
   'maze-run': { prompt: 'Question for this maze', answer: 'Correct answer tile' },
+  'speed-judge': { prompt: 'Question (the claim is about this)', answer: 'Correct answer (true claims use this)' },
 }
 
 const fieldStyle: React.CSSProperties = {

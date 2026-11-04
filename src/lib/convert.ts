@@ -19,7 +19,7 @@
  *   with a plain reason, and the play page shows that message instead
  *   of the player — never a mangled game.
  * - The target list mirrors ACTIVITY_TYPE_META (TypeSelector) and
- *   ActivityPlayer's component map (33 types). If a type is added to
+ *   ActivityPlayer's component map (34 types). If a type is added to
  *   either, it must be added here with a compatibility decision, or
  *   it will fall into the incompatible default below — which is the
  *   safe direction (message, not mangled play).
@@ -67,6 +67,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'video-quiz',       icon: '🎬', name: 'Video Quiz' },
   { slug: 'letter-wheel',     icon: '🔠', name: 'Letter Wheel' },
   { slug: 'maze-run',         icon: '🌀', name: 'Maze Run' },
+  { slug: 'speed-judge',      icon: '⚡', name: 'Speed Judge' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -153,8 +154,12 @@ export function canConvertTo(
     // show the prompt and check the answer (their own code handles
     // a prompt with no blank by showing the full prompt); Riddle
     // types the answer to the clue; Dictation speaks the answer
-    // with the prompt as its title. No item is dropped by any of
-    // these for a plain pair.
+    // with the prompt as its title. Speed Judge shows the prompt
+    // plus a claimed answer and the player judges it — a true
+    // claim uses the item's own answer, a false claim another
+    // item's answer, so no item is dropped and nothing is made
+    // up. No item is dropped by any of these for a plain pair.
+    case 'speed-judge':
     case 'quiz':
     case 'gameshow-quiz':
     case 'jump-path':

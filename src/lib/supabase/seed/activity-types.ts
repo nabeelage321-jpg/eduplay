@@ -456,6 +456,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Maze Run',
     description_en: 'Run the maze to the correct answer tile',
   },
+  {
+    slug: 'speed-judge',
+    icon: '⚡',
+    supports_live: true,
+    supports_print: true,
+    name_en: 'Speed Judge',
+    name_ur: 'Speed Judge',
+    name_ar: 'Speed Judge',
+    name_hi: 'Speed Judge',
+    name_es: 'Speed Judge',
+    name_fr: 'Speed Judge',
+    description_en: 'Judge true or false claims fast',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

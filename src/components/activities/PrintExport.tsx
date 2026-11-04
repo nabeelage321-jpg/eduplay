@@ -9,6 +9,7 @@ import {
   normalizeWorksheetTypeSlug,
   stableShuffle,
 } from '@/lib/print-worksheet'
+import { buildSpeedJudgeRounds } from '@/lib/speed-judge'
 
 export { isPrintableWorksheetType, normalizeWorksheetTypeSlug }
 
@@ -66,6 +67,16 @@ export function generatePrintHTML(activity: Activity): string {
   // Order worksheet: items are shuffled; the student writes the
   // correct position number beside each one.
   const orderItems = slug === 'order' ? stableShuffle(items, (it) => it.prompt + '|' + it.answer) : items
+
+  // Speed Judge worksheet: claims are DETERMINISTIC (original
+  // order, even rounds true, odd rounds the next item's answer),
+  // so the student sheet and the answer key below are built from
+  // the exact same rounds and can never drift apart. The claim
+  // itself is shown — judging it is the task, as with True/False
+  // — but the correct judgement lives ONLY in the key.
+  const speedJudgeRounds = slug === 'speed-judge'
+    ? buildSpeedJudgeRounds(items, { deterministic: true })
+    : []
   const orderPositionOf = new Map<Item, number>()
   items.forEach((it, i) => {
     orderPositionOf.set(it, i + 1)
@@ -98,6 +109,22 @@ export function generatePrintHTML(activity: Activity): string {
         <div class="match-col"><h3>Column A</h3>${left}</div>
         <div class="match-col"><h3>Column B</h3>${right}</div>
       </div>`
+  } else if (slug === 'speed-judge') {
+    itemsHTML = `
+      <p class="match-intro">Judge each claim: tick Correct if the claimed answer really answers the question, or Wrong if it does not. Judge fast — but the paper has no timer.</p>
+      ${speedJudgeRounds
+        .map(
+          (round, i) => `
+        <div class="item">
+          <div class="question-num">${i + 1}.</div>
+          <p class="prompt">${esc(round.prompt)} → <strong>${esc(round.claimedAnswer)}</strong></p>
+          <div class="tf-boxes">
+            <span class="tf-box">Correct ☐</span>
+            <span class="tf-box">Wrong ☐</span>
+          </div>
+        </div>`,
+        )
+        .join('')}`
   } else if (slug === 'order') {
     itemsHTML = `
       <p class="match-intro">Write the correct order number (1, 2, 3…) in the blank beside each item.</p>
@@ -185,6 +212,10 @@ export function generatePrintHTML(activity: Activity): string {
   } else if (slug === 'order') {
     keyHTML = items
       .map((item, i) => `<div class="answer-item">${i + 1}. ${esc(item.prompt)}</div>`)
+      .join('')
+  } else if (slug === 'speed-judge') {
+    keyHTML = speedJudgeRounds
+      .map((round, i) => `<div class="answer-item">${i + 1}. ${round.correctJudgement === 'correct' ? 'Correct' : 'Wrong'}</div>`)
       .join('')
   } else {
     keyHTML = items.map((item, i) => `<div class="answer-item">${i + 1}. ${esc(item.answer)}</div>`).join('')

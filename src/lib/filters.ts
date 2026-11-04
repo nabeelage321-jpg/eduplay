@@ -80,6 +80,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'video-quiz', label: 'Video Quiz' },
   { value: 'letter-wheel', label: 'Letter Wheel' },
   { value: 'maze-run', label: 'Maze Run' },
+  { value: 'speed-judge', label: 'Speed Judge' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

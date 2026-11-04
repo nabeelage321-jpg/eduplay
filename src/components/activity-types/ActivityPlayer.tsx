@@ -46,6 +46,7 @@ const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
   'video-quiz':       lazy(() => import('./VideoQuizActivity')),
   'letter-wheel':     lazy(() => import('./LetterWheelActivity')),
   'maze-run':         lazy(() => import('./MazeRunActivity')),
+  'speed-judge':      lazy(() => import('./SpeedJudgeActivity')),
 }
 
 interface ActivityPlayerProps {
