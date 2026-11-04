@@ -61,6 +61,13 @@ export default function JoinGameScreen({ locale }: JoinGameScreenProps) {
       const params = new URLSearchParams(window.location.search)
       const group = cleanGroupName(params.get('group') ?? '')
       if (group) setInvitationGroup(group)
+      // CHALLENGES v1 (additive only): a challenge Join button links here
+      // with ?roomCode=<PIN> (pin= accepted as an alias), so the PIN is
+      // prefilled instead of retyped. A typed code still works exactly
+      // as before, and a missing or bogus code still goes through the
+      // same lookup-then-error flow below — nothing else changed.
+      const prefilled = (params.get('roomCode') ?? params.get('pin') ?? '').trim().toUpperCase()
+      if (prefilled) setRoomCode(prefilled)
     } catch {
       /* no invitation group — join works exactly as before */
     }

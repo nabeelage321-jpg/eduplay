@@ -7,6 +7,7 @@ import Breadcrumb from '@/components/seo/Breadcrumb'
 import ActivityIdLine from '@/components/activity-types/ActivityIdLine'
 import ConvertToType from '@/components/activity-types/ConvertToType'
 import HostLiveGame from '@/components/game/HostLiveGame'
+import ChallengeMaker from '@/components/game/ChallengeMaker'
 import { generateActivitySchema, generateBreadcrumbSchema } from '@/lib/seo/schema'
 import { createServerClient } from '@/lib/supabase/server'
 import { adaptActivityItems, dbTypeOf, playerTypeKey } from '@/lib/activity-content'
@@ -405,6 +406,13 @@ export default async function ActivityPage({
               signed-in teacher who owns this game (checked against
               /api/my-activities); everyone else sees nothing here. */}
           <HostLiveGame activityId={activity.id} locale={params.locale} activityTitle={activity.title} />
+
+          {/* CHALLENGE MAKER v1 (2026-11-04, link-only): builds a shareable
+              challenge link (game + PIN + optional group + deadline) for
+              this game. The component itself only renders for the signed-in
+              teacher who owns this game; everyone else sees nothing here.
+              No server persistence in v1 — see src/lib/challenges.ts. */}
+          <ChallengeMaker activityId={activity.id} locale={params.locale} activityTitle={activity.title} />
 
           {/* Teacher attribution — only when a real name resolved;
               no invented name, no profile link without a username. */}
