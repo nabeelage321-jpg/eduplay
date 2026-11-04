@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import TypeSelector from './TypeSelector'
+import TypeSelector, { ACTIVITY_TYPE_META } from './TypeSelector'
 import RolePicker, { readStoredRole, storeRole, type CreatorRole } from './RolePicker'
 import MetaForm, { type ActivityMeta } from './MetaForm'
 import ItemEditor from './ItemEditor'
@@ -32,6 +32,17 @@ const STEPS = [
 
 interface ActivityCreatorProps {
   locale: SupportedLocale
+}
+
+/**
+ * PREVIEW-TYPE FIX (2026-11-04): which type an approved draft plays as.
+ * An existing Step 1 pick always wins over the draft's type; the draft
+ * supplies the type only when nothing has been picked yet. So Step 1
+ * Jump Path + approved Quiz draft = Jump Path Preview, and a prompt-
+ * first flow (no Step 1 pick) still previews as the draft's type.
+ */
+export function resolveApprovedType(existingType: string | null, draftType: string): string {
+  return existingType ?? draftType
 }
 
 export default function ActivityCreator({ locale }: ActivityCreatorProps) {
@@ -81,7 +92,16 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
    * game should be checked by a teacher/parent before going public.
    */
   function approveDraft(draft: PromptDraft) {
-    setTypeSlug(draft.type)
+    // PREVIEW-TYPE FIX (2026-11-04): an approved prompt/chapter draft
+    // used to overwrite the creator's Step 1 type pick with the prompt
+    // radio's type (Quiz by default — the radio only offers Quiz /
+    // Match Up / Unjumble). So a creator who picked Jump Path in Step 1
+    // and then approved a draft got a Quiz Preview, with no warning
+    // that the type had changed. A Step 1 pick now wins: the draft
+    // fills title/items/subject/grade, but the type only comes from
+    // the draft when no type has been picked yet. The creator can
+    // still change the type afterwards in Step 1.
+    setTypeSlug((prev) => resolveApprovedType(prev, draft.type))
     setMeta((m) => ({
       ...m,
       title: draft.title,
@@ -227,6 +247,10 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: '0 0 0.75rem' }}>
               {items.filter((i) => i.prompt && i.answer).length} questions filled in below.
               This game is 🔒 Private by default — nothing is published until you save it.
+            </p>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: '0 0 0.75rem' }}>
+              🎮 Playing as: {ACTIVITY_TYPE_META.find((t) => t.slug === typeSlug)?.name ?? typeSlug ?? '—'}
+              {typeSlug ? ' — change it in Step 1 (Type) if you want a different game.' : ''}
             </p>
             {(!meta.subject || !meta.grade) && (
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
