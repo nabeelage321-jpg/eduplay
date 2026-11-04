@@ -96,7 +96,12 @@ export default function ReportView({ pin }: ReportViewProps) {
         📊 Teacher report
       </p>
       <h1 style={{ fontSize: '2rem', fontWeight: 800, marginTop: '0.5rem' }}>
-        {title ?? (titleFailed ? 'Session report' : 'Loading report…')}
+        {/* The game-title fetch only runs for a ready report with an
+            activityId, so the heading must NOT wait on it: once the
+            report state itself is finished (rows, "No results yet",
+            or unavailable), the heading is finished too. Only while
+            the report is actually loading may it read "Loading…". */}
+        {title ?? (report.kind === 'loading' ? 'Loading report…' : 'Session report')}
       </h1>
       {titleFailed ? (
         <p style={{ color: 'var(--color-text-secondary)' }}>

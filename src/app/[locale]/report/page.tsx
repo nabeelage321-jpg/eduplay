@@ -27,6 +27,9 @@ export default function ReportPage({ searchParams }: ReportPageProps) {
           <p style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-primary)' }}>
             📊 Teacher report
           </p>
+          <h1 style={{ fontSize: '2rem', fontWeight: 800, marginTop: '0.5rem' }}>
+            Session report
+          </h1>
           <p style={{ marginTop: '1rem', fontWeight: 600 }}>
             This link has no PIN, so no report can be shown. Open a report from a challenge
             view&apos;s &ldquo;View report&rdquo; link.
