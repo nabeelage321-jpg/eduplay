@@ -19,13 +19,14 @@
  *   with a plain reason, and the play page shows that message instead
  *   of the player — never a mangled game.
  * - The target list mirrors ACTIVITY_TYPE_META (TypeSelector) and
- *   ActivityPlayer's component map (39 types). If a type is added to
+ *   ActivityPlayer's component map (40 types). If a type is added to
  *   either, it must be added here with a compatibility decision, or
  *   it will fall into the incompatible default below — which is the
  *   safe direction (message, not mangled play).
  */
 
 import type { ActivityItem } from '@/types'
+import { parseNumberAnswer } from '@/lib/number-slider'
 
 export interface ConvertTarget {
   slug: string
@@ -73,6 +74,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'memory-recall',    icon: '💭', name: 'Memory Recall' },
   { slug: 'claim-line',       icon: '🎯', name: 'Claim Line' },
   { slug: 'opinion-cloud',    icon: '☁️', name: 'Opinion Cloud' },
+  { slug: 'number-slider',    icon: '🎚️', name: 'Number Slider' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -198,6 +200,18 @@ export function canConvertTo(
     case 'claim-line':
     case 'opinion-cloud':
       return { ok: true, reason: '' }
+
+    // Number Slider slides a marker to a number on a line, so
+    // it needs every answer to BE a number: a word answer
+    // has no position on the line, and refusing up front
+    // beats dropping that item (convert never drops).
+    case 'number-slider':
+      return every((i) => parseNumberAnswer(i.answer) !== null)
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason: 'Number Slider needs every answer to be a number — some answers here are words, not numbers.',
+          }
 
     // Hangman guesses the answer letter by letter; Letter Wheel
     // types the answer for a letter (its own code drops items with

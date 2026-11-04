@@ -44,6 +44,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'memory-recall': { prompt: 'Prompt to remember', answer: 'Answer to recall' },
   'claim-line': { prompt: 'Question', answer: 'Correct answer' },
   'opinion-cloud': { prompt: 'Statement to react to', answer: 'Not shown — opinions have no right answer' },
+  'number-slider': { prompt: 'Question', answer: 'Number answer' },
 }
 
 const fieldStyle: React.CSSProperties = {

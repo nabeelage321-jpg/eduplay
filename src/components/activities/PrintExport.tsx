@@ -12,6 +12,7 @@ import {
 import { buildSpeedJudgeRounds } from '@/lib/speed-judge'
 import { buildPictureAnswerRounds } from '@/lib/picture-answer'
 import { buildClaimLineQuestions } from '@/lib/claim-line'
+import { buildNumberSliderLine, buildNumberSliderRounds, formatLineValue } from '@/lib/number-slider'
 import { spellItCells } from '@/lib/spell-it'
 
 export { isPrintableWorksheetType, normalizeWorksheetTypeSlug }
@@ -104,6 +105,20 @@ export function generatePrintHTML(activity: Activity): string {
   const claimLineQuestions = slug === 'claim-line'
     ? buildClaimLineQuestions(items, { deterministic: true })
     : []
+  // Number Slider worksheet: rounds are DETERMINISTIC
+  // (original order) and the line is built from those same
+  // rounds' answers, so the student sheet and the answer
+  // key below are built from the exact same rounds and line
+  // and can never drift apart. Only questions with a
+  // number answer appear — a word answer has no position
+  // on the line, so the sheet says so plainly instead of
+  // forcing it. The answer lives ONLY in the key.
+  const numberSliderRounds = slug === 'number-slider'
+    ? buildNumberSliderRounds(items, { deterministic: true })
+    : []
+  const numberSliderLine = numberSliderRounds.length > 0
+    ? buildNumberSliderLine(numberSliderRounds.map((r) => r.answer))
+    : null
   const orderPositionOf = new Map<Item, number>()
   items.forEach((it, i) => {
     orderPositionOf.set(it, i + 1)
@@ -207,6 +222,34 @@ export function generatePrintHTML(activity: Activity): string {
           <div class="options">${stableShuffle(q.options, (opt) => opt)
             .map((opt, oi) => `<span class="opt">☐ ${String.fromCharCode(65 + oi)}) ${esc(opt)}</span>`)
             .join('')}</div>
+        </div>`,
+        )
+        .join('')}`
+  } else if (slug === 'number-slider') {
+    // Number-line worksheet: the prompt plus the game's
+    // shared line to mark by hand. The line is drawn from
+    // the same rounds as the key, with labelled ticks at
+    // min, 25%, 50%, 75%, max — the student marks their
+    // answer on the line. No value is ever printed on
+    // the student sheet; the exact value lives ONLY in
+    // the key. Non-numeric items are skipped with a plain
+    // note, never forced onto the line.
+    const lineTicks = numberSliderLine ? numberSliderLine.ticks.map((t) => formatLineValue(t)) : []
+    itemsHTML = `
+      <p class="match-intro">Mark your answer on the number line for each question. Only questions with a number answer appear here — a question whose answer is not a number has no position on the line.</p>
+      ${numberSliderRounds
+        .map(
+          (round, i) => `
+        <div class="item">
+          <div class="question-num">${i + 1}.</div>
+          <p class="prompt">${esc(round.prompt)}</p>
+          <div style="border-top:3px solid #333;position:relative;height:18px;margin:0.9rem 0 0.2rem;">
+            ${lineTicks.map((_, ti) => `<span style="position:absolute;left:${ti * 25}%;top:-7px;width:12px;height:12px;border-radius:50%;background:#6366f1;transform:translateX(-50%);display:inline-block;"></span>`).join('')}
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#555;margin-bottom:0.3rem;">
+            ${lineTicks.map((t) => `<span>${esc(t)}</span>`).join('')}
+          </div>
+          <p style="font-size:0.875rem;color:#555;">Mark your answer on the line above ☐</p>
         </div>`,
         )
         .join('')}`
@@ -344,6 +387,14 @@ export function generatePrintHTML(activity: Activity): string {
     // options cannot be reverse-engineered from it.
     keyHTML = claimLineQuestions
       .map((q, i) => `<div class="answer-item">${i + 1}. ${esc(q.answer)}</div>`)
+      .join('')
+  } else if (slug === 'number-slider') {
+    // Keyed from the same deterministic rounds as the
+    // sheet (original item order, numeric items only),
+    // so sheet and key can never drift apart — and the
+    // key lists the exact value, never on the sheet.
+    keyHTML = numberSliderRounds
+      .map((r, i) => `<div class="answer-item">${i + 1}. ${esc(r.answerText)}</div>`)
       .join('')
   } else {
     keyHTML = items.map((item, i) => `<div class="answer-item">${i + 1}. ${esc(item.answer)}</div>`).join('')

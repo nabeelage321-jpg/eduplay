@@ -534,6 +534,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Opinion Cloud',
     description_en: 'Share your opinion — no right or wrong answers',
   },
+  {
+    slug: 'number-slider',
+    icon: '🎚️',
+    supports_live: true,
+    supports_print: true,
+    name_en: 'Number Slider',
+    name_ur: 'Number Slider',
+    name_ar: 'Number Slider',
+    name_hi: 'Number Slider',
+    name_es: 'Number Slider',
+    name_fr: 'Number Slider',
+    description_en: 'Slide to the number on the line',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

@@ -68,6 +68,12 @@ export function normalizeWorksheetTypeSlug(slug: string | undefined | null): str
  *   NO answer key page for this type: opinions have no
  *   right answers, so a key would be a lie; the final
  *   page states plainly that there is no key.
+ * - number-slider: prompt + the game's shared number line
+ *   to mark by hand (same line the player slides on, so
+ *   sheet and key can never drift), key lists the exact
+ *   value — never on the student sheet. Only questions
+ *   with a number answer appear; a word answer has no
+ *   position on the line, so the sheet says so plainly.
  */
 export const PRINTABLE_WORKSHEET_TYPES: ReadonlySet<string> = new Set([
   'quiz',
@@ -99,6 +105,7 @@ export const PRINTABLE_WORKSHEET_TYPES: ReadonlySet<string> = new Set([
   'memory-recall',
   'claim-line',
   'opinion-cloud',
+  'number-slider',
 ])
 
 /** Deliberately NOT printable in v1, and why (shown as a plain note, never a printout). */

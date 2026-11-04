@@ -86,6 +86,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'memory-recall', label: 'Memory Recall' },
   { value: 'claim-line', label: 'Claim Line' },
   { value: 'opinion-cloud', label: 'Opinion Cloud' },
+  { value: 'number-slider', label: 'Number Slider' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [
