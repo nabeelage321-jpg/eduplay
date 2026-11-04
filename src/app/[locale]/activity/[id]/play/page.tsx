@@ -11,6 +11,7 @@ import ConvertToType from '@/components/activity-types/ConvertToType'
 import ActivityIdLine from '@/components/activity-types/ActivityIdLine'
 import ShareGameButton from '@/components/home/ShareGameButton'
 import SoundToggle from '@/components/activity-types/SoundToggle'
+import InteractiveSoundToggle from '@/components/activity-types/InteractiveSoundToggle'
 // STREAK v1 (2026-11-04, master-list part 7): device-local streak +
 // levels, recorded only here, on a real finish. Preview has its own
 // handler and never touches this; game scoring is never altered.
@@ -342,7 +343,22 @@ function PlayPageInner() {
             {isPending ? '⏳ Waiting for teacher/parent approval' : '✕ Not approved'}
           </span>
         )}
-        <SoundToggle />
+        {/* MATCH UP SOUNDS 2026-11-04: the header toggle and the
+            in-player toggle must drive ONE setting for Match Up.
+            The header's old SoundToggle ('eduplay-sound-on',
+            default muted) is a different key from the interactive
+            setting ('eduplay-interactive-sound-on', default ON)
+            that Match Up's sounds read, so for Match Up — and
+            only Match Up, keyed on the EFFECTIVE type so a
+            ?as=match-up converted view counts too — the header
+            renders the interactive toggle instead. Both toggles
+            then stay in sync via the interactive storage event.
+            Every other type's header is untouched. */}
+        {effectiveActivity && dbTypeOf(effectiveActivity) === 'match-up' ? (
+          <InteractiveSoundToggle />
+        ) : (
+          <SoundToggle />
+        )}
         {/* TIMER FIX 2026-11-03, extended 2026-11-04 to Match Up:
             hidden for shell-wrapped types, whose shell header
             already shows the single elapsed time. Showing this too

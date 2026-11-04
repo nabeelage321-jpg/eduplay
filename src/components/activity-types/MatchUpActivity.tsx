@@ -5,6 +5,8 @@ import { motion } from 'framer-motion'
 import type { ActivityProps, ActivityCompletion } from './shared'
 import { SCORE_PER_CORRECT, shuffleArray, isRTL } from './shared'
 import PlayShell from './PlayShell'
+import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
+import InteractiveSoundToggle from './InteractiveSoundToggle'
 
 interface MatchItem { id: string; prompt: string; answer: string }
 
@@ -21,7 +23,8 @@ interface MatchItem { id: string; prompt: string; answer: string }
  *
  * Deliberately NOT in this batch: a How-to-Play page (Match Up has
  * none today — adding one is a separate item, not bundled here),
- * any sound change (Match Up has no sounds today), any scoring /
+ * any sound change (Match Up has no sounds today — SUPERSEDED
+ * 2026-11-04 by the sounds batch below), any scoring /
  * lives / timer / win-rule change, and any other type's player.
  * The only other file touched is the saved-game play page, which
  * extends its existing Quiz-only single-timer rule to Match Up
@@ -35,6 +38,33 @@ interface MatchItem { id: string; prompt: string; answer: string }
  * all taps while paused, so no new match can start during a
  * pause; the flash clearing mid-pause is cosmetic only and
  * changes no score, match, or progress.
+ *
+ * SOUNDS BATCH (2026-11-04, owner-ordered pre-launch light work,
+ * Match Up ONLY): the shared interactive sound system (Letter
+ * Wheel / Jump Path pattern) — correct match plays the correct
+ * arpeggio, a wrong match plays the wrong buzz, and matching
+ * every pair plays the win fanfare once (Letter Wheel's
+ * ref-guarded finish-sound effect). Sounds are an extra layer
+ * only: colour + text feedback is unchanged, and a wrong match
+ * still costs nothing. The toggle is the shared
+ * InteractiveSoundToggle, default ON (no stored choice means
+ * ON), rendered in the Letter Wheel placement pattern — a
+ * top-right "Sound" row during play and centred on the finish
+ * view. Header-toggle finding (audited this batch): the
+ * saved-game play page header renders the OLD SoundToggle
+ * ('eduplay-sound-on' key, default MUTED, playGameSound),
+ * which is a DIFFERENT setting from the interactive key
+ * ('eduplay-interactive-sound-on', default ON) — so the header
+ * toggle does NOT control Letter Wheel / Jump Path sounds
+ * today. For Match Up only, the play page header now renders
+ * InteractiveSoundToggle when the EFFECTIVE type is match-up
+ * (original Match Up, and ?as=match-up converted views, which
+ * share this same player and therefore inherit these sounds
+ * automatically) — header toggle and in-player toggle then
+ * drive the same setting and stay in sync via the existing
+ * storage event. Every other type's header is untouched.
+ * No rule change, no How-to-Play, no timer, no lives, no
+ * other type's player, no sitemap change.
  */
 
 interface MatchUpGameProps extends ActivityProps {
@@ -49,6 +79,7 @@ function MatchUpGame({ items, locale, onComplete, onProgress }: MatchUpGameProps
   const [wrongFlash, setWrongFlash] = useState<string | null>(null)
   const [score, setScore] = useState(0)
   const [finished, setFinished] = useState(false)
+  const finishedSoundRef = useRef(false)
   const rtl = isRTL(locale)
 
   useEffect(() => {
@@ -60,6 +91,16 @@ function MatchUpGame({ items, locale, onComplete, onProgress }: MatchUpGameProps
   // Lift the real score and finished flag to the shell header, so
   // the header shows the same score the end screen reports.
   useEffect(() => { onProgress(score, finished) }, [score, finished, onProgress])
+
+  // Finish sound once: win fanfare on All Matched. Sound only —
+  // no rule change. (Letter Wheel pattern: ref guard so a
+  // re-render never replays it.)
+  useEffect(() => {
+    if (!finished) { finishedSoundRef.current = false; return }
+    if (finishedSoundRef.current) return
+    finishedSoundRef.current = true
+    playEduSound('win', readInteractiveSoundOn())
+  }, [finished])
 
   function selectLeft(id: string) {
     if (matched.has(id)) return
@@ -75,8 +116,10 @@ function MatchUpGame({ items, locale, onComplete, onProgress }: MatchUpGameProps
       setMatched(newMatched)
       setScore((s) => s + SCORE_PER_CORRECT)
       setSelected(null)
+      playEduSound('correct', readInteractiveSoundOn())
       if (newMatched.size === pairs.length) { setFinished(true); onComplete(score + SCORE_PER_CORRECT) }
     } else {
+      playEduSound('wrong', readInteractiveSoundOn())
       setWrongFlash(answer)
       setTimeout(() => setWrongFlash(null), 600)
     }
@@ -88,11 +131,17 @@ function MatchUpGame({ items, locale, onComplete, onProgress }: MatchUpGameProps
       <div style={{ fontSize: '3rem' }}>🎯</div>
       <h2 style={{ fontFamily: 'var(--font-display)', marginTop: '0.5rem' }}>All Matched!</h2>
       <p style={{ color: 'var(--color-text-secondary)' }}>Score: {score}</p>
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.25rem' }}>
+        <InteractiveSoundToggle />
+      </div>
     </motion.div>
   )
 
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', justifyContent: 'flex-end', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+        Sound <InteractiveSoundToggle />
+      </div>
       <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', marginBottom: '1rem', fontSize: '0.9rem' }}>
         Select a prompt, then select its matching answer
       </p>
