@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { useLiveSessionPolling } from '@/lib/hooks/useLiveSessionPolling'
+import {
+  cleanGroupName,
+  loadGroupName,
+  loadGuestNicknames,
+  rememberGuestNickname,
+  saveGroupName,
+} from '@/lib/guests'
 
 /**
  * Batch 3 — INTERIM live room (teacher-host + student-join, polling).
@@ -61,6 +68,28 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
 
   const { session, players, error } = useLiveSessionPolling(sessionId, 3000)
 
+  // GUESTS/GROUPS v1 (device-local only, see src/lib/guests.ts):
+  // optional group name on the host side, stored on this device
+  // keyed by session id and room code and shown above the
+  // leaderboard; previous nicknames on the join side, offered as
+  // tap-to-pick chips. No group name = exactly as before. No
+  // database column, migration, or API change is involved, so a
+  // group name is not server-persistent on other devices on its
+  // own — that is phase 2, not this batch.
+  const [groupName, setGroupName] = useState('')
+  const [displayGroup, setDisplayGroup] = useState<string | null>(null)
+  const [previousNicknames, setPreviousNicknames] = useState<string[]>([])
+  useEffect(() => {
+    setPreviousNicknames(loadGuestNicknames())
+  }, [])
+  useEffect(() => {
+    if (!sessionId) {
+      setDisplayGroup(null)
+      return
+    }
+    setDisplayGroup(loadGroupName({ sessionId, roomCode: session?.room_code ?? null }))
+  }, [sessionId, session?.room_code])
+
   async function postJson(url: string, body: unknown) {
     const res = await fetch(url, {
       method: 'POST',
@@ -81,6 +110,11 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
     })
     setBusy(false)
     if (!ok) { setMessage(data.error ?? 'Could not create session.'); return }
+    const group = cleanGroupName(groupName)
+    if (group) {
+      saveGroupName({ sessionId: data.sessionId, roomCode: data.roomCode, name: group })
+      setDisplayGroup(group)
+    }
     setSessionId(data.sessionId)
     setMessage(`Session created. Share room code: ${data.roomCode}`)
   }
@@ -96,6 +130,8 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
     const { ok, data } = await postJson(`/api/live-sessions/${id}/join`, { nickname: nickname.trim() })
     setBusy(false)
     if (!ok) { setMessage(data.error ?? 'Could not join session.'); return }
+    rememberGuestNickname(nickname.trim())
+    setDisplayGroup(loadGroupName({ sessionId: id, roomCode: code }))
     setSessionId(id)
     setPlayerId(data.playerId)
     setMessage(`Joined as ${data.nickname}.`)
@@ -195,11 +231,32 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
               ) : null}
               <input value={activityId} onChange={(e) => setActivityId(e.target.value)} placeholder="Activity id (from a saved activity)" aria-label="Activity id" style={inputStyle} />
               <input value={teacherName} onChange={(e) => setTeacherName(e.target.value)} placeholder="Your name (optional)" aria-label="Teacher name" style={inputStyle} />
+              <input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="Group name (optional)" aria-label="Group name" maxLength={30} style={inputStyle} />
               <button onClick={createSession} disabled={busy} style={bigBtn}>{busy ? 'Creating…' : 'Create session →'}</button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <input value={roomCodeInput} onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())} placeholder="Room code (6 letters)" aria-label="Room code" maxLength={6} style={inputStyle} />
+              {previousNicknames.length > 0 ? (
+                <div>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: '0 0 0.5rem' }}>
+                    Played before on this device? Tap your nickname:
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {previousNicknames.map((previous) => (
+                      <button
+                        key={previous}
+                        type="button"
+                        onClick={() => setNickname(previous)}
+                        aria-label={`Use nickname ${previous}`}
+                        style={{ padding: '0.5rem 0.9rem', borderRadius: 'var(--radius)', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        {previous}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <input value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Your nickname" aria-label="Nickname" maxLength={20} style={inputStyle} />
               <button onClick={lookupAndJoin} disabled={busy} style={bigBtn}>{busy ? 'Joining…' : 'Join game →'}</button>
             </div>
@@ -233,7 +290,10 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
               </p>
             </div>
           )}
-          <h3 style={{ fontFamily: 'var(--font-display)', marginTop: '1.5rem' }}>🏆 Live leaderboard</h3>
+          {displayGroup ? (
+            <p style={{ fontWeight: 700, marginTop: '1.5rem', marginBottom: 0 }}>👥 Group: {displayGroup}</p>
+          ) : null}
+          <h3 style={{ fontFamily: 'var(--font-display)', marginTop: displayGroup ? '0.5rem' : '1.5rem' }}>🏆 Live leaderboard</h3>
           {players.length === 0 ? (
             <p style={{ color: 'var(--color-text-muted)' }}>No players yet. Share the room code to invite students.</p>
           ) : (

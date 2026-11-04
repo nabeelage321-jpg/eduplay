@@ -1,11 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useGameStore } from '@/lib/store/game-store'
+import {
+  cleanGroupName,
+  loadGuestNicknames,
+  rememberGuestNickname,
+  saveGroupName,
+} from '@/lib/guests'
 
 interface JoinGameScreenProps {
   locale: string
@@ -38,6 +44,27 @@ export default function JoinGameScreen({ locale }: JoinGameScreenProps) {
   const [nickname, setNickname] = useState('')
   const [isValidating, setIsValidating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // GUESTS/GROUPS v1 (device-local only, see src/lib/guests.ts):
+  // previous nicknames typed on this device, offered as tap-to-pick
+  // chips — an optional shortcut, never a requirement and never a
+  // login wall; and a group name from the host's invitation link
+  // (?group=), shown on this page so a guest knows which group the
+  // session belongs to. Neither is collected from, or sent to, a
+  // server; the group name is stored on this device keyed by the
+  // session once the code lookup succeeds.
+  const [previousNicknames, setPreviousNicknames] = useState<string[]>([])
+  const [invitationGroup, setInvitationGroup] = useState<string | null>(null)
+  useEffect(() => {
+    setPreviousNicknames(loadGuestNicknames())
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const group = cleanGroupName(params.get('group') ?? '')
+      if (group) setInvitationGroup(group)
+    } catch {
+      /* no invitation group — join works exactly as before */
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -92,6 +119,14 @@ export default function JoinGameScreen({ locale }: JoinGameScreenProps) {
         return
       }
 
+      // 1b. Remember a group name from the host's invitation, keyed
+      // by this session, so the session/leaderboard view on this
+      // device can show it. Sessions without a group name skip this
+      // and behave exactly as before.
+      if (invitationGroup) {
+        saveGroupName({ sessionId: session.id, roomCode: code, name: invitationGroup })
+      }
+
       // 2. Register the player on the session (same as /live does),
       // so the live leaderboard sees this player.
       const joinRes = await fetch(`/api/live-sessions/${session.id}/join`, {
@@ -111,7 +146,10 @@ export default function JoinGameScreen({ locale }: JoinGameScreenProps) {
       }
 
       // 3. Only now navigate — to the session's REAL activity id,
-      // never to activity 0.
+      // never to activity 0. Remember this nickname on this device
+      // so a returning guest can tap it next time instead of
+      // retyping it; the join itself is unchanged.
+      rememberGuestNickname(nickname.trim())
       joinGame(code, nickname.trim())
       router.push(`/${locale}/activity/${activityId}/play?roomCode=${encodeURIComponent(code)}`)
     } catch {
@@ -156,6 +194,12 @@ export default function JoinGameScreen({ locale }: JoinGameScreenProps) {
             {t('enterCodeNickname')}
           </p>
 
+          {invitationGroup ? (
+            <p className="mb-4 p-3 rounded-lg text-center font-semibold" style={{ backgroundColor: 'var(--color-surface-alt)', color: 'var(--color-text-primary)' }}>
+              👥 Joining group: {invitationGroup}
+            </p>
+          ) : null}
+
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label htmlFor="room-code" className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
@@ -182,6 +226,40 @@ export default function JoinGameScreen({ locale }: JoinGameScreenProps) {
                 aria-label={t('roomCode')}
               />
             </div>
+
+            {previousNicknames.length > 0 ? (
+              <div className="mb-4">
+                <p className="text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                  Played before on this device? Tap your nickname:
+                </p>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {previousNicknames.map((previous) => (
+                    <button
+                      key={previous}
+                      type="button"
+                      onClick={() => {
+                        setNickname(previous)
+                        setError(null)
+                      }}
+                      aria-label={`Use nickname ${previous}`}
+                      className="px-3 py-2 rounded-lg border-2 font-semibold"
+                      style={{
+                        borderColor: 'var(--color-border)',
+                        backgroundColor: 'var(--color-background)',
+                        color: 'var(--color-text-primary)',
+                        minHeight: 40,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {previous}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs mt-2" style={{ color: 'var(--color-text-muted)' }}>
+                  Saved only on this device. You can still type a different nickname below.
+                </p>
+              </div>
+            ) : null}
 
             <div className="mb-4">
               <label htmlFor="nickname" className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>

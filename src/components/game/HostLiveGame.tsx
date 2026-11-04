@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useLiveSessionPolling } from '@/lib/hooks/useLiveSessionPolling'
+import { cleanGroupName, saveGroupName } from '@/lib/guests'
 
 /**
  * ONE-CLICK HOST — first launch blocker (2026-11-03).
@@ -56,6 +57,17 @@ export default function HostLiveGame({ activityId, locale, activityTitle }: Host
   const [actionMessage, setActionMessage] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
 
+  // GUESTS/GROUPS v1 (device-local only, see src/lib/guests.ts):
+  // the host may optionally name the session's group. The name is
+  // stored on this device keyed by session id and room code, shown
+  // above the leaderboard below, and included in the share message
+  // so invited guests see it. No name = exactly as before; no
+  // database column, migration, or API change is involved, so the
+  // name is not server-persistent on other devices on its own —
+  // that is phase 2, not this batch.
+  const [groupName, setGroupName] = useState('')
+  const [savedGroup, setSavedGroup] = useState<string | null>(null)
+
   const { session, players, error: pollError, refresh } = useLiveSessionPolling(
     created ? created.sessionId : null,
     3000,
@@ -85,8 +97,9 @@ export default function HostLiveGame({ activityId, locale, activityTitle }: Host
 
   const joinUrl = `https://eduplay-self.vercel.app/${locale}/join`
   const roomCode = created ? created.roomCode : ''
+  const groupSuffix = savedGroup ? ` Group: ${savedGroup}.` : ''
   const shareText = created
-    ? `Join my EduPlay game "${activityTitle}"! Room code: ${roomCode}. Go to ${joinUrl} and enter the code.`
+    ? `Join my EduPlay game "${activityTitle}"!${groupSuffix} Room code: ${roomCode}. Go to ${joinUrl} and enter the code.`
     : ''
   const status = session ? session.status : 'waiting'
 
@@ -124,6 +137,11 @@ export default function HostLiveGame({ activityId, locale, activityTitle }: Host
         return
       }
       setCreated({ sessionId: data.sessionId, roomCode: data.roomCode })
+      const group = cleanGroupName(groupName)
+      if (group) {
+        saveGroupName({ sessionId: data.sessionId, roomCode: data.roomCode, name: group })
+        setSavedGroup(group)
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create a live room.')
     } finally {
@@ -224,6 +242,35 @@ export default function HostLiveGame({ activityId, locale, activityTitle }: Host
             One click creates a live room for this game — no activity id to type, no separate
             live page to visit. Students join at{' '}
             <strong>{joinUrl}</strong> with the room code.
+          </p>
+          <label
+            htmlFor="host-group-name"
+            style={{ display: 'block', color: 'var(--color-text-primary)', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.375rem' }}
+          >
+            Group name (optional)
+          </label>
+          <input
+            id="host-group-name"
+            type="text"
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+            placeholder="E.g., Class 5A — leave blank for no group"
+            maxLength={30}
+            autoComplete="off"
+            style={{
+              width: '100%',
+              padding: '0.625rem 0.875rem',
+              borderRadius: 'var(--radius)',
+              border: '2px solid var(--color-border)',
+              background: 'var(--color-surface-alt)',
+              color: 'var(--color-text-primary)',
+              marginBottom: '1rem',
+              fontSize: '0.95rem',
+            }}
+          />
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '-0.5rem', marginBottom: '1rem' }}>
+            Shown above the leaderboard here and in your share message. Guests join with the
+            room code exactly as before.
           </p>
           <button type="button" onClick={createSession} disabled={busy} style={btnPrimary}>
             {busy ? 'Creating room…' : '🎮 Host live game'}
@@ -331,7 +378,12 @@ export default function HostLiveGame({ activityId, locale, activityTitle }: Host
           ) : null}
           {error ? <p style={{ color: 'var(--color-danger)' }}>{error}</p> : null}
 
-          <h3 style={{ fontFamily: 'var(--font-display)', marginTop: '1.25rem' }}>
+          {savedGroup ? (
+            <p style={{ color: 'var(--color-text-primary)', fontWeight: 700, marginTop: '1.25rem', marginBottom: 0 }}>
+              👥 Group: {savedGroup}
+            </p>
+          ) : null}
+          <h3 style={{ fontFamily: 'var(--font-display)', marginTop: savedGroup ? '0.5rem' : '1.25rem' }}>
             🏆 Live leaderboard
           </h3>
           {pollError ? (
