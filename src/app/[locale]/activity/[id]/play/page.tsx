@@ -179,17 +179,25 @@ function PlayPageInner() {
   // Time instead. Every other type is unchanged: it has no shell
   // yet, so this page timer still runs for it exactly as before,
   // and it will be unified the same way when its shell lands.
-  // Converted Quiz must behave exactly like original Quiz (single
-  // shell timer), and converted FROM Quiz must behave like its new
-  // type (page timer, as that type normally runs). The effective
+  // A converted shell-wrapped type must behave exactly like the
+  // original (single shell timer), and a type converted FROM a
+  // shell-wrapped type must behave like its new type (page timer,
+  // as that type normally runs). The effective
   // type — not the saved type — decides, so converting can never
   // resurrect the double timer the 2026-11-03 fix removed.
-  const isQuiz = effectiveActivity ? dbTypeOf(effectiveActivity) === 'quiz' : false
+  // PLAYSHELL ROLLOUT 2026-11-04, FIRST TYPE: Match Up joins Quiz
+  // here — its shell lands in this batch, so it is unified the
+  // same way (page timer off, shell elapsed as the final Time).
+  // Every other type is still unchanged: no shell yet, so this
+  // page timer still runs for it exactly as before.
+  const isShellWrapped = effectiveActivity
+    ? ['quiz', 'match-up'].includes(dbTypeOf(effectiveActivity))
+    : false
   useEffect(() => {
-    if (!activity || finalScore !== null || isQuiz) return
+    if (!activity || finalScore !== null || isShellWrapped) return
     timerRef.current = setInterval(() => setElapsed((t) => t + 1), 1000)
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [activity, finalScore, isQuiz])
+  }, [activity, finalScore, isShellWrapped])
 
   function handleComplete(score: number, details?: ActivityCompletion) {
     if (timerRef.current) clearInterval(timerRef.current)
@@ -202,9 +210,9 @@ function PlayPageInner() {
       setStreakResult(recordFinish(score))
     }
     setFinalScore(score)
-    // Quiz: the shell's elapsed (0-based from play start). Other
-    // types: details carry no elapsed, so fall back to this page's
-    // own timer, exactly as before.
+    // Shell-wrapped types: the shell's elapsed (0-based from play
+    // start). Other types: details carry no elapsed, so fall back
+    // to this page's own timer, exactly as before.
     setFinalElapsed(details?.elapsedSeconds ?? elapsed)
   }
 
@@ -335,10 +343,11 @@ function PlayPageInner() {
           </span>
         )}
         <SoundToggle />
-        {/* TIMER FIX 2026-11-03: hidden for Quiz, whose shell header
+        {/* TIMER FIX 2026-11-03, extended 2026-11-04 to Match Up:
+            hidden for shell-wrapped types, whose shell header
             already shows the single elapsed time. Showing this too
             would leave two elapsed timers on one screen again. */}
-        {!isQuiz && (
+        {!isShellWrapped && (
           <span style={{ color: 'var(--color-text-muted)', fontFamily: 'monospace', fontSize: '1rem', flexShrink: 0 }}>
             {formatTime(elapsed)}
           </span>

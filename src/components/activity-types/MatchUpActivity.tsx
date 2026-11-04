@@ -1,13 +1,47 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
-import type { ActivityProps } from './shared'
+import type { ActivityProps, ActivityCompletion } from './shared'
 import { SCORE_PER_CORRECT, shuffleArray, isRTL } from './shared'
+import PlayShell from './PlayShell'
 
 interface MatchItem { id: string; prompt: string; answer: string }
 
-export default function MatchUpActivity({ items, locale, onComplete }: ActivityProps) {
+/**
+ * PLAYSHELL ROLLOUT, FIRST TYPE (2026-11-04): Match Up is the first
+ * unwrapped type to get the shared shell. Why Match Up first: it has
+ * no timer, no lives, and no pause of its own, so there is no
+ * conflicting behaviour to resolve — the shell only adds Start,
+ * the 3-2-1 countdown, the elapsed+score header, and a Pause
+ * overlay that blocks taps while paused. Nothing about Match Up's
+ * own rules changes: 10 points per correct match, a wrong match
+ * only flashes red and costs nothing, and matching every pair
+ * finishes the game ("All Matched!") with the real score.
+ *
+ * Deliberately NOT in this batch: a How-to-Play page (Match Up has
+ * none today — adding one is a separate item, not bundled here),
+ * any sound change (Match Up has no sounds today), any scoring /
+ * lives / timer / win-rule change, and any other type's player.
+ * The only other file touched is the saved-game play page, which
+ * extends its existing Quiz-only single-timer rule to Match Up
+ * (the 2026-11-03 fix's own comment says each type is unified
+ * "the same way when its shell lands") — without that, Match Up
+ * play would show two elapsed timers, the exact double-timer
+ * problem the 2026-11-03 fix removed for Quiz.
+ *
+ * Pause note: Match Up's only timeout is the 600ms wrong-match
+ * red flash clearing. The shell's Pause overlay already blocks
+ * all taps while paused, so no new match can start during a
+ * pause; the flash clearing mid-pause is cosmetic only and
+ * changes no score, match, or progress.
+ */
+
+interface MatchUpGameProps extends ActivityProps {
+  onProgress: (score: number, finished: boolean) => void
+}
+
+function MatchUpGame({ items, locale, onComplete, onProgress }: MatchUpGameProps) {
   const [pairs, setPairs] = useState<MatchItem[]>([])
   const [rightItems, setRightItems] = useState<string[]>([])
   const [selected, setSelected] = useState<string | null>(null)
@@ -22,6 +56,10 @@ export default function MatchUpActivity({ items, locale, onComplete }: ActivityP
     setPairs(p)
     setRightItems(shuffleArray(p.map((x) => x.answer)))
   }, [items])
+
+  // Lift the real score and finished flag to the shell header, so
+  // the header shows the same score the end screen reports.
+  useEffect(() => { onProgress(score, finished) }, [score, finished, onProgress])
 
   function selectLeft(id: string) {
     if (matched.has(id)) return
@@ -108,5 +146,25 @@ export default function MatchUpActivity({ items, locale, onComplete }: ActivityP
         {matched.size} / {pairs.length} matched · Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong>
       </div>
     </div>
+  )
+}
+
+export default function MatchUpActivity({ items, theme, locale, onComplete }: ActivityProps) {
+  const [shellScore, setShellScore] = useState(0)
+  const [shellFinished, setShellFinished] = useState(false)
+  // The shell's elapsed seconds, kept in a ref so the finish-time
+  // value is exact even if a state update is still queued when the
+  // last pair matches. Attached to the completion details so the
+  // play page can use it as its single final Time (Quiz pattern).
+  const elapsedRef = useRef(0)
+  const handleElapsed = useCallback((seconds: number) => { elapsedRef.current = seconds }, [])
+  const handleComplete = useCallback((score: number, details?: ActivityCompletion) => {
+    onComplete(score, { ...details, elapsedSeconds: elapsedRef.current })
+  }, [onComplete])
+  const handleProgress = useCallback((s: number, f: boolean) => { setShellScore(s); setShellFinished(f) }, [])
+  return (
+    <PlayShell title="Match Up" score={shellScore} finished={shellFinished} onElapsed={handleElapsed}>
+      <MatchUpGame items={items} theme={theme} locale={locale} onComplete={handleComplete} onProgress={handleProgress} />
+    </PlayShell>
   )
 }
