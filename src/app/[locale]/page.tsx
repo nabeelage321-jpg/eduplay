@@ -310,6 +310,33 @@ export default async function HomePage({ params }: HomePageProps) {
           </Link>
         </section>
 
+        {/* CHAPTER-TO-GAME HOMEPAGE SECTION (2026-11-04): a prominent
+            homepage entry for the chapter flow — paste a chapter, or
+            photograph its pages, and a game is made from it, to share
+            with friends. No new chapter flow here: the button links to
+            the existing chapter flow at the top of /create (paste /
+            photo scan / draft / approve / Preview / Save, unchanged).
+            Copyright-safe copy, per the owner's paraphrase rule: the
+            game is made in NEW words from the chapter's facts, never
+            the book's exact sentences, and stays private until a
+            teacher or parent has checked it. English wording for every
+            locale, like the prompt-funnel section above — no
+            translations invented. */}
+        <section aria-labelledby="make-chapter-title" style={{ ...sectionStyle, background: 'var(--color-surface-alt)' }}>
+          <p style={eyebrowStyle}>From your chapter</p>
+          <h2 id="make-chapter-title" style={{ marginTop: '0.5rem', ...h2Style }}>Turn your chapter into a game</h2>
+          <p style={subStyle}>Paste your chapter, or photograph its pages — the system makes a game from it, to share with friends.</p>
+          <p style={{ marginTop: '0.75rem', fontSize: '1rem', lineHeight: 1.6, color: 'var(--color-text-secondary)' }}>
+            Made in NEW words from your chapter&apos;s facts — never the book&apos;s exact sentences — and private until a teacher or parent has checked it.
+          </p>
+          <Link
+            href={`/${locale}/create`}
+            style={{ marginTop: '1.5rem', display: 'inline-flex', minHeight: '48px', alignItems: 'center', gap: '0.5rem', borderRadius: '9999px', background: 'var(--color-primary)', padding: '0 1.5rem', fontSize: '1.125rem', fontWeight: 800, color: 'white' }}
+          >
+            Make a game from your chapter →
+          </Link>
+        </section>
+
         {/* How it works — V0 3 steps + friends-first callout. */}
         <section id="how-it-works" aria-labelledby="how-title" style={sectionStyle}>
           <div style={{ textAlign: 'center', maxWidth: '42rem', margin: '0 auto' }}>
