@@ -84,6 +84,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'spell-it', label: 'Spell It' },
   { value: 'picture-answer', label: 'Picture Answer' },
   { value: 'memory-recall', label: 'Memory Recall' },
+  { value: 'claim-line', label: 'Claim Line' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

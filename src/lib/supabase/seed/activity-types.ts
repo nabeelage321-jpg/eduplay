@@ -508,6 +508,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Memory Recall',
     description_en: 'Study the pairs, then recall them from memory',
   },
+  {
+    slug: 'claim-line',
+    icon: '🎯',
+    supports_live: true,
+    supports_print: true,
+    name_en: 'Claim Line',
+    name_ur: 'Claim Line',
+    name_ar: 'Claim Line',
+    name_hi: 'Claim Line',
+    name_es: 'Claim Line',
+    name_fr: 'Claim Line',
+    description_en: 'Answer to claim squares — first line wins',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

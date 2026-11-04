@@ -11,6 +11,7 @@ import {
 } from '@/lib/print-worksheet'
 import { buildSpeedJudgeRounds } from '@/lib/speed-judge'
 import { buildPictureAnswerRounds } from '@/lib/picture-answer'
+import { buildClaimLineQuestions } from '@/lib/claim-line'
 import { spellItCells } from '@/lib/spell-it'
 
 export { isPrintableWorksheetType, normalizeWorksheetTypeSlug }
@@ -90,6 +91,18 @@ export function generatePrintHTML(activity: Activity): string {
   // in the key.
   const pictureAnswerRounds = slug === 'picture-answer'
     ? buildPictureAnswerRounds(items, { deterministic: true })
+    : []
+  // Claim Line worksheet: questions are DETERMINISTIC
+  // (original item order), so the student sheet and the
+  // answer key below are built from the exact same
+  // questions and can never drift apart. Options are
+  // stably shuffled per question (keyed by option text)
+  // so the sheet never leaks the answer position. The
+  // on-screen computer opponent has no paper equivalent,
+  // so the sheet says plainly to play with a friend,
+  // taking turns, or on your own.
+  const claimLineQuestions = slug === 'claim-line'
+    ? buildClaimLineQuestions(items, { deterministic: true })
     : []
   const orderPositionOf = new Map<Item, number>()
   items.forEach((it, i) => {
@@ -172,6 +185,28 @@ export function generatePrintHTML(activity: Activity): string {
           <div class="question-num">${i + 1}.</div>
           <p class="prompt">${esc(item.prompt)}</p>
           <p class="answer-blank">Answer: _______________________________</p>
+        </div>`,
+        )
+        .join('')}`
+  } else if (slug === 'claim-line') {
+    // Paper Claim Line: an empty 3x3 board to mark by hand
+    // (first line of 3 wins, same as on screen) plus the
+    // game's questions with blank option checkboxes —
+    // nothing marks the correct option. The answer lives
+    // ONLY in the key.
+    const boardHTML = `<table style="border-collapse:collapse;margin:0 auto 1.25rem;"><tbody>${[0, 1, 2].map((r) => `<tr>${[0, 1, 2].map(() => `<td style="width:64px;height:64px;border:2px solid #333;text-align:center;">&nbsp;</td>`).join('')}</tr>`).join('')}</tbody></table>`
+    itemsHTML = `
+      <p class="match-intro">Play on paper: answer a question to claim a square — mark your square on the board. First line of 3 wins. Play with a friend, taking turns, or on your own.</p>
+      ${boardHTML}
+      ${claimLineQuestions
+        .map(
+          (q, i) => `
+        <div class="item">
+          <div class="question-num">${i + 1}.</div>
+          <p class="prompt">${esc(q.prompt)}</p>
+          <div class="options">${stableShuffle(q.options, (opt) => opt)
+            .map((opt, oi) => `<span class="opt">☐ ${String.fromCharCode(65 + oi)}) ${esc(opt)}</span>`)
+            .join('')}</div>
         </div>`,
         )
         .join('')}`
@@ -276,6 +311,15 @@ export function generatePrintHTML(activity: Activity): string {
   } else if (slug === 'speed-judge') {
     keyHTML = speedJudgeRounds
       .map((round, i) => `<div class="answer-item">${i + 1}. ${round.correctJudgement === 'correct' ? 'Correct' : 'Wrong'}</div>`)
+      .join('')
+  } else if (slug === 'claim-line') {
+    // Keyed from the same deterministic questions as the
+    // sheet (original item order), so sheet and key can
+    // never drift apart — and the key lists the answer
+    // text, never a letter, so the stably shuffled sheet
+    // options cannot be reverse-engineered from it.
+    keyHTML = claimLineQuestions
+      .map((q, i) => `<div class="answer-item">${i + 1}. ${esc(q.answer)}</div>`)
       .join('')
   } else {
     keyHTML = items.map((item, i) => `<div class="answer-item">${i + 1}. ${esc(item.answer)}</div>`).join('')

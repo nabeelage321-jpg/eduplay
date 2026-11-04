@@ -54,6 +54,14 @@ export function normalizeWorksheetTypeSlug(slug: string | undefined | null): str
  *   answer — never on the student sheet. The on-screen
  *   study phase has no paper equivalent, so the sheet
  *   says plainly to answer from memory.
+ * - claim-line: an empty 3x3 board to mark by hand +
+ *   questions with option checkboxes (deterministic
+ *   question order, options stably shuffled so the sheet
+ *   never leaks the answer position), key lists the
+ *   answer — never on the student sheet. The on-screen
+ *   computer opponent has no paper equivalent, so the
+ *   sheet says plainly to play with a friend, taking
+ *   turns, or on your own.
  */
 export const PRINTABLE_WORKSHEET_TYPES: ReadonlySet<string> = new Set([
   'quiz',
@@ -83,6 +91,7 @@ export const PRINTABLE_WORKSHEET_TYPES: ReadonlySet<string> = new Set([
   'spell-it',
   'picture-answer',
   'memory-recall',
+  'claim-line',
 ])
 
 /** Deliberately NOT printable in v1, and why (shown as a plain note, never a printout). */

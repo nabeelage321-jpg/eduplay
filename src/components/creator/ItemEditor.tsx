@@ -42,6 +42,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'spell-it': { prompt: 'Clue or question', answer: 'Word to spell' },
   'picture-answer': { prompt: 'Question about the picture', answer: 'Correct answer' },
   'memory-recall': { prompt: 'Prompt to remember', answer: 'Answer to recall' },
+  'claim-line': { prompt: 'Question', answer: 'Correct answer' },
 }
 
 const fieldStyle: React.CSSProperties = {

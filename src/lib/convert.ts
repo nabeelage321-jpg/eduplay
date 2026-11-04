@@ -19,7 +19,7 @@
  *   with a plain reason, and the play page shows that message instead
  *   of the player — never a mangled game.
  * - The target list mirrors ACTIVITY_TYPE_META (TypeSelector) and
- *   ActivityPlayer's component map (37 types). If a type is added to
+ *   ActivityPlayer's component map (38 types). If a type is added to
  *   either, it must be added here with a compatibility decision, or
  *   it will fall into the incompatible default below — which is the
  *   safe direction (message, not mangled play).
@@ -71,6 +71,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'spell-it',         icon: '🔡', name: 'Spell It' },
   { slug: 'picture-answer',   icon: '🖼️', name: 'Picture Answer' },
   { slug: 'memory-recall',    icon: '💭', name: 'Memory Recall' },
+  { slug: 'claim-line',       icon: '🎯', name: 'Claim Line' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -182,9 +183,14 @@ export function canConvertTo(
     // as-is, drops nothing, and invents no picture. Memory
     // Recall studies every prompt/answer pair and recalls
     // them — same plain pairs, nothing dropped, nothing
-    // invented, no special item shape needed.
+    // invented, no special item shape needed. Claim Line
+    // answers ordinary questions from the game's items and
+    // turns them into board moves — the board needs no
+    // special item shape, so it plays every prompt/answer
+    // item as-is, drops nothing, invents nothing.
     case 'picture-answer':
     case 'memory-recall':
+    case 'claim-line':
       return { ok: true, reason: '' }
 
     // Hangman guesses the answer letter by letter; Letter Wheel

@@ -40,6 +40,7 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'spell-it',         icon: '🔡', name: 'Spell It',         desc: 'Spell the answer word, letter by letter' },
   { slug: 'picture-answer',   icon: '🖼️', name: 'Picture Answer',   desc: 'Answer the question about the picture' },
   { slug: 'memory-recall',    icon: '💭', name: 'Memory Recall',    desc: 'Study the pairs, then recall them from memory' },
+  { slug: 'claim-line',       icon: '🎯', name: 'Claim Line',       desc: 'Answer to claim squares — first line wins' },
 ]
 
 /**
