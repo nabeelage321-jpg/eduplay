@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import type { Activity } from '@/types'
 import { ACTIVITY_TYPE_META } from '@/components/creator/TypeSelector'
+import { canShowPrintButton } from '@/lib/print-worksheet'
 
 interface ActivityCardProps {
   activity: Activity
@@ -172,6 +173,16 @@ export default function ActivityCard({
           {copied ? '✓' : '🔗'}
         </motion.button>
 
+        {/* Print button, gated (2026-11-04 print v1): only for types
+            that print as a real worksheet, and for a private game
+            only its owner — a private game's questions must never
+            leak through a card button. Previously this button showed
+            for every type, including map/video/jigsaw games. */}
+        {onPrint && canShowPrintButton({
+          typeSlug: activity.type_id ?? (activity as { type?: string }).type,
+          isPublic: activity.is_public !== false,
+          isOwner,
+        }) && (
         <motion.button
           whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
           onClick={onPrint}
@@ -189,6 +200,7 @@ export default function ActivityCard({
         >
           🖨️
         </motion.button>
+        )}
 
         {isOwner && (
           <motion.button

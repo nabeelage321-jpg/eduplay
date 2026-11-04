@@ -5,6 +5,7 @@ import { generatePageMetadata } from '@/lib/seo/metadata'
 import JsonLd from '@/components/seo/JsonLd'
 import Breadcrumb from '@/components/seo/Breadcrumb'
 import ActivityIdLine from '@/components/activity-types/ActivityIdLine'
+import PrintWorksheetButton from '@/components/activities/PrintWorksheetButton'
 import ConvertToType from '@/components/activity-types/ConvertToType'
 import HostLiveGame from '@/components/game/HostLiveGame'
 import ChallengeMaker from '@/components/game/ChallengeMaker'
@@ -48,6 +49,11 @@ interface ActivityData {
   imageUrl?: string
   items: { prompt: string; answer: string }[]
   relatedActivities: { id: string; title: string; type: string }[]
+  // Print audience (2026-11-04 print v1): true unless the row's
+  // is_public is exactly false — the same rule the play page uses
+  // for its private-game gate. The print button uses this, never
+  // the row's questions, to decide who may print.
+  isPublic: boolean
 }
 
 // ─── Data fetching ─────────────────────────────────────────────────────────────
@@ -92,6 +98,7 @@ const getActivity = cache(async (id: string, locale: string): Promise<ActivityDa
         { id: 'grade-5-math-decimals-quiz', title: 'Grade 5 Decimals Quiz', type: 'Quiz' },
         { id: 'grade-5-math-fractions-match', title: 'Fractions Match Up', type: 'Match Up' },
       ],
+      isPublic: true,
     },
   }
   if (mockActivities[id]) return mockActivities[id]
@@ -152,6 +159,7 @@ const getActivity = cache(async (id: string, locale: string): Promise<ActivityDa
       imageUrl: undefined,
       items,
       relatedActivities: [],
+      isPublic: (row as Record<string, unknown>).is_public !== false,
     }
   } catch {
     return null
@@ -376,6 +384,30 @@ export default async function ActivityPage({
               >
                 📋 Copy &amp; Edit
               </a>
+              {/* PRINT WORKSHEET v1 (2026-11-04): the detail-page
+                  print control, beside Play / Copy & Edit. It only
+                  renders a button for printable types, and for a
+                  private game only for its owner (proven client-side
+                  via /api/my-activities, like HostLiveGame); a
+                  non-printable type renders a plain note instead.
+                  The detail page itself never renders item contents,
+                  so this button is the only print path from here. */}
+              {activity.items.length > 0 ? (
+                <PrintWorksheetButton
+                  activity={{
+                    id: activity.id,
+                    title: activity.title,
+                    type_id: playerTypeKey(activity.activityType),
+                    locale: params.locale,
+                    teacher_id: '',
+                    is_public: activity.isPublic,
+                    items: activity.items,
+                    created_at: activity.createdAt,
+                    updated_at: activity.createdAt,
+                  }}
+                  isPublic={activity.isPublic}
+                />
+              ) : null}
             </div>
             {activity.items.length === 0 ? (
               <p style={{ color: 'var(--color-text-muted)', marginTop: '1rem', marginBottom: 0 }}>

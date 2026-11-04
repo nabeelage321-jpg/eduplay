@@ -1,13 +1,15 @@
 /**
  * Seed data for the `activity_types` table.
- * All 31 activity types with icons and multilingual names.
+ * All 32 activity types with icons and multilingual names.
  * The 8 queue types added 2026-11-04 carry their English name in
  * every locale slot: that is an explicit fallback (getActivityTypeLabel
  * falls back to name_en anyway), NOT a translated name. Real
  * translations for those 8 are still open, not invented here.
- * supports_live is true for all 8 (each has an ActivityPlayer player,
- * so live sessions can play it); supports_print is false (no print
- * format has been built for any of the 8).
+ * supports_print (2026-11-04 print v1) mirrors
+ * src/lib/print-worksheet.ts: true only for types whose questions
+ * print as a text worksheet; false for image/map/video/audio tasks
+ * and for grid games (crossword, word search), whose printable grid
+ * is phase-2 work, not faked here.
  */
 
 export interface ActivityTypeSeed {
@@ -68,7 +70,7 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     slug: 'crossword',
     icon: '⬛',
     supports_live: false,
-    supports_print: true,
+    supports_print: false,
     name_en: 'Crossword',
     name_ur: 'کراس ورڈ',
     name_ar: 'كلمات متقاطعة',
@@ -81,7 +83,7 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     slug: 'wordsearch',
     icon: '🔍',
     supports_live: false,
-    supports_print: true,
+    supports_print: false,
     name_en: 'Word Search',
     name_ur: 'لفظ تلاش',
     name_ar: 'البحث عن الكلمات',
@@ -94,7 +96,7 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     slug: 'spin-wheel',
     icon: '🎡',
     supports_live: true,
-    supports_print: false,
+    supports_print: true,
     name_en: 'Spin the Wheel',
     name_ur: 'پہیہ گھماؤ',
     name_ar: 'دوران العجلة',
@@ -107,7 +109,7 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     slug: 'balloon-pop',
     icon: '🎈',
     supports_live: true,
-    supports_print: false,
+    supports_print: true,
     name_en: 'Balloon Pop',
     name_ur: 'غبارہ پھوڑو',
     name_ar: 'تفجير البالون',
@@ -120,7 +122,7 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     slug: 'whack-a-mole',
     icon: '🔨',
     supports_live: true,
-    supports_print: false,
+    supports_print: true,
     name_en: 'Whack a Mole',
     name_ur: 'چھچھوندر مارو',
     name_ar: 'اضرب الخلد',
@@ -185,7 +187,7 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     slug: 'labelled-diagram',
     icon: '🗺️',
     supports_live: false,
-    supports_print: true,
+    supports_print: false,
     name_en: 'Labelled Diagram',
     name_ur: 'نامزد خاکہ',
     name_ar: 'مخطط مُسمَّى',
@@ -237,7 +239,7 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     slug: 'gameshow-quiz',
     icon: '🎬',
     supports_live: true,
-    supports_print: false,
+    supports_print: true,
     name_en: 'Gameshow Quiz',
     name_ur: 'گیم شو کوئز',
     name_ar: 'اختبار البرامج التلفزيونية',
@@ -250,7 +252,7 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     slug: 'hangman',
     icon: '🪢',
     supports_live: false,
-    supports_print: false,
+    supports_print: true,
     name_en: 'Hangman',
     name_ur: 'ہینگ مین',
     name_ar: 'المشنقة',
@@ -276,7 +278,7 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     slug: 'open-box',
     icon: '📦',
     supports_live: true,
-    supports_print: false,
+    supports_print: true,
     name_en: 'Open the Box',
     name_ur: 'ڈبہ کھولو',
     name_ar: 'افتح الصندوق',
@@ -289,7 +291,7 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     slug: 'memory-match',
     icon: '🧠',
     supports_live: true,
-    supports_print: false,
+    supports_print: true,
     name_en: 'Memory Match',
     name_ur: 'میموری میچ',
     name_ar: 'مطابقة الذاكرة',
@@ -302,7 +304,7 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     slug: 'typing-race',
     icon: '⌨️',
     supports_live: true,
-    supports_print: false,
+    supports_print: true,
     name_en: 'Typing Race',
     name_ur: 'ٹائپنگ ریس',
     name_ar: 'سباق الكتابة',
@@ -328,7 +330,7 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     slug: 'jump-path',
     icon: '⭐',
     supports_live: true,
-    supports_print: false,
+    supports_print: true,
     name_en: 'Jump Path',
     name_ur: 'Jump Path',
     name_ar: 'Jump Path',
@@ -341,7 +343,7 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     slug: 'riddle',
     icon: '🧩',
     supports_live: true,
-    supports_print: false,
+    supports_print: true,
     name_en: 'Riddle',
     name_ur: 'Riddle',
     name_ar: 'Riddle',
@@ -354,7 +356,7 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     slug: 'aster-quiz',
     icon: '🚀',
     supports_live: true,
-    supports_print: false,
+    supports_print: true,
     name_en: 'AsterQuiz',
     name_ur: 'AsterQuiz',
     name_ar: 'AsterQuiz',
@@ -432,7 +434,7 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     slug: 'letter-wheel',
     icon: '🔠',
     supports_live: true,
-    supports_print: false,
+    supports_print: true,
     name_en: 'Letter Wheel',
     name_ur: 'Letter Wheel',
     name_ar: 'Letter Wheel',
