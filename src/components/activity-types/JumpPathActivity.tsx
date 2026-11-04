@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { shuffleArray, isRTL } from './shared'
 import type { ActivityItem } from '@/types'
-import { playGameSound, readSoundOn } from '@/lib/game-sound'
+import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
+import InteractiveSoundToggle from './InteractiveSoundToggle'
 
 /**
  * Jump Path — EduPlay's own jump-along-the-path quiz.
@@ -13,8 +14,11 @@ import { playGameSound, readSoundOn } from '@/lib/game-sound'
  * NOT a copy of any rival: no frog, no rival art, no rival audio.
  * The token on the path is EduPlay's own star helper (a plain star
  * glyph, drawn here in text — no image asset, no copied character),
- * and sounds are the same Web Audio tones every other EduPlay game
- * uses (default muted; the play-page sound button turns them on).
+ * and sounds are the shared interactive Web Audio system (synthesized,
+ * no assets): jump on a correct answer, wrong buzz on a wrong one,
+ * win/lose on finish, timer warning at 5 seconds. Sound is ON by
+ * default for this game only; the in-player toggle mutes it in one
+ * tap. Scoring, lives, timers, and win conditions are unchanged.
  *
  * Data: the same quiz Q&A items every quiz game uses — prompt,
  * answer, and the other items' answers as distractors. Text
@@ -84,7 +88,7 @@ export default function JumpPathActivity({ items, locale, onComplete }: Activity
   const rtl = isRTL(locale)
 
   useEffect(() => {
-    if (feedback) playGameSound(feedback.type, readSoundOn())
+    if (feedback) playEduSound(feedback.type === 'correct' ? 'jump' : 'wrong', readInteractiveSoundOn())
   }, [feedback])
 
   // Build the pool once per content fingerprint.
@@ -129,6 +133,8 @@ export default function JumpPathActivity({ items, locale, onComplete }: Activity
   const completedRef = useRef(false)
   const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const timeUpRef = useRef(false)
+  const lastTimerWarningRef = useRef(-1)
+  const finishedSoundRef = useRef(false)
   useEffect(() => { onCompleteRef.current = onComplete })
   useEffect(() => { currentRef.current = current })
   useEffect(() => { scoreRef.current = score })
@@ -139,6 +145,9 @@ export default function JumpPathActivity({ items, locale, onComplete }: Activity
   const pointsPerQuestion = round.length > 0 ? 100 / round.length : 0
 
   const startGame = useCallback(() => {
+    playEduSound('click', readInteractiveSoundOn())
+    finishedSoundRef.current = false
+    lastTimerWarningRef.current = -1
     timerSecRef.current = timerSec
     completedRef.current = false
     const ordered = randomOrder ? shuffleArray(pool) : [...pool]
@@ -193,8 +202,25 @@ export default function JumpPathActivity({ items, locale, onComplete }: Activity
     advanceTimeoutRef.current = setTimeout(advance, 1500)
   }, [timeLeft, started, selected, finished, round.length, advance])
 
+  // Timer warning: one short warning when 5 seconds remain on a question.
+  useEffect(() => {
+    if (!started || finished || selected !== null || timerSecRef.current <= 0 || timeLeft !== 5) return
+    if (lastTimerWarningRef.current === current) return
+    lastTimerWarningRef.current = current
+    playEduSound('timerWarning', readInteractiveSoundOn())
+  }, [timeLeft, started, finished, selected, current])
+
+  // Finish sound: win when the path ends with lives left (or unlimited),
+  // lose when it ends because lives ran out. Sound only — no rule change.
+  useEffect(() => {
+    if (!finished || finishedSoundRef.current) return
+    finishedSoundRef.current = true
+    playEduSound(livesLeft === 0 ? 'lose' : 'win', readInteractiveSoundOn())
+  }, [finished, livesLeft])
+
   function handleSelect(idx: number) {
     if (selected !== null || finished) return
+    playEduSound('click', readInteractiveSoundOn())
     const q = round[current]
     if (!q) return
     setSelected(idx)
@@ -211,6 +237,8 @@ export default function JumpPathActivity({ items, locale, onComplete }: Activity
   }
 
   function playAgain() {
+    playEduSound('click', readInteractiveSoundOn())
+    finishedSoundRef.current = false
     if (advanceTimeoutRef.current) clearTimeout(advanceTimeoutRef.current)
     setStarted(false)
     setRound([])
@@ -274,6 +302,9 @@ export default function JumpPathActivity({ items, locale, onComplete }: Activity
             <input type="checkbox" checked={randomOrder} onChange={(e) => setRandomOrder(e.target.checked)} aria-label="Random question order" />
             Random question order
           </label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', justifyContent: 'flex-end', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+            Sound <InteractiveSoundToggle />
+          </div>
           <button
             onClick={startGame}
             style={{
@@ -304,6 +335,9 @@ export default function JumpPathActivity({ items, locale, onComplete }: Activity
           {correctCount} correct out of {round.length} questions
           {livesLeft !== null ? ` · ${livesLeft} ${livesLeft === 1 ? 'life' : 'lives'} left` : ' · unlimited lives'}
         </p>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.25rem' }}>
+          <InteractiveSoundToggle />
+        </div>
         <button
           onClick={playAgain}
           style={{
@@ -330,14 +364,24 @@ export default function JumpPathActivity({ items, locale, onComplete }: Activity
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-        <span aria-live="polite">Score: <strong style={{ color: 'var(--color-primary)' }}>{Math.round(score)} / 100</strong></span>
+        <motion.span key={Math.round(score)} initial={{ scale: 1.35 }} animate={{ scale: 1 }} transition={{ duration: 0.25 }} style={{ display: 'inline-block' }} aria-live="polite">Score: <strong style={{ color: 'var(--color-primary)' }}>{Math.round(score)} / 100</strong></motion.span>
         <span aria-live="polite">{livesLeft === null ? '∞ lives' : `${'❤️'.repeat(Math.max(0, livesLeft))} ${livesLeft} ${livesLeft === 1 ? 'life' : 'lives'}`}</span>
         {timerOn && <span aria-live="polite" aria-label={`${timeLeft} seconds remaining`}>{timeLeft}s</span>}
         {!timerOn && <span>No timer</span>}
+        <InteractiveSoundToggle />
       </div>
 
       {/* The path: one stone per question; the star sits on the current stone. */}
       <div style={{ marginBottom: '1.25rem' }} aria-label={`Star helper is on stone ${current + 1} of ${round.length}`}>
+        {feedback?.type === 'correct' && (
+          <motion.div key={`jump-arc-${current}`} initial={{ x: -48, y: 0, scale: 1, opacity: 1 }}
+            animate={{ x: [-48, 0, 48], y: [0, -40, 0], scale: [1, 1.35, 1], opacity: [1, 1, 0] }}
+            transition={{ duration: 0.9, ease: 'easeOut' }}
+            aria-hidden="true"
+            style={{ textAlign: 'center', fontSize: '1.75rem', lineHeight: 1, pointerEvents: 'none' }}>
+            ⭐ Jump!
+          </motion.div>
+        )}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', justifyContent: 'center', alignItems: 'flex-end' }}>
           {round.map((_, i) => {
             const isCurrent = i === current
@@ -386,7 +430,7 @@ export default function JumpPathActivity({ items, locale, onComplete }: Activity
           }}>
             {q.prompt}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <motion.div animate={{ x: feedback?.type === 'wrong' ? [0, -10, 10, -6, 6, 0] : 0 }} transition={{ duration: 0.4 }} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             {q.options.map((opt, idx) => {
               let bg = 'var(--color-surface)'
               let border = 'var(--color-border)'
@@ -413,7 +457,7 @@ export default function JumpPathActivity({ items, locale, onComplete }: Activity
                 </motion.button>
               )
             })}
-          </div>
+          </motion.div>
         </motion.div>
       </AnimatePresence>
       <AnimatePresence>

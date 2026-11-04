@@ -5,15 +5,18 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { isRTL } from './shared'
 import type { ActivityItem } from '@/types'
-import { playGameSound, readSoundOn } from '@/lib/game-sound'
+import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
+import InteractiveSoundToggle from './InteractiveSoundToggle'
 
 /**
  * Letter Wheel — EduPlay's own letter-wheel word game.
  *
  * NOT a copy of any rival: no rival art, wording, or layout. The
  * wheel is EduPlay's own ring of letter circles, and sounds are the
- * same Web Audio tones every other EduPlay game uses (default
- * muted; the play-page sound button turns them on).
+ * shared interactive Web Audio system (synthesized, no assets):
+ * correct arpeggio, wrong buzz, click, and win on finish. Sound is
+ * ON by default for this game only; the in-player toggle mutes it
+ * in one tap. Scoring, letters, and How-to-Play content are unchanged.
  *
  * Data: the standard creator item shape — prompt = definition,
  * answer = word. No new save path was needed: the save route
@@ -99,7 +102,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
   const rtl = isRTL(locale)
 
   useEffect(() => {
-    if (feedback) playGameSound(feedback.type, readSoundOn())
+    if (feedback) playEduSound(feedback.type, readInteractiveSoundOn())
   }, [feedback])
 
   // Build the wheel once per content fingerprint.
@@ -136,6 +139,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
   const skippedRef = useRef<Set<number>>(new Set())
   const onCompleteRef = useRef(onComplete)
   const completedRef = useRef(false)
+  const finishedSoundRef = useRef(false)
   useEffect(() => { onCompleteRef.current = onComplete })
   useEffect(() => { scoreRef.current = score })
   useEffect(() => { resultsRef.current = results })
@@ -166,6 +170,14 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
 
   useEffect(() => { skippedRef.current = skipped }, [skipped])
 
+  // Finish sound once: win on Wheel Complete. Sound only — no rule change.
+  useEffect(() => {
+    if (!finished) { finishedSoundRef.current = false; return }
+    if (finishedSoundRef.current) return
+    finishedSoundRef.current = true
+    playEduSound('win', readInteractiveSoundOn())
+  }, [finished])
+
   const advanceFrom = useCallback((from: number) => {
     setTyped('')
     setWrongOnLetter(0)
@@ -179,6 +191,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
   }, [nextUnanswered, finishGame])
 
   function startPlaying() {
+    playEduSound('click', readInteractiveSoundOn())
     completedRef.current = false
     setShowHowto(false)
     setStarted(true)
@@ -186,6 +199,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
 
   function handleCheck() {
     if (finished || showHowto) return
+    playEduSound('click', readInteractiveSoundOn())
     const slot = letters[current]
     if (!slot) return
     const guess = normalizeWheelWord(typed)
@@ -214,6 +228,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
 
   function handleSkipLetter() {
     if (finished || showHowto) return
+    playEduSound('click', readInteractiveSoundOn())
     setSkipped((s) => new Set(s).add(current))
     setFeedback(null)
     advanceFrom(current)
@@ -221,6 +236,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
 
   function handleReveal() {
     if (finished || showHowto) return
+    playEduSound('click', readInteractiveSoundOn())
     const slot = letters[current]
     if (!slot) return
     setResults((r) => r.map((v, i) => (i === current ? false : v)))
@@ -230,6 +246,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
   }
 
   function playAgain() {
+    playEduSound('click', readInteractiveSoundOn())
     setShowHowto(true)
     setStarted(false)
     setCurrent(0)
@@ -258,6 +275,9 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
   if (showHowto) {
     return (
       <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto', color: 'var(--color-text-primary)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', justifyContent: 'flex-end', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+          Sound <InteractiveSoundToggle />
+        </div>
         <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
           <div style={{ fontSize: '2.5rem', lineHeight: 1 }} aria-hidden="true">🔠</div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', margin: '0.5rem 0 0.25rem' }}>How to play Letter Wheel</h2>
@@ -309,6 +329,9 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
           {` · ${missedCount} missed`}
           {` · ${wrongTotal} wrong ${wrongTotal === 1 ? 'guess' : 'guesses'}`}
         </p>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.25rem' }}>
+          <InteractiveSoundToggle />
+        </div>
         <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', marginTop: '1.25rem', flexWrap: 'wrap' }}>
           <button
             onClick={() => setShowHowto(true)}
@@ -345,7 +368,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-        <span aria-live="polite">Score: <strong style={{ color: 'var(--color-primary)' }}>{Math.round(score)} / 100</strong></span>
+        <motion.span key={Math.round(score)} initial={{ scale: 1.35 }} animate={{ scale: 1 }} transition={{ duration: 0.25 }} style={{ display: 'inline-block' }} aria-live="polite">Score: <strong style={{ color: 'var(--color-primary)' }}>{Math.round(score)} / 100</strong></motion.span>
         <span aria-live="polite">{correctCount} of {letters.length} letters correct</span>
         <button
           onClick={() => setShowHowto(true)}
@@ -356,6 +379,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
         >
           How to play
         </button>
+        <InteractiveSoundToggle />
       </div>
 
       {/* The wheel: one circle per letter; the current letter is highlighted. */}
@@ -365,7 +389,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
             const isCurrent = i === current
             const result = results[i]
             return (
-              <div key={i} style={{
+              <motion.div key={i} animate={{ scale: isCurrent && feedback?.type === 'correct' ? [1, 1.35, 1] : 1 }} transition={{ duration: 0.4 }} style={{
                 width: '2.25rem', height: '2.25rem', borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '0.95rem', fontWeight: 700,
@@ -375,7 +399,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
               }}
               aria-label={result === true ? `Letter ${l.letter}: correct` : result === false ? `Letter ${l.letter}: missed` : `Letter ${l.letter}`}>
                 {result === true ? '✓' : result === false ? '✗' : l.letter}
-              </div>
+              </motion.div>
             )
           })}
         </div>
@@ -407,6 +431,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
                 : `Type a word starting with the letter ${slot.letter}.`}
             </p>
           </div>
+          <motion.div animate={{ x: feedback?.type === 'wrong' ? [0, -10, 10, -6, 6, 0] : 0 }} transition={{ duration: 0.4 }}>
           <form
             onSubmit={(e) => { e.preventDefault(); handleCheck() }}
             style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}
@@ -434,6 +459,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
               Check
             </button>
           </form>
+          </motion.div>
           <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
             <button
               type="button"
