@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
+import { resolveSessionUser } from '@/lib/auth/session-user'
+import { isActivityOwner } from '@/lib/activity-audience'
 
 /**
  * Batch 3 — INTERIM live multiplayer (polling, not a socket).
@@ -45,7 +47,49 @@ export async function POST(request: NextRequest) {
     if (!activityId) {
       return NextResponse.json({ error: 'activityId is required' }, { status: 400 })
     }
+    // SECURITY BATCH (pre-domain-launch): server-side ownership
+    // enforcement. The host button was already ownership-gated in the
+    // UI (GET /api/my-activities membership check in HostLiveGame),
+    // but this route accepted ANY activityId — a crafted POST could
+    // host someone else's game. Now only the signed-in owner of the
+    // game may create a session for it: unauthenticated callers and
+    // foreign activityIds both get a plain 403, and a missing game
+    // gets the same 404 as elsewhere. The check is the same
+    // ownership semantics as the my-activities list (teacher_id =
+    // session user), done as one direct query instead of the list —
+    // so, unlike the list, it is not affected by that list's 50-game
+    // cap. A row with no teacher_id (all programme games) has no
+    // owner and is therefore never hostable here; no legitimate flow
+    // breaks, because the host UI only ever offers the teacher's own
+    // games. The guest join-by-room-code flow is untouched: guests
+    // never create sessions, they only look sessions up by code
+    // through GET, which this batch does not change.
+    let sessionUserId: string | null = null
+    try {
+      const sessionUser = await resolveSessionUser()
+      sessionUserId = sessionUser?.userId ?? null
+    } catch {
+      sessionUserId = null
+    }
+    const ownerError = NextResponse.json(
+      { error: 'Only the game\'s owner can host a live session. Sign in as the game\'s owner and try again.' },
+      { status: 403 },
+    )
+    if (!sessionUserId) {
+      return ownerError
+    }
     const supabase = createServerClient()
+    const { data: game, error: gameError } = await supabase
+      .from('activities')
+      .select('teacher_id')
+      .eq('id', activityId)
+      .single()
+    if (gameError || !game) {
+      return NextResponse.json({ error: 'Activity not found' }, { status: 404 })
+    }
+    if (!isActivityOwner((game as { teacher_id?: string | null }).teacher_id, sessionUserId)) {
+      return ownerError
+    }
     const { data, error } = await supabase
       .from('live_sessions')
       .insert([{ activity_id: activityId, teacher_name: teacherName, mode, room_code: roomCode(), status: 'waiting' }])

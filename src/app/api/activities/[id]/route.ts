@@ -2,13 +2,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { resolveSessionUser } from '@/lib/auth/session-user'
 import { needsApproval } from '@/lib/approval'
+import { canServeGeneralActivity } from '@/lib/activity-audience'
 
 function sanitize(str: unknown): string {
   if (typeof str !== 'string') return ''
   return str.replace(/<script[^>]*>.*?<\/script>/gi, '').trim().slice(0, 2000)
 }
 
-// GET /api/activities/[id]
+// GET /api/activities/[id] — SECURITY BATCH (pre-domain-launch):
+// audience-checked. Public games serve to anyone exactly as before
+// (browse, play, share, convert, challenge and report all depend on
+// it). A non-public game serves ONLY to its signed-in owner —
+// everyone else gets the same 404 as a missing game, so nothing
+// leaks: not a question, not even existence. That closes the
+// pre-existing gap (this route served any id with no audience
+// check). A pending kid game is therefore also refused here to
+// non-owners: testers reach it ONLY through the intentional
+// GET /api/activities/[id]/test-game path, never this route.
+// Session resolution throwing (e.g. the route-test harness, where
+// getServerSession throws outside a request scope) is treated as
+// signed-out, exactly like GET /api/my-activities does — a public
+// game still serves, a private game still refuses.
 export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }
@@ -22,6 +36,26 @@ export async function GET(
       .single()
 
     if (error || !activity) {
+      return NextResponse.json({ error: 'Activity not found' }, { status: 404 })
+    }
+
+    let sessionUserId: string | null = null
+    try {
+      const sessionUser = await resolveSessionUser()
+      sessionUserId = sessionUser?.userId ?? null
+    } catch {
+      sessionUserId = null
+    }
+
+    const row = activity as {
+      is_public?: boolean | null
+      teacher_id?: string | null
+    }
+    if (!canServeGeneralActivity({
+      isPublic: row.is_public,
+      teacherId: row.teacher_id,
+      sessionUserId,
+    })) {
       return NextResponse.json({ error: 'Activity not found' }, { status: 404 })
     }
 

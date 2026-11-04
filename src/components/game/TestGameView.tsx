@@ -62,14 +62,26 @@ export default function TestGameView({ gameId, locale }: { gameId: string; local
     } catch {
       // Private mode — nickname starts empty, as designed.
     }
+    // SECURITY BATCH: content comes from the intentional test-game
+    // path now, NOT the general route — the general route refuses
+    // every non-public game to non-owners, which would break this
+    // anonymous test flow. The test-game path serves pending kid
+    // games (and already-public games) and refuses everything else.
     Promise.all([
-      fetch(`/api/activities/${gameId}`).then((r) => (r.ok ? r.json() : null)),
+      fetch(`/api/activities/${gameId}/test-game`).then((r) => (r.ok ? r.json() : null)),
       fetch(`/api/activities/${gameId}/test-approve`).then((r) => (r.ok ? r.json() : null)),
     ])
       .then(([gameJson, statusJson]) => {
         if (cancelled) return
+        if (statusJson) setStatus(statusJson as TestStatus)
         if (!gameJson?.activity) {
-          setError('This game was not found.')
+          // A missing game fails BOTH fetches and shows the not-found
+          // error. A game whose content is refused but whose status
+          // loaded (removed, not gated, approved-but-private) renders
+          // its status panel below instead of an error.
+          if (!statusJson) {
+            setError('This game was not found.')
+          }
         } else {
           const row = gameJson.activity as Record<string, unknown>
           const items = adaptActivityItems(row as never)
@@ -79,7 +91,6 @@ export default function TestGameView({ gameId, locale }: { gameId: string; local
             items,
           })
         }
-        if (statusJson) setStatus(statusJson as TestStatus)
         setLoading(false)
       })
       .catch(() => {
@@ -158,7 +169,7 @@ export default function TestGameView({ gameId, locale }: { gameId: string; local
       </div>
     )
   }
-  if (error || !activity) {
+  if (error) {
     return (
       <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
         <p style={{ color: 'var(--color-text-primary)', fontWeight: 700 }}>{error ?? 'Game not found.'}</p>
@@ -170,6 +181,39 @@ export default function TestGameView({ gameId, locale }: { gameId: string; local
   const isPublished = status?.isPublic === true && status?.approvalStatus === 'approved'
   const isRejected = status?.approvalStatus === 'rejected'
   const notGated = status?.setupReady === true && status?.creatorIsStudent === false
+
+  // No content, but the status loaded: the game exists and its state
+  // explains itself — removed, not gated, or approved-but-private
+  // (a test link to a game that no longer needs testing). Render that
+  // panel, not a not-found error. A genuinely missing game never
+  // reaches here: it sets the error above.
+  if (!activity) {
+    return (
+      <div style={{ maxWidth: '720px', margin: '0 auto', padding: '2rem 1rem' }}>
+        <h1 style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>Test game</h1>
+        <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem' }}>
+          You are testing a kid-made game. Play it, then approve it if it is good.
+        </p>
+        {status && !status.setupReady ? (
+          <p style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '1rem' }}>
+            {status.message ?? 'Social approval is not set up yet.'}
+          </p>
+        ) : isRejected ? (
+          <p style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '1rem' }}>
+            This game is not open for testing right now. Its creator can edit it to resubmit it.
+          </p>
+        ) : notGated ? (
+          <p style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '1rem' }}>
+            This game does not need test approval — teachers, parents and creators publish directly.
+          </p>
+        ) : (
+          <p style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '1rem' }}>
+            This game does not need test approval right now.
+          </p>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: '2rem 1rem' }}>
