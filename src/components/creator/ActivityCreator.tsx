@@ -220,6 +220,12 @@ export default function ActivityCreator({ locale, initialType }: ActivityCreator
           onChange={(role) => { setCreatorRole(role); storeRole(role) }}
         />
       </div>
+      {/* FUNNEL (2026-11-04): the manual way is headed in bold, exactly
+          "Manual game" — the wizard below (Type, Details, Items,
+          Preview, Save) is unchanged; only this heading is new. */}
+      <h2 style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 700, margin: '0 0 1rem' }}>
+        Manual game
+      </h2>
       {/* Step indicator */}
       <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', alignItems: 'center' }}>
         {STEPS.map((s, i) => (

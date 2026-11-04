@@ -235,8 +235,11 @@ export default function PromptToGame({
 
   return (
     <div style={boxStyle}>
-      <h2 style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontSize: '1.25rem', margin: '0 0 0.25rem' }}>
-        ✨ Make a game from a prompt
+      {/* FUNNEL (2026-11-04): the prompt way is headed in bold, exactly
+          "Make game with prompt", so it cannot be confused with the
+          manual way below. The prompt flow itself is unchanged. */}
+      <h2 style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 700, margin: '0 0 0.25rem' }}>
+        Make game with prompt
       </h2>
       <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: '0 0 1rem' }}>
         Two ways to start — pick from lists, or type your own prompt.

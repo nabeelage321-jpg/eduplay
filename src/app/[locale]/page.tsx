@@ -294,6 +294,22 @@ export default async function HomePage({ params }: HomePageProps) {
           </ul>
         </section>
 
+        {/* PROMPT GAME-MAKING FUNNEL ENTRY (2026-11-04): one clear link
+            that takes a viewer into the prompt game-making system —
+            first who they are, then which one game to make, then the
+            maker with that game already selected. No new maker here. */}
+        <section aria-labelledby="make-prompt-title" style={sectionStyle}>
+          <p style={eyebrowStyle}>Make a game with a prompt</p>
+          <h2 id="make-prompt-title" style={{ marginTop: '0.5rem', ...h2Style }}>Make a game with a prompt</h2>
+          <p style={subStyle}>Pick who you are, pick one game, write a few words — the system makes your draft, you approve it, and the game is ready.</p>
+          <Link
+            href={`/${locale}/make`}
+            style={{ marginTop: '1.5rem', display: 'inline-flex', minHeight: '48px', alignItems: 'center', gap: '0.5rem', borderRadius: '9999px', background: 'var(--color-primary)', padding: '0 1.5rem', fontSize: '1.125rem', fontWeight: 800, color: 'white' }}
+          >
+            Make a game with a prompt →
+          </Link>
+        </section>
+
         {/* How it works — V0 3 steps + friends-first callout. */}
         <section id="how-it-works" aria-labelledby="how-title" style={sectionStyle}>
           <div style={{ textAlign: 'center', maxWidth: '42rem', margin: '0 auto' }}>
