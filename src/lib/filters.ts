@@ -37,6 +37,50 @@ export const FILTER_SUBJECTS: FilterOption[] = [
   { value: 'Physics', label: 'Physics' },
 ]
 
+/**
+ * Game-type options for browse. Values are the exact live DB `type`
+ * column values (same rule as subjects/grades above); labels are the
+ * English display names from the activity-types seed. The only
+ * slug/DB mismatch is Word Search: the creator slug is 'wordsearch',
+ * the DB value is 'word-search' (see normalizeTypeFilter below).
+ * STRUCTURED BROWSE v1 (2026-11-04): this list powers the browse
+ * type filter; it is not a new game type and changes no gameplay.
+ */
+export const FILTER_TYPES: FilterOption[] = [
+  { value: 'quiz', label: 'Quiz' },
+  { value: 'match-up', label: 'Match Up' },
+  { value: 'anagram', label: 'Anagram' },
+  { value: 'crossword', label: 'Crossword' },
+  { value: 'word-search', label: 'Word Search' },
+  { value: 'spin-wheel', label: 'Spin the Wheel' },
+  { value: 'balloon-pop', label: 'Balloon Pop' },
+  { value: 'whack-a-mole', label: 'Whack a Mole' },
+  { value: 'true-false', label: 'True or False' },
+  { value: 'categorize', label: 'Categorize' },
+  { value: 'order', label: 'Order' },
+  { value: 'fill-blank', label: 'Fill in the Blank' },
+  { value: 'labelled-diagram', label: 'Labelled Diagram' },
+  { value: 'flashcards', label: 'Flashcards' },
+  { value: 'missing-word', label: 'Missing Word' },
+  { value: 'unjumble', label: 'Unjumble' },
+  { value: 'gameshow-quiz', label: 'Gameshow Quiz' },
+  { value: 'hangman', label: 'Hangman' },
+  { value: 'random-wheel', label: 'Random Wheel' },
+  { value: 'open-box', label: 'Open the Box' },
+  { value: 'memory-match', label: 'Memory Match' },
+  { value: 'typing-race', label: 'Typing Race' },
+  { value: 'bingo', label: 'Bingo' },
+  { value: 'jump-path', label: 'Jump Path' },
+  { value: 'riddle', label: 'Riddle' },
+  { value: 'aster-quiz', label: 'AsterQuiz' },
+  { value: 'dictation', label: 'Dictation' },
+  { value: 'dialogue', label: 'Dialogue' },
+  { value: 'map-quiz', label: 'Map Quiz' },
+  { value: 'jigsaw-puzzle', label: 'Jigsaw Puzzle' },
+  { value: 'video-quiz', label: 'Video Quiz' },
+  { value: 'letter-wheel', label: 'Letter Wheel' },
+]
+
 export const FILTER_GRADES: FilterOption[] = [
   { value: 'pre-k', label: 'Pre-K' },
   { value: 'kg', label: 'Kindergarten' },
