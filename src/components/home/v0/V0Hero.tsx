@@ -59,6 +59,23 @@ export default function V0Hero({
             {heroSubtitle}
           </p>
 
+          {/* AD-FREE HEADLINE (2026-11-04, owner's exact wording): a
+              headline in the hero itself, so a first-time visitor sees
+              it without scrolling. Honest and free: EduPlay has no ads
+              at all, so this is never a paid tier and never an
+              "upgrade to remove ads" offer — no pricing, no plan,
+              no ad code anywhere near it. English wording is used
+              for every locale (no translations invented); it matches
+              the hero's existing hardcoded English lines above. */}
+          <div aria-label="Ad-Free for Kids" style={{ margin: '1.5rem auto 0', maxWidth: '36rem', borderRadius: '1rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '1rem 1.25rem', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--color-text-primary)' }}>
+              🛡️ Ad-Free for Kids
+            </p>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '1rem', fontWeight: 600, lineHeight: 1.5, color: 'var(--color-text-secondary)' }}>
+              No fullscreen ad before a kid&apos;s game, ever.
+            </p>
+          </div>
+
           <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
             <Link
               href={`/${locale}/activities`}
