@@ -145,7 +145,7 @@ export default async function ActivityTypeHubPage({
           </p>
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <a
-              href={`/${params.locale}/create`}
+              href={`/${params.locale}/create?type=${params.type}`}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -157,9 +157,9 @@ export default async function ActivityTypeHubPage({
                 textDecoration: 'none',
                 fontWeight: 600,
               }}
-              aria-label={`Create a ${typeLabel}`}
+              aria-label={`Make a ${typeLabel} game`}
             >
-              + Create a {typeLabel}
+              + Make a {typeLabel} game
             </a>
             <a
               href={`/${params.locale}/activities`}
@@ -273,7 +273,7 @@ export default async function ActivityTypeHubPage({
                 </a>
               ))
             ) : (
-              <EmptyActivitiesCTA locale={params.locale} />
+              <EmptyActivitiesCTA locale={params.locale} typeSlug={params.type} typeLabel={typeLabel} />
             )}
           </div>
         </section>

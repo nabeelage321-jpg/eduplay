@@ -36,6 +36,20 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'video-quiz',       icon: '🎬', name: 'Video Quiz',       desc: 'Watch the video, answer as it plays' },
 ]
 
+/**
+ * SINGLE-GAME MAKER ENTRY (2026-11-04): a type hub page links to
+ * /create?type=<slug> so a teacher can make one single game of that
+ * type directly. Validate the query value against the known type list:
+ * a valid slug is returned as-is, anything else (unknown slug, blank,
+ * non-string) returns null and the creator simply opens with no type
+ * preselected — never a crash, never an invented type.
+ */
+export function resolveInitialType(value: string | null | undefined): string | null {
+  if (!value || typeof value !== 'string') return null
+  const slug = value.trim().toLowerCase()
+  return ACTIVITY_TYPE_META.some((t) => t.slug === slug) ? slug : null
+}
+
 interface TypeSelectorProps {
   selected: string | null
   onSelect: (slug: string) => void

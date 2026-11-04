@@ -5,7 +5,22 @@
 // Until a database-backed listing lands (future batch, needs Supabase
 // resumed), they show this: a plain statement plus two real actions
 // (Browse real activities, Create a game), both with 48px+ touch targets.
-export default function EmptyActivitiesCTA({ locale }: { locale: string }) {
+export default function EmptyActivitiesCTA({
+  locale,
+  typeSlug,
+  typeLabel,
+}: {
+  locale: string
+  // SINGLE-GAME MAKER ENTRY (2026-11-04): when a type hub renders
+  // this empty state, its "make a game" action opens the maker with
+  // that type preselected. Without them (other pages) the button
+  // keeps its old generic /create link.
+  typeSlug?: string
+  typeLabel?: string
+}) {
+  const createHref = typeSlug
+    ? `/${locale}/create?type=${encodeURIComponent(typeSlug)}`
+    : `/${locale}/create`
   return (
     <div
       style={{
@@ -51,7 +66,7 @@ export default function EmptyActivitiesCTA({ locale }: { locale: string }) {
           Browse Games
         </a>
         <a
-          href={`/${locale}/create`}
+          href={createHref}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -66,7 +81,7 @@ export default function EmptyActivitiesCTA({ locale }: { locale: string }) {
             fontWeight: 600,
           }}
         >
-          Create a Game
+          {typeLabel ? `Make a ${typeLabel} game` : 'Create a Game'}
         </a>
       </div>
     </div>

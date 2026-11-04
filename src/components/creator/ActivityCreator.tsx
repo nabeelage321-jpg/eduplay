@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import TypeSelector, { ACTIVITY_TYPE_META } from './TypeSelector'
+import TypeSelector, { ACTIVITY_TYPE_META, resolveInitialType } from './TypeSelector'
 import RolePicker, { readStoredRole, storeRole, type CreatorRole } from './RolePicker'
 import MetaForm, { type ActivityMeta } from './MetaForm'
 import ItemEditor from './ItemEditor'
@@ -32,6 +32,16 @@ const STEPS = [
 
 interface ActivityCreatorProps {
   locale: SupportedLocale
+  /**
+   * SINGLE-GAME MAKER ENTRY (2026-11-04): raw ?type= value from the
+   * create page (a hub CTA link). Validated by resolveInitialType
+   * against the known type list; an invalid value means no
+   * preselection, never a crash. The preselected type is only the
+   * starting Step 1 pick — the creator can change it in Step 1
+   * afterwards, and the Step 1 pick still wins over an approved
+   * prompt draft (see resolveApprovedType, Preview fix 2026-11-04).
+   */
+  initialType?: string | null
 }
 
 /**
@@ -45,12 +55,16 @@ export function resolveApprovedType(existingType: string | null, draftType: stri
   return existingType ?? draftType
 }
 
-export default function ActivityCreator({ locale }: ActivityCreatorProps) {
+export default function ActivityCreator({ locale, initialType }: ActivityCreatorProps) {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [creatorRole, setCreatorRole] = useState<CreatorRole>('teacher')
   const [roleHydrated, setRoleHydrated] = useState(false)
-  const [typeSlug, setTypeSlug] = useState<string | null>(null)
+  // SINGLE-GAME MAKER ENTRY: preselectedType is fixed at open time so
+  // the "Making:" banner stays honest about where the maker came from;
+  // typeSlug is the live Step 1 pick and starts at the same value.
+  const [preselectedType] = useState<string | null>(() => resolveInitialType(initialType))
+  const [typeSlug, setTypeSlug] = useState<string | null>(() => resolveInitialType(initialType))
   const [meta, setMeta] = useState<ActivityMeta>({
     title: '', description: '', subject: '', grade: '',
     locale: locale || 'en', curriculum: '', tags: '',
@@ -173,6 +187,28 @@ export default function ActivityCreator({ locale }: ActivityCreatorProps) {
 
   return (
     <div className="eduplay-create" style={{ maxWidth: '680px', margin: '0 auto', padding: '1rem' }}>
+      {/* SINGLE-GAME MAKER ENTRY: when the maker was opened from a type
+          hub's "Make a … game" link, say plainly at the top which
+          single game is being made, so the prompt Quiz radio above
+          cannot confuse it. The banner follows the live Step 1 pick,
+          which the creator can still change in Step 1. */}
+      {preselectedType && (
+        <div
+          role="status"
+          style={{
+            background: 'color-mix(in srgb, var(--color-primary) 12%, var(--color-surface))',
+            border: '2px solid var(--color-primary)', borderRadius: 'var(--radius)',
+            padding: '1rem', marginBottom: '1.25rem',
+          }}
+        >
+          <p style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontWeight: 700, margin: '0 0 0.25rem' }}>
+            🎮 Making: {ACTIVITY_TYPE_META.find((t) => t.slug === typeSlug)?.name ?? ACTIVITY_TYPE_META.find((t) => t.slug === preselectedType)?.name ?? preselectedType}
+          </p>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: 0 }}>
+            You are making a single game of this type. Change it in Step 1 (Type) if you want a different game.
+          </p>
+        </div>
+      )}
       {/* Prompt-to-game + chapter-scan, prominent at the top of /create.
           Both are lazy-loaded; approval only fills the wizard below. */}
       <PromptToGame onApprove={approveDraft} />
