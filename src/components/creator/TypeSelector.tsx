@@ -35,6 +35,7 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'jigsaw-puzzle',    icon: '🧩', name: 'Jigsaw Puzzle',    desc: 'Rebuild the picture, then answer about it' },
   { slug: 'video-quiz',       icon: '🎬', name: 'Video Quiz',       desc: 'Watch the video, answer as it plays' },
   { slug: 'letter-wheel',     icon: '🔠', name: 'Letter Wheel',     desc: 'Answer one definition per letter on the wheel' },
+  { slug: 'maze-run',         icon: '🌀', name: 'Maze Run',         desc: 'Run the maze to the correct answer tile' },
 ]
 
 /**

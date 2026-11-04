@@ -443,6 +443,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Letter Wheel',
     description_en: 'Answer one definition per letter on the wheel',
   },
+  {
+    slug: 'maze-run',
+    icon: '🌀',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Maze Run',
+    name_ur: 'Maze Run',
+    name_ar: 'Maze Run',
+    name_hi: 'Maze Run',
+    name_es: 'Maze Run',
+    name_fr: 'Maze Run',
+    description_en: 'Run the maze to the correct answer tile',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

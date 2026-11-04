@@ -19,7 +19,7 @@
  *   with a plain reason, and the play page shows that message instead
  *   of the player — never a mangled game.
  * - The target list mirrors ACTIVITY_TYPE_META (TypeSelector) and
- *   ActivityPlayer's component map (32 types). If a type is added to
+ *   ActivityPlayer's component map (33 types). If a type is added to
  *   either, it must be added here with a compatibility decision, or
  *   it will fall into the incompatible default below — which is the
  *   safe direction (message, not mangled play).
@@ -66,6 +66,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'jigsaw-puzzle',    icon: '🧩', name: 'Jigsaw Puzzle' },
   { slug: 'video-quiz',       icon: '🎬', name: 'Video Quiz' },
   { slug: 'letter-wheel',     icon: '🔠', name: 'Letter Wheel' },
+  { slug: 'maze-run',         icon: '🌀', name: 'Maze Run' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -125,6 +126,8 @@ const INCOMPATIBLE_REASONS: Record<string, string> = {
     'Jigsaw Puzzle needs a picture to rebuild — these questions do not carry a picture.',
   'video-quiz':
     'Video Quiz needs a video with questions timed to it — these questions do not carry a video.',
+  'maze-run':
+    'Maze Run needs its own maze with answer tiles placed in it — these questions do not carry a maze.',
 }
 
 /**

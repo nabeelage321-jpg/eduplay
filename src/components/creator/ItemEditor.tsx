@@ -37,6 +37,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'jigsaw-puzzle': { prompt: 'Final question about the picture', answer: 'Final answer (typed)' },
   'video-quiz': { prompt: 'Question about the video', answer: 'Correct answer' },
   'letter-wheel': { prompt: 'Definition for this letter', answer: 'Word that fits the definition' },
+  'maze-run': { prompt: 'Question for this maze', answer: 'Correct answer tile' },
 }
 
 const fieldStyle: React.CSSProperties = {
