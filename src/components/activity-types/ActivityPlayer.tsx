@@ -49,6 +49,7 @@ const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
   'speed-judge':      lazy(() => import('./SpeedJudgeActivity')),
   'spell-it':         lazy(() => import('./SpellItActivity')),
   'picture-answer':   lazy(() => import('./PictureAnswerActivity')),
+  'memory-recall':    lazy(() => import('./MemoryRecallActivity')),
 }
 
 interface ActivityPlayerProps {

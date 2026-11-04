@@ -41,6 +41,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'speed-judge': { prompt: 'Question (the claim is about this)', answer: 'Correct answer (true claims use this)' },
   'spell-it': { prompt: 'Clue or question', answer: 'Word to spell' },
   'picture-answer': { prompt: 'Question about the picture', answer: 'Correct answer' },
+  'memory-recall': { prompt: 'Prompt to remember', answer: 'Answer to recall' },
 }
 
 const fieldStyle: React.CSSProperties = {

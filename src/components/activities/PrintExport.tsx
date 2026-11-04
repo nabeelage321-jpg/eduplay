@@ -157,6 +157,24 @@ export function generatePrintHTML(activity: Activity): string {
         </div>`,
         )
         .join('')}`
+  } else if (slug === 'memory-recall') {
+    // Recall worksheet: the prompt only plus a writing line.
+    // The answer lives ONLY in the key, never on the student
+    // sheet. The on-screen study phase has no paper
+    // equivalent, so the sheet says plainly to answer from
+    // memory — it is a recall test, not an open-book sheet.
+    itemsHTML = `
+      <p class="match-intro">Answer each question from memory — do not look at your notes. Write your recalled answer on the line.</p>
+      ${items
+        .map(
+          (item, i) => `
+        <div class="item">
+          <div class="question-num">${i + 1}.</div>
+          <p class="prompt">${esc(item.prompt)}</p>
+          <p class="answer-blank">Answer: _______________________________</p>
+        </div>`,
+        )
+        .join('')}`
   } else if (slug === 'order') {
     itemsHTML = `
       <p class="match-intro">Write the correct order number (1, 2, 3…) in the blank beside each item.</p>

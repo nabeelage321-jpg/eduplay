@@ -49,6 +49,11 @@ export function normalizeWorksheetTypeSlug(slug: string | undefined | null): str
  *   sheet. A printed picture is the teacher's own URL, so a
  *   printed sheet only shows pictures the teacher already
  *   supplied; the browser prints the image from its URL.
+ * - memory-recall: prompt + writing line (answer from
+ *   memory, never on the student sheet), key lists the
+ *   answer — never on the student sheet. The on-screen
+ *   study phase has no paper equivalent, so the sheet
+ *   says plainly to answer from memory.
  */
 export const PRINTABLE_WORKSHEET_TYPES: ReadonlySet<string> = new Set([
   'quiz',
@@ -77,6 +82,7 @@ export const PRINTABLE_WORKSHEET_TYPES: ReadonlySet<string> = new Set([
   'speed-judge',
   'spell-it',
   'picture-answer',
+  'memory-recall',
 ])
 
 /** Deliberately NOT printable in v1, and why (shown as a plain note, never a printout). */

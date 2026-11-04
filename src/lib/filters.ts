@@ -83,6 +83,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'speed-judge', label: 'Speed Judge' },
   { value: 'spell-it', label: 'Spell It' },
   { value: 'picture-answer', label: 'Picture Answer' },
+  { value: 'memory-recall', label: 'Memory Recall' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

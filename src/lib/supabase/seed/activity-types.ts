@@ -495,6 +495,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Picture Answer',
     description_en: 'Answer the question about the picture',
   },
+  {
+    slug: 'memory-recall',
+    icon: '💭',
+    supports_live: true,
+    supports_print: true,
+    name_en: 'Memory Recall',
+    name_ur: 'Memory Recall',
+    name_ar: 'Memory Recall',
+    name_hi: 'Memory Recall',
+    name_es: 'Memory Recall',
+    name_fr: 'Memory Recall',
+    description_en: 'Study the pairs, then recall them from memory',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)
