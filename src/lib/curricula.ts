@@ -693,6 +693,22 @@ export function resolveCurriculumTag(
   return { countryCode, syllabusSlug }
 }
 
+/**
+ * HUB CTA ENTRY (beat-plan build #1): raw ?country= value from the
+ * create page (a hub CTA link, e.g. ?country=Pakistan). Matches an
+ * exact country NAME (case-insensitive, trimmed — the same rule the
+ * PromptToGame datalist uses in pickCountry) and returns its code;
+ * anything else means no preselection, never a crash and never a
+ * guessed country.
+ */
+export function resolveInitialCountry(value: string | null | undefined): string {
+  if (!value || typeof value !== 'string') return ''
+  const name = value.trim().toLowerCase()
+  if (!name) return ''
+  const match = CURRICULUM_COUNTRIES.find((c) => c.name.toLowerCase() === name)
+  return match ? match.code : ''
+}
+
 /** Display data for a validated tag, or null when it is not valid. */
 export function curriculumTagDisplay(tag: CurriculumTag): {
   countryName: string

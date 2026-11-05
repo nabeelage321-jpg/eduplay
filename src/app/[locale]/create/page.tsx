@@ -7,7 +7,7 @@ import type { SupportedLocale } from '@/types'
 
 interface Props {
   params: { locale: SupportedLocale }
-  searchParams?: { type?: string | string[] }
+  searchParams?: { type?: string | string[]; country?: string | string[] }
 }
 
 export const metadata: Metadata = {
@@ -24,6 +24,12 @@ export default function CreatePage({ params, searchParams }: Props) {
   // preselection, never a crash).
   const rawType = searchParams?.type
   const initialType = Array.isArray(rawType) ? rawType[0] : rawType
+  // BEAT-PLAN BUILD #1: a curriculum hub links here with
+  // ?country=<name> (e.g. ?country=Pakistan). Pass the raw value
+  // through; ActivityCreator/PromptToGame validate it against the
+  // known country list (invalid = General, never a crash).
+  const rawCountry = searchParams?.country
+  const initialCountry = Array.isArray(rawCountry) ? rawCountry[0] : rawCountry
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{ minHeight: '100vh', background: 'var(--color-background)' }}>
@@ -31,7 +37,7 @@ export default function CreatePage({ params, searchParams }: Props) {
 
       {/* Creator wizard */}
       <div style={{ padding: '1.5rem 0.5rem' }}>
-        <ActivityCreator locale={params.locale} initialType={initialType} />
+        <ActivityCreator locale={params.locale} initialType={initialType} initialCountry={initialCountry} />
       </div>
     </div>
   )

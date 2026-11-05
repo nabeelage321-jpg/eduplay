@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase/server'
+import { resolveCurriculumTag, type CurriculumTag } from '@/lib/curricula'
 
 /**
  * Programmatic SEO — real-DB mapping (2026-10-30 SEO batch).
@@ -182,4 +183,107 @@ export async function fetchProgrammaticActivities(
 /** Indexing rule, single source of truth: >=1 real game = index. */
 export function isIndexable(count: number): boolean {
   return count > 0
+}
+
+export interface PakistanCurriculumActivity extends ProgrammaticActivity {
+  /** Validated seed tag, or null (a row that fails validation is dropped). */
+  curriculum: CurriculumTag | null
+}
+
+/**
+ * BEAT-PLAN BUILD #1 — Pakistan curriculum hub listing.
+ *
+ * AUDIT (2026-11-05): curriculum tags are stored ONLY inside the
+ * game's content JSON (content.curriculum = { countryCode,
+ * syllabusSlug }, server-validated on save in POST /api/activities).
+ * There is NO server query path to list games by tag — GET
+ * /api/activities filters subject/grade/type/locale/search only, and
+ * the browse country/syllabus filter is phase 2 and NOT built here.
+ * So this hub carries its own server fetch, mirroring
+ * fetchProgrammaticActivities above (same service-role client, same
+ * fail-to-empty behaviour). It is the hub's own listing, not a browse
+ * filter: no browse UI changes in this batch.
+ *
+ * A game counts only when its tag validates against the seed AND
+ * names Pakistan (countryCode 'PK') — any Pakistan syllabus (NCP
+ * 2022, BISE/FBISE, AKU-EB, Cambridge, IB) counts, because the tag
+ * means "made for Pakistan". Public only, so a pending kid game can
+ * never appear here. Returns [] / 0 on any error (e.g. placeholder
+ * env at build time), so the page renders the honest empty state
+ * and stays noindex instead of inventing games.
+ */
+export async function fetchPakistanCurriculumActivities(
+  limit = 100,
+): Promise<{ activities: PakistanCurriculumActivity[]; count: number }> {
+  // Node fetch has no default timeout: on this VM a dead host hangs
+  // instead of failing (observed 2026-11-05 — a plain Node fetch to
+  // the placeholder host never returns, while curl fails in 0.25s).
+  // Race the queries so a hung network can never hang a build or a
+  // page render; a timeout is just another empty result. 10s is far
+  // above a real Supabase round-trip for this select (<1s).
+  const queryTimeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Pakistan hub query timed out')), 10_000),
+  )
+  try {
+    const supabase = createServerClient()
+    const [countRes, dataRes] = await Promise.race([
+      Promise.all([
+        supabase
+          .from('activities')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_public', true)
+          .filter('content->curriculum->>countryCode', 'eq', 'PK'),
+        supabase
+          .from('activities')
+          .select('id, title, description, subject, grade, type, content')
+          .eq('is_public', true)
+          .filter('content->curriculum->>countryCode', 'eq', 'PK')
+          .order('created_at', { ascending: false })
+          .range(0, limit - 1),
+      ]),
+      queryTimeout,
+    ])
+    if (countRes.error || dataRes.error) return { activities: [], count: 0 }
+    const rows = (dataRes.data ?? []) as Array<{
+      id: string
+      title: string
+      description: string | null
+      subject: string
+      grade: string
+      type: string
+      content?: { curriculum?: unknown } | null
+    }>
+    const activities: PakistanCurriculumActivity[] = rows
+      .map((row) => {
+        const raw = row.content?.curriculum
+        const tag =
+          raw && typeof raw === 'object'
+            ? resolveCurriculumTag(
+                (raw as { countryCode?: unknown }).countryCode,
+                (raw as { syllabusSlug?: unknown }).syllabusSlug,
+              )
+            : null
+        return {
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          subject: row.subject,
+          grade: row.grade,
+          type: row.type,
+          curriculum: tag && tag.countryCode === 'PK' ? tag : null,
+        }
+      })
+      // Defence in depth: a row can only carry a server-validated tag,
+      // so this drops nothing in practice — it only guards against a
+      // hand-written row with a stale or invented syllabus slug.
+      .filter((a) => a.curriculum !== null)
+    // The displayed count is the validated total whenever this page
+    // holds every match; above the limit it is the DB total (a row can
+    // only carry a server-validated tag, so validated == DB total in
+    // practice — the page never overcounts).
+    const dbCount = countRes.count ?? activities.length
+    return { activities, count: dbCount <= limit ? activities.length : dbCount }
+  } catch {
+    return { activities: [], count: 0 }
+  }
 }

@@ -43,6 +43,13 @@ interface ActivityCreatorProps {
    * prompt draft (see resolveApprovedType, Preview fix 2026-11-04).
    */
   initialType?: string | null
+  /**
+   * BEAT-PLAN BUILD #1: raw ?country= value from the create page (a
+   * hub CTA link, e.g. ?country=Pakistan). Passed through to
+   * PromptToGame, which validates it with resolveInitialCountry;
+   * an invalid value means General, never a crash.
+   */
+  initialCountry?: string | null
 }
 
 /**
@@ -56,7 +63,7 @@ export function resolveApprovedType(existingType: string | null, draftType: stri
   return existingType ?? draftType
 }
 
-export default function ActivityCreator({ locale, initialType }: ActivityCreatorProps) {
+export default function ActivityCreator({ locale, initialType, initialCountry }: ActivityCreatorProps) {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [creatorRole, setCreatorRole] = useState<CreatorRole>('teacher')
@@ -224,7 +231,7 @@ export default function ActivityCreator({ locale, initialType }: ActivityCreator
       )}
       {/* Prompt-to-game + chapter-scan, prominent at the top of /create.
           Both are lazy-loaded; approval only fills the wizard below. */}
-      <PromptToGame onApprove={approveDraft} />
+      <PromptToGame onApprove={approveDraft} initialCountry={initialCountry} />
       <ChapterScan onApprove={approveDraft} />
       {/* Batch 1 — creator role picker (local choice; auth is a later batch) */}
       <div style={{ maxWidth: '720px', margin: '0 auto 1.5rem' }}>

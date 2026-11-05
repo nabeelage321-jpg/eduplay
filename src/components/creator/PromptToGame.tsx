@@ -9,6 +9,7 @@ import {
   curriculumTagLabel,
   getCurriculumCountry,
   resolveCurriculumTag,
+  resolveInitialCountry,
 } from '@/lib/curricula'
 import type { ActivityItem } from '@/types'
 
@@ -162,9 +163,19 @@ function chipStyle(selected: boolean): React.CSSProperties {
 
 export default function PromptToGame({
   onApprove,
+  initialCountry,
 }: {
   /** Called with the edited draft. Nothing is saved or published here. */
   onApprove: (draft: PromptDraft) => void
+  /**
+   * BEAT-PLAN BUILD #1: raw ?country= value from the create page (a
+   * hub CTA link, e.g. ?country=Pakistan). Validated by
+   * resolveInitialCountry — an exact country name preselects it,
+   * anything else means General, never a crash and never a guess.
+   * The teacher can change it afterwards, exactly like the type
+   * preselect in Step 1.
+   */
+  initialCountry?: string | null
 }) {
   const [mode, setMode] = useState<'guided' | 'free'>('guided')
   const [subject, setSubject] = useState('')
@@ -177,8 +188,11 @@ export default function PromptToGame({
   // box is a searchable text input (datalist): typing filters the
   // list natively, and only an exact country name counts as a pick —
   // anything else is General, never a guessed country.
-  const [countryInput, setCountryInput] = useState('')
-  const [countryCode, setCountryCode] = useState('')
+  const [countryInput, setCountryInput] = useState(() => {
+    const code = resolveInitialCountry(initialCountry)
+    return code ? getCurriculumCountry(code)?.name ?? '' : ''
+  })
+  const [countryCode, setCountryCode] = useState(() => resolveInitialCountry(initialCountry))
   const [syllabusSlug, setSyllabusSlug] = useState('')
   const pickedCountry = countryCode ? getCurriculumCountry(countryCode) : undefined
   const pickedSyllabus = pickedCountry?.syllabuses.find((s) => s.slug === syllabusSlug)
