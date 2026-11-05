@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { PROMPT_GAME_TYPES, type PromptDraft, type PromptGameType } from '@/lib/prompt-to-game'
-import { FILTER_SUBJECTS, FILTER_GRADES } from '@/lib/filters'
+import { FILTER_SUBJECTS, FILTER_GRADES, resolveInitialSubject } from '@/lib/filters'
 import {
   CURRICULUM_COUNTRIES,
   CURRICULUM_KIND_LABELS,
@@ -164,6 +164,7 @@ function chipStyle(selected: boolean): React.CSSProperties {
 export default function PromptToGame({
   onApprove,
   initialCountry,
+  initialSubject,
 }: {
   /** Called with the edited draft. Nothing is saved or published here. */
   onApprove: (draft: PromptDraft) => void
@@ -176,9 +177,18 @@ export default function PromptToGame({
    * preselect in Step 1.
    */
   initialCountry?: string | null
+  /**
+   * BEAT-PLAN BUILD #3: raw ?subject= value from the create page (a
+   * subject-hub CTA link, e.g. ?subject=Urdu). Validated by
+   * resolveInitialSubject — an exact subject name preselects it,
+   * anything else means no preselection, never a crash and never a
+   * guess. The teacher can change it afterwards, exactly like the
+   * country preselect above.
+   */
+  initialSubject?: string | null
 }) {
   const [mode, setMode] = useState<'guided' | 'free'>('guided')
-  const [subject, setSubject] = useState('')
+  const [subject, setSubject] = useState(() => resolveInitialSubject(initialSubject))
   const [grade, setGrade] = useState('')
   const [prompt, setPrompt] = useState('')
   // WORLDWIDE CURRICULUM v1 (2026-11-04): country + syllabus are

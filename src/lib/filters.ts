@@ -127,6 +127,25 @@ export function normalizeSubjectFilter(input: string): string {
   return SUBJECT_LABEL_TO_DB[v.toLowerCase()] ?? v
 }
 
+/**
+ * BEAT-PLAN BUILD #3 — resolve a raw ?subject= value to a canonical
+ * DB subject value, or '' when it is not a known subject. Mirrors
+ * resolveInitialCountry (curricula.ts): an exact subject name
+ * (case-insensitive, trimmed) preselects it, anything else means no
+ * preselection — never a crash and never a guessed subject. The
+ * legacy display labels ('math', 'mathematics') resolve to 'Math'
+ * exactly like the browse normalizer; every other unknown value
+ * returns '' instead of passing through.
+ */
+export function resolveInitialSubject(value: string | null | undefined): string {
+  if (!value || typeof value !== 'string') return ''
+  const name = value.trim().toLowerCase()
+  if (!name) return ''
+  const match = FILTER_SUBJECTS.find((s) => s.value.toLowerCase() === name)
+  if (match) return match.value
+  return SUBJECT_LABEL_TO_DB[name] ?? ''
+}
+
 /** Normalize a grade filter value to the exact DB value. */
 export function normalizeGradeFilter(input: string): string {
   const v = input.trim()

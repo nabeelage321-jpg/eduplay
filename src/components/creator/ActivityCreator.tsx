@@ -50,6 +50,13 @@ interface ActivityCreatorProps {
    * an invalid value means General, never a crash.
    */
   initialCountry?: string | null
+  /**
+   * BEAT-PLAN BUILD #3: raw ?subject= value from the create page (a
+   * subject-hub CTA link, e.g. ?subject=Urdu). Passed through to
+   * PromptToGame, which validates it with resolveInitialSubject;
+   * an invalid value means no preselection, never a crash.
+   */
+  initialSubject?: string | null
 }
 
 /**
@@ -63,7 +70,7 @@ export function resolveApprovedType(existingType: string | null, draftType: stri
   return existingType ?? draftType
 }
 
-export default function ActivityCreator({ locale, initialType, initialCountry }: ActivityCreatorProps) {
+export default function ActivityCreator({ locale, initialType, initialCountry, initialSubject }: ActivityCreatorProps) {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [creatorRole, setCreatorRole] = useState<CreatorRole>('teacher')
@@ -231,7 +238,7 @@ export default function ActivityCreator({ locale, initialType, initialCountry }:
       )}
       {/* Prompt-to-game + chapter-scan, prominent at the top of /create.
           Both are lazy-loaded; approval only fills the wizard below. */}
-      <PromptToGame onApprove={approveDraft} initialCountry={initialCountry} />
+      <PromptToGame onApprove={approveDraft} initialCountry={initialCountry} initialSubject={initialSubject} />
       <ChapterScan onApprove={approveDraft} />
       {/* Batch 1 — creator role picker (local choice; auth is a later batch) */}
       <div style={{ maxWidth: '720px', margin: '0 auto 1.5rem' }}>

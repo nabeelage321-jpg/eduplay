@@ -7,7 +7,7 @@ import type { SupportedLocale } from '@/types'
 
 interface Props {
   params: { locale: SupportedLocale }
-  searchParams?: { type?: string | string[]; country?: string | string[] }
+  searchParams?: { type?: string | string[]; country?: string | string[]; subject?: string | string[] }
 }
 
 export const metadata: Metadata = {
@@ -30,6 +30,12 @@ export default function CreatePage({ params, searchParams }: Props) {
   // known country list (invalid = General, never a crash).
   const rawCountry = searchParams?.country
   const initialCountry = Array.isArray(rawCountry) ? rawCountry[0] : rawCountry
+  // BEAT-PLAN BUILD #3: a subject hub links here with ?subject=<name>
+  // (e.g. ?subject=Urdu). Pass the raw value through;
+  // ActivityCreator/PromptToGame validate it against the known
+  // subject list (invalid = no preselection, never a crash).
+  const rawSubject = searchParams?.subject
+  const initialSubject = Array.isArray(rawSubject) ? rawSubject[0] : rawSubject
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{ minHeight: '100vh', background: 'var(--color-background)' }}>
@@ -37,7 +43,7 @@ export default function CreatePage({ params, searchParams }: Props) {
 
       {/* Creator wizard */}
       <div style={{ padding: '1.5rem 0.5rem' }}>
-        <ActivityCreator locale={params.locale} initialType={initialType} initialCountry={initialCountry} />
+        <ActivityCreator locale={params.locale} initialType={initialType} initialCountry={initialCountry} initialSubject={initialSubject} />
       </div>
     </div>
   )

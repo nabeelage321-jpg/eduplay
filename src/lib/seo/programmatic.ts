@@ -287,3 +287,49 @@ export async function fetchPakistanCurriculumActivities(
     return { activities: [], count: 0 }
   }
 }
+
+/**
+ * BEAT-PLAN BUILD #3 — "Urdu games for kids" hub listing.
+ *
+ * Distinct filter: subject = 'Urdu' (DB_SUBJECT_BY_SLUG['urdu']),
+ * ANY curriculum — a game counts by its subject column, never by a
+ * curriculum tag, so Pakistani, Indian, diaspora and international
+ * Urdu games all belong here. Public only, newest first. Same shape
+ * and fail-to-empty behaviour as fetchPakistanCurriculumActivities
+ * (same service-role client, same 10s timeout race — a hung network
+ * can never hang a build or a page render), so the page renders the
+ * honest empty state and stays noindex instead of inventing games.
+ */
+export async function fetchUrduSubjectActivities(
+  limit = 100,
+): Promise<{ activities: ProgrammaticActivity[]; count: number }> {
+  const queryTimeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Urdu hub query timed out')), 10_000),
+  )
+  try {
+    const supabase = createServerClient()
+    const [countRes, dataRes] = await Promise.race([
+      Promise.all([
+        supabase
+          .from('activities')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_public', true)
+          .eq('subject', DB_SUBJECT_BY_SLUG.urdu),
+        supabase
+          .from('activities')
+          .select('id, title, description, subject, grade, type')
+          .eq('is_public', true)
+          .eq('subject', DB_SUBJECT_BY_SLUG.urdu)
+          .order('created_at', { ascending: false })
+          .range(0, limit - 1),
+      ]),
+      queryTimeout,
+    ])
+    if (countRes.error || dataRes.error) return { activities: [], count: 0 }
+    const activities = (dataRes.data ?? []) as ProgrammaticActivity[]
+    const dbCount = countRes.count ?? activities.length
+    return { activities, count: dbCount <= limit ? activities.length : dbCount }
+  } catch {
+    return { activities: [], count: 0 }
+  }
+}
