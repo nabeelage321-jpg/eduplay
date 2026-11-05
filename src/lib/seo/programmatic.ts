@@ -335,6 +335,56 @@ export async function fetchUrduSubjectActivities(
 }
 
 /**
+ * BEAT-PLAN BUILD #6 — "Free educational games for kids" hub listing.
+ *
+ * Distinct filter: NONE — every public game is free to play, so this
+ * hub lists ALL public games, newest first. That is exactly why the
+ * page is a value-proposition landing page (free + ad-free promise,
+ * safety note, capped start-here picks, FAQ), NOT a second browse
+ * catalogue: /en/browse is the filterable catalogue (filters, sort,
+ * 500 per page); this page shows only 12 newest games plus subject
+ * and type entry points and answers the parent's "is it really free
+ * and safe?" questions. Same shape and fail-to-empty behaviour as
+ * the subject helpers (same service-role client, same 10s timeout
+ * race), so the page renders the honest empty state and stays
+ * noindex instead of inventing games.
+ *
+ * LIVE COUNT (verified 2026-11-05 against GET /api/activities?
+ * sort=newest — pagination.total): 5,112 public games (5,110
+ * programme + 2 saved since). The hub is POPULATED from day one.
+ */
+export async function fetchFreeEducationalGamesActivities(
+  limit = 12,
+): Promise<{ activities: ProgrammaticActivity[]; count: number }> {
+  const queryTimeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Free games hub query timed out')), 10_000),
+  )
+  try {
+    const supabase = createServerClient()
+    const [countRes, dataRes] = await Promise.race([
+      Promise.all([
+        supabase
+          .from('activities')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_public', true),
+        supabase
+          .from('activities')
+          .select('id, title, description, subject, grade, type')
+          .eq('is_public', true)
+          .order('created_at', { ascending: false })
+          .range(0, limit - 1),
+      ]),
+      queryTimeout,
+    ])
+    if (countRes.error || dataRes.error) return { activities: [], count: 0 }
+    const activities = (dataRes.data ?? []) as ProgrammaticActivity[]
+    const dbCount = countRes.count ?? activities.length
+    return { activities, count: dbCount <= limit ? activities.length : dbCount }
+  } catch {
+    return { activities: [], count: 0 }
+  }
+}
+/**
  * BEAT-PLAN BUILD #4 — "Islamiyat quiz" hub listing.
  *
  * Distinct filter: subject = 'Islamiyat' (DB_SUBJECT_BY_SLUG['islamiat']),
