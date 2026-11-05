@@ -333,3 +333,57 @@ export async function fetchUrduSubjectActivities(
     return { activities: [], count: 0 }
   }
 }
+
+/**
+ * BEAT-PLAN BUILD #4 — "Islamiyat quiz" hub listing.
+ *
+ * Distinct filter: subject = 'Islamiyat' (DB_SUBJECT_BY_SLUG['islamiat']),
+ * ANY curriculum — a game counts by its subject column, never by a
+ * curriculum tag, so Pakistani, diaspora and international Islamiyat
+ * games all belong here. Public only, newest first. Same shape and
+ * fail-to-empty behaviour as fetchUrduSubjectActivities (same
+ * service-role client, same 10s timeout race — a hung network can
+ * never hang a build or a page render), so the page renders the
+ * honest empty state and stays noindex instead of inventing games.
+ *
+ * LIVE COUNT (verified 2026-11-05 against GET /api/activities?
+ * subject=Islamiyat, all 342 rows fetched): 342 public games, ALL
+ * subject=Islamiyat, ALL public — 23 per grade × 14 grades = 322
+ * programme games + 20 older pre-k games; 23 types present. The hub
+ * is POPULATED from day one — unlike hub #3, whose builder expected
+ * 0 and found 342 live. The empty state is kept only as the honest
+ * fallback for a fetch failure.
+ */
+export async function fetchIslamiyatSubjectActivities(
+  limit = 100,
+): Promise<{ activities: ProgrammaticActivity[]; count: number }> {
+  const queryTimeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Islamiyat hub query timed out')), 10_000),
+  )
+  try {
+    const supabase = createServerClient()
+    const [countRes, dataRes] = await Promise.race([
+      Promise.all([
+        supabase
+          .from('activities')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_public', true)
+          .eq('subject', DB_SUBJECT_BY_SLUG.islamiat),
+        supabase
+          .from('activities')
+          .select('id, title, description, subject, grade, type')
+          .eq('is_public', true)
+          .eq('subject', DB_SUBJECT_BY_SLUG.islamiat)
+          .order('created_at', { ascending: false })
+          .range(0, limit - 1),
+      ]),
+      queryTimeout,
+    ])
+    if (countRes.error || dataRes.error) return { activities: [], count: 0 }
+    const activities = (dataRes.data ?? []) as ProgrammaticActivity[]
+    const dbCount = countRes.count ?? activities.length
+    return { activities, count: dbCount <= limit ? activities.length : dbCount }
+  } catch {
+    return { activities: [], count: 0 }
+  }
+}
