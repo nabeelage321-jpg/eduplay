@@ -10,6 +10,7 @@ import MetaForm, { type ActivityMeta } from './MetaForm'
 import ItemEditor from './ItemEditor'
 import ActivityPreview from './ActivityPreview'
 import type { PromptDraft } from '@/lib/prompt-to-game'
+import { PENDING_PROMPT_DRAFT_KEY } from '@/lib/prompt-to-game'
 import { curriculumTagLabel, resolveCurriculumTag, type CurriculumTag } from '@/lib/curricula'
 import type { ActivityItem, SupportedLocale } from '@/types'
 
@@ -108,6 +109,44 @@ export default function ActivityCreator({ locale, initialType, initialCountry, i
   const [curriculumTag, setCurriculumTag] = useState<CurriculumTag | null>(null)
 
   useEffect(() => { setCreatorRole(readStoredRole()); setRoleHydrated(true) }, [])
+
+  // PENDING-DRAFT HANDOFF (separate prompt page, 2026-11-06): the
+  // standalone /prompt-to-game page stores an approved draft in
+  // sessionStorage and routes here. Read it ONCE on mount and apply
+  // it through the SAME approveDraft below — the draft fills the
+  // wizard and jumps to Preview, nothing is saved. ADDITIVE ONLY:
+  // no step reorder, no design change, no behaviour change for a
+  // normal /create visit — the key is absent, nothing happens. The
+  // key is removed the moment it is read, so it can never fire
+  // twice. A corrupt handoff is ignored silently: the creator opens
+  // empty, exactly as if the teacher had arrived with no draft.
+  // Without this read the standalone page would be a dead end — an
+  // approved draft would have nowhere to go — so this small read is
+  // the handoff itself, not a redesign of this page.
+  useEffect(() => {
+    let raw: string | null = null
+    try {
+      raw = window.sessionStorage.getItem(PENDING_PROMPT_DRAFT_KEY)
+      if (raw) window.sessionStorage.removeItem(PENDING_PROMPT_DRAFT_KEY)
+    } catch {
+      raw = null
+    }
+    if (!raw) return
+    try {
+      const parsed: unknown = JSON.parse(raw)
+      if (
+        parsed && typeof parsed === 'object' &&
+        typeof (parsed as PromptDraft).title === 'string' &&
+        ['quiz', 'match-up', 'unjumble'].includes((parsed as PromptDraft).type) &&
+        Array.isArray((parsed as PromptDraft).items)
+      ) {
+        approveDraft(parsed as PromptDraft)
+      }
+    } catch {
+      // Corrupt handoff: ignore it, open empty. Never a crash.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function canProceed(): boolean {
     if (step === 1) return !!typeSlug

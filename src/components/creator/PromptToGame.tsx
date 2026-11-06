@@ -165,6 +165,7 @@ export default function PromptToGame({
   onApprove,
   initialCountry,
   initialSubject,
+  starterChips,
 }: {
   /** Called with the edited draft. Nothing is saved or published here. */
   onApprove: (draft: PromptDraft) => void
@@ -186,6 +187,16 @@ export default function PromptToGame({
    * country preselect above.
    */
   initialSubject?: string | null
+  /**
+   * SEPARATE PROMPT PAGE (2026-11-06): predefined starter prompts
+   * for the standalone /prompt-to-game page (owner order: prompts
+   * should be "almost predefined"). Each chip fills the prompt box
+   * exactly like the topic chips below. OPTIONAL and default
+   * absent — /create passes nothing, so the full creator renders
+   * exactly as before. Plain topic prompts only, never a
+   * curriculum, board, or official-alignment claim.
+   */
+  starterChips?: Array<{ label: string; prompt: string }>
 }) {
   const [mode, setMode] = useState<'guided' | 'free'>('guided')
   const [subject, setSubject] = useState(() => resolveInitialSubject(initialSubject))
@@ -319,6 +330,31 @@ export default function PromptToGame({
         Both make the same editable draft. Approving only fills the
         creator — nothing is published until you save it yourself.
       </p>
+
+      {/* SEPARATE PROMPT PAGE (2026-11-06): predefined starter prompts.
+          Rendered ONLY when the caller passes them (the standalone
+          prompt page); /create passes none, so this block never
+          appears there. Tapping one fills the prompt box — the
+          teacher can still edit it before making a draft. */}
+      {starterChips && starterChips.length > 0 && (
+        <div style={{ marginBottom: '1rem' }}>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: '0 0 0.5rem' }}>
+            ⭐ Start with one of these — tap to fill your prompt:
+          </p>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {starterChips.map((c) => (
+              <button
+                key={c.label}
+                type="button"
+                onClick={() => setPrompt(c.prompt)}
+                style={chipStyle(prompt === c.prompt)}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* WORLDWIDE CURRICULUM v1 (2026-11-04): country FIRST, then its
           syllabus, then the existing subject/grade/prompt flow. Both

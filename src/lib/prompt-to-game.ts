@@ -18,6 +18,18 @@ import type { ActivityItem } from '@/types'
 
 export type PromptGameType = 'quiz' | 'match-up' | 'unjumble'
 
+/**
+ * PENDING-DRAFT HANDOFF (separate prompt page, 2026-11-06) — the
+ * sessionStorage key that carries an approved prompt draft from the
+ * standalone /prompt-to-game page to /create. sessionStorage, not
+ * localStorage: the draft is for this tab's flow only, and
+ * ActivityCreator removes the key the moment it reads it, so it can
+ * never fire twice or leak into a later, unrelated /create visit.
+ * Lives here (not in a component) because both the standalone page
+ * and ActivityCreator need the same string.
+ */
+export const PENDING_PROMPT_DRAFT_KEY = 'eduplay-pending-prompt-draft'
+
 export const PROMPT_GAME_TYPES: Array<{ id: PromptGameType; label: string }> = [
   { id: 'quiz', label: 'Quiz' },
   { id: 'match-up', label: 'Match Up' },
