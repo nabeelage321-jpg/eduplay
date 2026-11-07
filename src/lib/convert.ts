@@ -76,6 +76,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'opinion-cloud',    icon: '☁️', name: 'Opinion Cloud' },
   { slug: 'number-slider',    icon: '🎚️', name: 'Number Slider' },
   { slug: 'maze-chase',      icon: '👻', name: 'Maze Chase' },
+  { slug: 'apple-snake',     icon: '🍎', name: 'Apple Snake' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -397,6 +398,21 @@ export function canConvertTo(
             ok: false,
             reason:
               'Maze Chase needs at least one different answer to borrow as a wrong ball in every maze — one of these questions has no other answer to borrow from.',
+          }
+
+    // Apple Snake (type 42): the garden is generated from the game's
+    // own items — one garden per question, apples are the correct
+    // answer plus wrong answers borrowed from the other items,
+    // exactly like Maze Run. A round needs at least one wrong
+    // apple whose label differs from the correct answer, or the
+    // garden has no choice in it.
+    case 'apple-snake':
+      return items.every((_, i) => hasBorrowableWrong(items, i))
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Apple Snake needs at least one different answer to borrow as a wrong apple in every garden — one of these questions has no other answer to borrow from.',
           }
 
     default:

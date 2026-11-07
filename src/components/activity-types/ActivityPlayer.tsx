@@ -55,6 +55,7 @@ const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
   'opinion-cloud':    lazy(() => import('./OpinionCloudActivity')),
   'number-slider':    lazy(() => import('./NumberSliderActivity')),
   'maze-chase':       lazy(() => import('./MazeChaseActivity')),
+  'apple-snake':      lazy(() => import('./AppleSnakeActivity')),
 }
 
 interface ActivityPlayerProps {

@@ -91,6 +91,7 @@ export const DB_TYPE_BY_SLUG: Record<string, string> = {
   'opinion-cloud': 'opinion-cloud',
   'number-slider': 'number-slider',
   'maze-chase': 'maze-chase',
+  'apple-snake': 'apple-snake',
 }
 
 export interface ProgrammaticActivity {

@@ -29,7 +29,9 @@
  *     lives, NO timer, NO wrong answers. number-slider: exact +10,
  *     near +5, far 0 and -1 life, 30s/round, 3 lives. maze-chase:
  *     10 pts, 45s/round, 3 lives (wrong ball, ghost catch, or
- *     time-up costs one). aster-quiz:
+ *     time-up costs one). apple-snake: 10 pts, 45s/round, 3 lives
+ *     (wrong apple, wall bump, tail bite, or time-up costs one).
+ *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
  *     10 pts per card you know. random-wheel / open-box: 10 pts
@@ -342,6 +344,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Arrow keys or WASD, or the on-screen arrow pad.',
     timer: '45 seconds per round.',
     lives: 'You have 3 lives — a wrong ball, a ghost catch, or a time-up costs one.',
+  }),
+  'apple-snake': rules({
+    howTo: 'Steer your snake through the garden — it moves on its own, so guide it to the apple with the correct answer.',
+    scoring: 'Each correct apple earns 10 points, and your snake grows by one segment.',
+    objective: 'Eat the right apple in every garden and grow the longest snake you can.',
+    controls: 'Arrow keys or WASD, or the on-screen arrow pad.',
+    timer: '45 seconds per round.',
+    lives: 'You have 3 lives — a wrong apple, a wall bump, a tail bite, or a time-up costs one.',
   }),
 }
 

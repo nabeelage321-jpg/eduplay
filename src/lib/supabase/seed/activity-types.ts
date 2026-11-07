@@ -560,6 +560,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Maze Chase',
     description_en: 'Eat the right answer, dodge the ghost',
   },
+  {
+    slug: 'apple-snake',
+    icon: '🍎',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Apple Snake',
+    name_ur: 'Apple Snake',
+    name_ar: 'Apple Snake',
+    name_hi: 'Apple Snake',
+    name_es: 'Apple Snake',
+    name_fr: 'Apple Snake',
+    description_en: 'Eat the right apple and grow',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)
