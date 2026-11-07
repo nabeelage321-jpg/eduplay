@@ -68,10 +68,10 @@ export default function V0Hero({
               for every locale (no translations invented); it matches
               the hero's existing hardcoded English lines above. */}
           <div aria-label="Ad-Free for Kids" style={{ margin: '1.5rem auto 0', maxWidth: '36rem', borderRadius: '1rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '1rem 1.25rem', textAlign: 'center' }}>
-            <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--color-text-primary)' }}>
+            <p style={{ margin: 0, fontSize: '1.125rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--color-text-primary)' }}>
               🛡️ Ad-Free for Kids
             </p>
-            <p style={{ margin: '0.25rem 0 0', fontSize: '1rem', fontWeight: 600, lineHeight: 1.5, color: 'var(--color-text-secondary)' }}>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.875rem', fontWeight: 600, lineHeight: 1.5, color: 'var(--color-text-secondary)' }}>
               No fullscreen ad before a kid&apos;s game, ever.
             </p>
           </div>
@@ -79,9 +79,9 @@ export default function V0Hero({
           <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
             <Link
               href={`/${locale}/activities`}
-              style={{ display: 'inline-flex', minHeight: '56px', alignItems: 'center', gap: '0.75rem', borderRadius: '9999px', background: 'var(--color-primary)', padding: '0 2rem', fontSize: '1.25rem', fontWeight: 800, color: 'white', boxShadow: '0 6px 0 0 var(--color-primary-dark)' }}
+              style={{ display: 'inline-flex', minHeight: '72px', alignItems: 'center', gap: '1rem', borderRadius: '9999px', background: 'var(--color-primary)', padding: '0 3rem', fontSize: '1.75rem', fontWeight: 800, color: 'white', boxShadow: '0 6px 0 0 var(--color-primary-dark)' }}
             >
-              <Play style={{ width: '1.5rem', height: '1.5rem', fill: 'currentColor' }} aria-hidden="true" />
+              <Play style={{ width: '2rem', height: '2rem', fill: 'currentColor' }} aria-hidden="true" />
               {playGames}
             </Link>
 
