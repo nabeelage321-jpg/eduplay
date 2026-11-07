@@ -55,6 +55,10 @@
  *     tower or a miss wastes one of 3 stones; spending all 3
  *     stones without the correct tower costs one life and ends
  *     the round).
+ *     brick-bounce: 10 pts per correct brick (3 per round), 3
+ *     lives (a wrong brick or a fall past the paddle costs one
+ *     of 3 balls; spending all 3 balls without smashing every
+ *     correct brick costs one life and ends the round).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -448,6 +452,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Drag back on the slingshot with your mouse or finger and release to fire — or use the up/down arrow keys for angle, left/right for power, and Space to fire.',
     timer: 'No timer — take your time to aim, but you only get 3 stones per round.',
     lives: 'You have 3 lives — a wrong tower or a miss only wastes a stone, but spending all 3 stones without the correct tower costs one life and ends the round.',
+  }),
+  'brick-bounce': rules({
+    howTo: 'Slide the paddle along the bottom to bounce the ball up into the wall of bricks — smash the bricks with the right answer. Where the ball hits the paddle decides where it goes next.',
+    scoring: 'Each correct brick smashed earns 10 points — 3 right-answer bricks per round.',
+    objective: 'Smash every right-answer brick in every round without running out of lives.',
+    controls: 'Move your mouse or drag your finger across the field to slide the paddle — or use the left/right arrow keys. Press Space, tap the field, or press LAUNCH to send the ball up.',
+    timer: 'No timer — take your time to aim, but you only get 3 balls per round.',
+    lives: 'You have 3 lives — a wrong brick or a ball falling past the paddle only costs a ball, but spending all 3 balls without smashing every right-answer brick costs one life and ends the round.',
   }),
 }
 

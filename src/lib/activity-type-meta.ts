@@ -61,4 +61,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'lane-runner',      icon: '🏃', name: 'Lane Runner',      desc: 'Run the lanes and race through the gate with the right answer' },
   { slug: 'block-drop',       icon: '🧱', name: 'Block Drop',       desc: 'Drop falling blocks to spell the word or make the sum' },
   { slug: 'slingshot-aim',    icon: '🎯', name: 'Slingshot Aim',    desc: 'Aim the slingshot and knock down the tower with the right answer' },
+  { slug: 'brick-bounce',     icon: '🧱', name: 'Brick Bounce',     desc: 'Bounce the ball off the paddle to smash the bricks with the right answer' },
 ]

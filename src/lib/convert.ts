@@ -32,6 +32,7 @@ import { sequenceTerms, borrowNumericWrongAnswers, RIVER_HOP_MIN_NUMERIC_WRONGS 
 import { borrowWrongAnswers as borrowLaneRunnerWrongAnswers, LANE_RUNNER_MAX_WRONGS } from '@/lib/lane-runner'
 import { buildBlockDropRound } from '@/lib/block-drop'
 import { buildSlingshotAimRound } from '@/lib/slingshot-aim'
+import { buildBrickBounceRound } from '@/lib/brick-bounce'
 
 export interface ConvertTarget {
   slug: string
@@ -91,6 +92,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'lane-runner',      icon: '🏃', name: 'Lane Runner' },
   { slug: 'block-drop',       icon: '🧱', name: 'Block Drop' },
   { slug: 'slingshot-aim',    icon: '🎯', name: 'Slingshot Aim' },
+  { slug: 'brick-bounce',     icon: '🧱', name: 'Brick Bounce' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -586,6 +588,27 @@ export function canConvertTo(
             ok: false,
             reason:
               'Slingshot Aim needs at least two different answers to borrow as wrong towers in every round — one of these questions has no other answers to borrow from.',
+          }
+
+    // Brick Bounce (type 52): the round is generated from the
+    // game's own items — one wall per question, the correct
+    // answer on 3 bricks and wrong answers borrowed from the
+    // other items on the rest. A round needs at least two
+    // different answers to borrow, or the wall has no choice
+    // in it.
+    case 'brick-bounce':
+      return items.every((item) =>
+        buildBrickBounceRound(
+          item.prompt,
+          item.answer,
+          items.map((i) => i.answer),
+        ),
+      )
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Brick Bounce needs at least two different answers to borrow as wrong bricks in every round — one of these questions has no other answers to borrow from.',
           }
 
     default:

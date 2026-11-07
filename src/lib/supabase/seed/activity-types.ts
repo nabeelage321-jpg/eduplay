@@ -690,6 +690,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Slingshot Aim',
     description_en: 'Aim the slingshot and knock down the tower with the right answer',
   },
+  {
+    slug: 'brick-bounce',
+    icon: '🧱',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Brick Bounce',
+    name_ur: 'Brick Bounce',
+    name_ar: 'Brick Bounce',
+    name_hi: 'Brick Bounce',
+    name_es: 'Brick Bounce',
+    name_fr: 'Brick Bounce',
+    description_en: 'Bounce the ball off the paddle to smash the bricks with the right answer',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)
