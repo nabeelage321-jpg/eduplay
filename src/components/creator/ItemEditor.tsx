@@ -62,6 +62,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'block-drop': { prompt: 'Question for this drop', answer: 'Word to spell (3–6 letters) or sum answer (0–27)' },
   'slingshot-aim': { prompt: 'Question for this round', answer: 'Correct answer tower' },
   'brick-bounce': { prompt: 'Question for this wall', answer: 'Correct answer brick' },
+  'rock-blaster': { prompt: 'Question for this space', answer: 'Correct answer asteroid' },
 }
 
 const fieldStyle: React.CSSProperties = {

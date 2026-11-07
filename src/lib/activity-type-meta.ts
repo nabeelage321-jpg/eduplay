@@ -62,4 +62,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'block-drop',       icon: '🧱', name: 'Block Drop',       desc: 'Drop falling blocks to spell the word or make the sum' },
   { slug: 'slingshot-aim',    icon: '🎯', name: 'Slingshot Aim',    desc: 'Aim the slingshot and knock down the tower with the right answer' },
   { slug: 'brick-bounce',     icon: '🧱', name: 'Brick Bounce',     desc: 'Bounce the ball off the paddle to smash the bricks with the right answer' },
+  { slug: 'rock-blaster',      icon: '🪨', name: 'Rock Blaster',      desc: 'Fly your ship through space and blast the asteroid with the right answer' },
 ]

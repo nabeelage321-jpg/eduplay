@@ -33,6 +33,7 @@ import { borrowWrongAnswers as borrowLaneRunnerWrongAnswers, LANE_RUNNER_MAX_WRO
 import { buildBlockDropRound } from '@/lib/block-drop'
 import { buildSlingshotAimRound } from '@/lib/slingshot-aim'
 import { buildBrickBounceRound } from '@/lib/brick-bounce'
+import { buildRockBlasterRound } from '@/lib/rock-blaster'
 
 export interface ConvertTarget {
   slug: string
@@ -93,6 +94,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'block-drop',       icon: '🧱', name: 'Block Drop' },
   { slug: 'slingshot-aim',    icon: '🎯', name: 'Slingshot Aim' },
   { slug: 'brick-bounce',     icon: '🧱', name: 'Brick Bounce' },
+  { slug: 'rock-blaster',      icon: '🪨', name: 'Rock Blaster' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -609,6 +611,27 @@ export function canConvertTo(
             ok: false,
             reason:
               'Brick Bounce needs at least two different answers to borrow as wrong bricks in every round — one of these questions has no other answers to borrow from.',
+          }
+
+    // Rock Blaster (type 53): the round is generated from the
+    // game's own items — one sky per question, the correct
+    // answer on one asteroid and wrong answers borrowed from
+    // the other items on the rest. A round needs at least two
+    // different answers to borrow, or the sky has no choice
+    // in it.
+    case 'rock-blaster':
+      return items.every((item) =>
+        buildRockBlasterRound(
+          item.prompt,
+          item.answer,
+          items.map((i) => i.answer),
+        ),
+      )
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Rock Blaster needs at least two different answers to borrow as wrong asteroids in every round — one of these questions has no other answers to borrow from.',
           }
 
     default:

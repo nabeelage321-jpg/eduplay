@@ -703,6 +703,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Brick Bounce',
     description_en: 'Bounce the ball off the paddle to smash the bricks with the right answer',
   },
+  {
+    slug: 'rock-blaster',
+    icon: '🪨',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Rock Blaster',
+    name_ur: 'Rock Blaster',
+    name_ar: 'Rock Blaster',
+    name_hi: 'Rock Blaster',
+    name_es: 'Rock Blaster',
+    name_fr: 'Rock Blaster',
+    description_en: 'Fly your ship through space and blast the asteroid with the right answer',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

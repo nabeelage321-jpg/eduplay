@@ -59,6 +59,11 @@
  *     lives (a wrong brick or a fall past the paddle costs one
  *     of 3 balls; spending all 3 balls without smashing every
  *     correct brick costs one life and ends the round).
+ *     rock-blaster: 10 pts per correct asteroid (1 per round), 3
+ *     lives (a wrong asteroid wastes one of 6 bullets and a
+ *     crash into any asteroid costs one life and ends the
+ *     round; spending all 6 bullets without blasting the
+ *     correct asteroid costs one life and ends the round).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -460,6 +465,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Move your mouse or drag your finger across the field to slide the paddle — or use the left/right arrow keys. Press Space, tap the field, or press LAUNCH to send the ball up.',
     timer: 'No timer — take your time to aim, but you only get 3 balls per round.',
     lives: 'You have 3 lives — a wrong brick or a ball falling past the paddle only costs a ball, but spending all 3 balls without smashing every right-answer brick costs one life and ends the round.',
+  }),
+  'rock-blaster': rules({
+    howTo: 'Fly your ship through space — turn with the arrow keys, thrust to drift, and blast the asteroid with the right answer. Or tap an asteroid to shoot straight at it. Dodge the rocks you are not shooting.',
+    scoring: 'Each correct asteroid blasted earns 10 points — one right-answer asteroid per round.',
+    objective: 'Blast the correct asteroid in every round without running out of lives.',
+    controls: 'Hold the left/right arrow keys to turn, hold up to thrust, and press Space to fire — or use the on-screen turn, thrust, and FIRE buttons. Tap an asteroid to shoot straight at it.',
+    timer: 'No timer — take your time to aim, but you only get 6 bullets per round.',
+    lives: 'You have 3 lives — a wrong asteroid only wastes a bullet, but crashing into any asteroid costs one life and ends the round, and spending all 6 bullets without blasting the correct asteroid costs one life and ends the round.',
   }),
 }
 
