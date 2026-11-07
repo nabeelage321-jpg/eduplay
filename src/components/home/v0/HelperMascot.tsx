@@ -1,22 +1,44 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, CircleHelp, Search, Sparkles, X } from 'lucide-react'
+import TwinkleArt from './TwinkleArt'
+import {
+  MASCOT_NAME,
+  MASCOT_ANCHORS,
+  MASCOT_PLAY_ANCHORS,
+  MASCOT_MOVE_MS,
+  MASCOT_WANDER_MS,
+  isPlayPath,
+  pickNextAnchor,
+  type MascotAnchor,
+} from '@/lib/mascot'
 
-// V0 ZIP #2 helper-mascot port (adapted, not copied): V0 used Tailwind-4
-// tokens and a 1408×768 mascot image at scale 1.9. Here the mascot is the
-// same original orange star + teal book image, cropped and optimised to
-// 512×512 (979 KB → 281 KB), shown with Next Image. The panel is quick
-// actions only — no chat backend, no personal data, never pretending to
-// be a human. Greeting is dismissible and remembered on this device only.
+// Twinkle — EduPlay's helper star (original inline-SVG character: eyes,
+// smile, hands, feet; one hand holds a book, the other a phone).
+// The mascot ROAMS: it slowly drifts between screen corners so kids see
+// it walking around on every screen. Small, always at the edges, and it
+// never covers buttons, game controls, the Start button, or the right
+// panel — the wrapper takes no pointer events, only the mascot button
+// itself is tappable, and on play pages it stays at the bottom corners
+// only. Tapping it opens the helper panel (quick actions only — no chat
+// backend, no personal data, never pretending to be a human). The
+// greeting is dismissible and remembered on this device only.
 const GREETING_KEY = 'eduplay-helper-greeted'
 
 export default function HelperMascot({ locale }: { locale: string }) {
   const [open, setOpen] = useState(false)
   const [showGreeting, setShowGreeting] = useState(false)
+  const [anchor, setAnchor] = useState<MascotAnchor>(MASCOT_ANCHORS[0])
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const openRef = useRef(open)
+  openRef.current = open
+
+  const pathname = usePathname()
+  const onPlayPage = isPlayPath(pathname)
+  const allowed = onPlayPage ? MASCOT_PLAY_ANCHORS : MASCOT_ANCHORS
 
   useEffect(() => {
     try {
@@ -25,6 +47,24 @@ export default function HelperMascot({ locale }: { locale: string }) {
       setShowGreeting(true)
     }
   }, [])
+
+  // Wander: drift to a new corner every so often. Never while the helper
+  // panel is open — the panel must not drift away from the reader.
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (openRef.current) return
+      setAnchor((current) => pickNextAnchor(current.id, allowed))
+    }, MASCOT_WANDER_MS)
+    return () => window.clearInterval(id)
+  }, [allowed])
+
+  // If a top corner is showing when a play page opens, drift back down
+  // to a bottom corner (play pages use the bottom corners only).
+  useEffect(() => {
+    if (onPlayPage && anchor.id !== 'bottom-right' && anchor.id !== 'bottom-left') {
+      setAnchor(MASCOT_ANCHORS[0])
+    }
+  }, [onPlayPage, anchor.id])
 
   const dismissGreeting = () => {
     setShowGreeting(false)
@@ -42,15 +82,28 @@ export default function HelperMascot({ locale }: { locale: string }) {
   ] as const
 
   return (
-    <div style={{ position: 'fixed', insetInlineEnd: '1rem', bottom: '6.5rem', zIndex: 40, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.75rem' }} className="lg:bottom-6">
+    <div
+      style={{
+        position: 'fixed',
+        left: anchor.left,
+        top: anchor.top,
+        zIndex: 40,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: anchor.side === 'right' ? 'flex-end' : 'flex-start',
+        gap: '0.75rem',
+        pointerEvents: 'none',
+        transition: `left ${MASCOT_MOVE_MS}ms ease-in-out, top ${MASCOT_MOVE_MS}ms ease-in-out`,
+      }}
+    >
       {open && (
         <div
           role="dialog"
-          aria-label="EduPlay helper"
-          style={{ width: 'min(20rem, calc(100vw - 2rem))', borderRadius: '1.5rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '1rem', boxShadow: '0 8px 0 0 var(--color-border)', color: 'var(--color-text-primary)' }}
+          aria-label={`${MASCOT_NAME} — EduPlay's helper`}
+          style={{ width: 'min(20rem, calc(100vw - 2rem))', borderRadius: '1.5rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '1rem', boxShadow: '0 8px 0 0 var(--color-border)', color: 'var(--color-text-primary)', pointerEvents: 'auto' }}
         >
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
-            <p style={{ fontSize: '1.125rem', fontWeight: 600 }}>EduPlay helper</p>
+            <p style={{ fontSize: '1.125rem', fontWeight: 600 }}>{MASCOT_NAME}</p>
             <button
               type="button"
               onClick={() => {
@@ -84,10 +137,10 @@ export default function HelperMascot({ locale }: { locale: string }) {
       {showGreeting && !open && (
         <div
           role="status"
-          style={{ position: 'relative', display: 'flex', maxWidth: '16rem', alignItems: 'flex-start', gap: '0.25rem', borderRadius: '1.5rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '0.75rem 0.25rem 0.75rem 1rem', color: 'var(--color-text-primary)', boxShadow: '0 6px 0 0 var(--color-border)' }}
+          style={{ position: 'relative', display: 'flex', maxWidth: '16rem', alignItems: 'flex-start', gap: '0.25rem', borderRadius: '1.5rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '0.75rem 0.25rem 0.75rem 1rem', color: 'var(--color-text-primary)', boxShadow: '0 6px 0 0 var(--color-border)', pointerEvents: 'auto' }}
         >
           <p style={{ fontSize: '0.875rem', fontWeight: 600, lineHeight: 1.5 }}>
-            Hi! I am EduPlay&apos;s helper. I can help you find a game or make one from a prompt.
+            Hi! I&apos;m {MASCOT_NAME} — EduPlay&apos;s helper. I can help you find a game or make one from a prompt.
           </p>
           <button
             type="button"
@@ -107,10 +160,11 @@ export default function HelperMascot({ locale }: { locale: string }) {
           setOpen((v) => !v)
         }}
         aria-expanded={open}
-        aria-label={open ? 'Close EduPlay helper' : 'Open EduPlay helper'}
-        style={{ position: 'relative', width: '64px', height: '64px', overflow: 'hidden', borderRadius: '9999px', border: '2px solid var(--color-border)', background: '#FFF8E7', boxShadow: '0 4px 0 0 var(--color-primary-dark)', cursor: 'pointer', padding: 0 }}
+        aria-label={open ? `Close ${MASCOT_NAME} helper` : `Open ${MASCOT_NAME} helper`}
+        className="eduplay-mascot-bob"
+        style={{ position: 'relative', width: '64px', height: '64px', overflow: 'hidden', borderRadius: '9999px', border: '2px solid var(--color-border)', background: '#FFF8E7', boxShadow: '0 4px 0 0 var(--color-primary-dark)', cursor: 'pointer', padding: '4px', pointerEvents: 'auto' }}
       >
-        <Image src="/eduplay-mascot.png" alt="" width={512} height={512} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <TwinkleArt />
       </button>
     </div>
   )

@@ -1020,6 +1020,19 @@
     animation: none;
   }
 }
+/* Twinkle, the helper mascot: a soft bob so the star feels alive while
+   it roams the screen edges. The drift itself is a left/top transition
+   on the mascot wrapper; reduced-motion users get a still mascot. */
+@keyframes eduplay-mascot-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.eduplay-mascot-bob { animation: eduplay-mascot-bob 3s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .eduplay-mascot-bob {
+    animation: none;
+  }
+}
 /* Creator + prompt boxes: 48px primary actions, 1rem text, and a
    bottom-centre primary action row on small screens. */
 .eduplay-create button,

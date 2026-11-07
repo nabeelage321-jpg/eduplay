@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import type { SupportedLocale } from '@/types'
 import { RTL_LOCALES } from '@/types'
 import AuthProvider from '@/components/auth/AuthProvider'
+import HelperMascot from '@/components/home/v0/HelperMascot'
 import '@/styles/globals.css'
 
 const locales: SupportedLocale[] = [
@@ -96,7 +97,10 @@ export default async function LocaleLayout({
       </head>
       <body className="theme-transition antialiased" suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            {children}
+            <HelperMascot locale={locale} />
+          </AuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>

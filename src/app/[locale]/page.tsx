@@ -23,7 +23,6 @@ import { DB_SUBJECT_BY_SLUG, DB_TYPE_BY_SLUG } from '@/lib/seo/programmatic'
 import V0Hero from '@/components/home/v0/V0Hero'
 import V0GameCard from '@/components/home/v0/V0GameCard'
 import V0MobilePlayBar from '@/components/home/v0/V0MobilePlayBar'
-import HelperMascot from '@/components/home/v0/HelperMascot'
 import V0CreatorsSection from '@/components/home/v0/V0CreatorsSection'
 import V0SellingSection from '@/components/home/v0/V0SellingSection'
 import ThemeSection from '@/components/home/v0/ThemeSection'
@@ -522,7 +521,6 @@ export default async function HomePage({ params }: HomePageProps) {
         <div aria-hidden="true" style={{ height: '6rem' }} className="lg:hidden" />
       </main>
       <V0MobilePlayBar locale={locale} />
-      <HelperMascot locale={locale} />
     </div>
   )
 }
