@@ -44,6 +44,16 @@ export default function Navbar({ locale }: NavbarProps) {
     { href: `/${locale}/dashboard`,  label: t('dashboard') },
   ]
 
+  // NAV LOOK FIX (owner order 2026-11-07, launch day): the desktop row
+  // does NOT carry Dashboard. It was duplicated — a light-blue
+  // "Dashboard" pill in the nav sat beside the dark-blue "Dashboard"
+  // account button in the right actions, and the owner called it dumb.
+  // The blue account button stays; the nav pill goes. The mobile menu
+  // still uses navLinks above (untouched), so its content is unchanged.
+  const desktopNavLinks = navLinks.filter(
+    (link) => link.href !== `/${locale}/dashboard`,
+  )
+
   return (
     <>
     <header
@@ -81,18 +91,27 @@ export default function Navbar({ locale }: NavbarProps) {
             saw plain text links. Each link now carries a VISIBLE
             soft background (var(--color-surface-alt)) + 2px border
             (var(--color-border)), so the pill is plainly a pill.
-            This row renders in BOTH signed-in and signed-out states
-            (the session split is only in the right actions below),
-            so one fix covers both. Only the desktop row is styled
-            here; the mobile menu, the Dashboard blue pill, logo,
-            language, palette and user chip are untouched. */}
-        <div className="hidden md:flex items-center gap-1">
-          {navLinks.map((link) => (
+            2026-11-07 LOOK fix: the pills WRAPPED to two lines and
+            the row crowded — each label now has white-space nowrap
+            + flexShrink 0, the pills are compacted just enough to
+            fit one row (1rem / 44px / 0.5rem 0.875rem), and the row
+            only shows at xl (1280px) and up, where logo + 4 pills +
+            right actions genuinely fit one row; below xl the
+            hamburger menu serves navigation (its content is
+            untouched). This row renders in BOTH signed-in and
+            signed-out states (the session split is only in the
+            right actions below), so one fix covers both. Only the
+            desktop row is styled here; the mobile menu, the
+            Dashboard blue pill, logo, language, palette and user
+            chip are untouched. Every pill — Create included — shares
+            this one style object, so Create matches the rest exactly. */}
+        <div className="hidden xl:flex items-center gap-2" style={{ flexShrink: 0 }}>
+          {desktopNavLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className="btn-ghost"
-              style={{ display: 'inline-flex', minHeight: '48px', alignItems: 'center', padding: '0.625rem 1.125rem', borderRadius: '9999px', fontSize: '1.125rem', fontWeight: 700, background: 'var(--color-surface-alt)', border: '2px solid var(--color-border)' }}
+              style={{ display: 'inline-flex', minHeight: '44px', alignItems: 'center', padding: '0.5rem 0.875rem', borderRadius: '9999px', fontSize: '1rem', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0, background: 'var(--color-surface-alt)', border: '2px solid var(--color-border)' }}
             >
               {link.label}
             </Link>
