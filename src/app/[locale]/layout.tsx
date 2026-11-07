@@ -65,6 +65,7 @@ export default async function LocaleLayout({
                   var kids = ['space','ocean','jungle','princess','superhero','dinosaur','candy','farm','robot','magic','astronaut','garden','mountains','sky','waterfall'];
                   var roles = ['teacher','student','parent','creator'];
                   var palettes = ['sunset','forest','ocean-blue','plum','slate','gold'];
+                  var variants = ['clean-minimal','calm-focused','warm-nature','professional-trust','soft-classroom','gaming-world','superheroes','cute-creatures','dinosaurs','space-adventure','dopamine-brights','y2k-aero','dark-luxe','maximalism','anime-cyberpunk'];
                   function apply(data) {
                     if (!data || !data.state) return;
                     var state = data.state;
@@ -77,6 +78,9 @@ export default async function LocaleLayout({
                     }
                     if (palettes.indexOf(state.creatorPalette) >= 0) {
                       document.documentElement.setAttribute('data-creator-palette', state.creatorPalette);
+                    }
+                    if (variants.indexOf(state.themeVariant) >= 0) {
+                      document.documentElement.setAttribute('data-theme-variant', state.themeVariant);
                     }
                   }
                   // Current store name (theme-store) first, legacy key second.

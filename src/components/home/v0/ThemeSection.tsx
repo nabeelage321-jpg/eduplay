@@ -1,51 +1,50 @@
 'use client'
 
+import { useState } from 'react'
 import { useThemeStore } from '@/lib/store/theme-store'
 import { useThemeIntroStore } from '@/lib/store/theme-intro-store'
 import { getThemeIntro } from '@/lib/theme-intros'
-import type { Audience, KidsTheme, RoleTheme } from '@/types'
+import {
+  FONT_LABELS,
+  KIDS_WORLDS,
+  ROLE_PILLARS,
+  getRoleThemeEntry,
+  getThemesForRole,
+  type RoleId,
+  type RoleThemeEntry,
+} from '@/lib/role-themes'
 import { TILES } from './tiles'
 
-// Visible "Choose your theme" section for the homepage. This is an
-// ADDITIONAL entry point — the Navbar palette button is untouched and
-// still works exactly as before.
-// The 3 main themes are correct by design: Ladies, Gents and Kids are
-// AUDIENCES, not the whole theme system. Kids has 15 sub-themes below,
-// and the 4 role looks are a separate, device-only layer on top.
-const AUDIENCES: { id: Audience; emoji: string; label: string; blurb: string }[] = [
-  { id: 'ladies', emoji: '🌸', label: 'Ladies', blurb: 'Elegant, calm learning' },
-  { id: 'gents', emoji: '🎓', label: 'Gents', blurb: 'Professional, focused learning' },
-  { id: 'kids', emoji: '🎮', label: 'Kids', blurb: 'Fun, colourful adventure' },
-]
-
-const KIDS_THEMES: { id: KidsTheme; emoji: string; label: string }[] = [
-  { id: 'space', emoji: '🚀', label: 'Space' },
-  { id: 'ocean', emoji: '🌊', label: 'Ocean' },
-  { id: 'jungle', emoji: '🌿', label: 'Jungle' },
-  { id: 'princess', emoji: '👑', label: 'Princess' },
-  { id: 'superhero', emoji: '⚡', label: 'Superhero' },
-  { id: 'dinosaur', emoji: '🦕', label: 'Dinosaur' },
-  { id: 'candy', emoji: '🍭', label: 'Candy' },
-  { id: 'farm', emoji: '🐄', label: 'Farm' },
-  { id: 'robot', emoji: '🤖', label: 'Robot' },
-  { id: 'magic', emoji: '✨', label: 'Magic' },
-  { id: 'astronaut', emoji: '🧑‍🚀', label: 'Astronaut' },
-  { id: 'garden', emoji: '🌻', label: 'Garden' },
-  { id: 'mountains', emoji: '⛰️', label: 'Mountains' },
-  { id: 'sky', emoji: '☁️', label: 'Sky' },
-  { id: 'waterfall', emoji: '💧', label: 'Waterfall' },
-]
-
-const ROLES: { id: RoleTheme; emoji: string; label: string }[] = [
-  { id: 'teacher', emoji: '👩‍🏫', label: 'Teacher' },
-  { id: 'student', emoji: '🎓', label: 'Student' },
-  { id: 'parent', emoji: '👨‍👩‍👧', label: 'Parents' },
-  { id: 'creator', emoji: '🎨', label: 'Creator' },
-]
-
+// Role-first theme section for the homepage (build-list item 8, owner
+// order 2026-11-07). Themes are by ROLE, not gender — Ladies/Gents
+// are gone. Pick a role first, then see only that role's themes:
+// NOTHING shows before the role pick. The 4 pillars are Teacher,
+// Parents, Kids, Creator. Kids keep all 15 worlds UNTOUCHED (same
+// names, order, emojis). Gen is a FLAVOR inside each role, never a
+// top picker. Picking a theme still applies it exactly as before.
 export default function ThemeSection() {
-  const { audience, kidsTheme, roleTheme, setAudience, setKidsTheme, setRoleTheme } = useThemeStore()
+  const { audience, kidsTheme, roleTheme, themeVariant, setAudience, setKidsTheme, setRoleTheme, setThemeVariant } = useThemeStore()
   const requestIntro = useThemeIntroStore((s) => s.requestIntro)
+  const [pickedRole, setPickedRole] = useState<RoleId | null>(null)
+
+  // Which role is currently applied, for the ✓ on the pillar cards.
+  // 'student' is a legacy stored roleTheme value, not a pillar.
+  const variantEntry = themeVariant ? getRoleThemeEntry(themeVariant) : undefined
+  const activeRole: RoleId | null = variantEntry
+    ? variantEntry.role
+    : (roleTheme === 'teacher' || roleTheme === 'parent' || roleTheme === 'creator'
+        ? roleTheme
+        : (audience === 'kids' ? 'kids' : null))
+
+  const pickRole = (role: RoleId) => {
+    setPickedRole(role)
+    // Picking a pillar also applies that role's base look, as before.
+    if (role === 'kids') setAudience('kids')
+    else setRoleTheme(role)
+  }
+
+  const roleThemes: RoleThemeEntry[] = pickedRole ? getThemesForRole(pickedRole) : []
+  const pickedPillar = pickedRole ? ROLE_PILLARS.find((p) => p.id === pickedRole) : undefined
 
   return (
     <section aria-labelledby="themes-title" style={{ margin: '0 auto', maxWidth: '80rem', padding: '4rem 1rem' }}>
@@ -56,118 +55,180 @@ export default function ThemeSection() {
         Choose your theme
       </h2>
       <p style={{ marginTop: '0.75rem', fontSize: '1.125rem', fontWeight: 600, lineHeight: 1.6, color: 'var(--color-text-secondary)' }}>
-        Three main themes — Ladies, Gents and Kids — are the audiences. Kids has 15 worlds below, and the role looks are a
-        separate layer saved on this device only.
+        Pick who you are first — then see only your themes. Themes are by role, not by gender: a teacher can be a lady
+        or a gent. A theme is saved on this device only.
       </p>
 
-      <div style={{ marginTop: '2rem', display: 'grid', gap: '1.5rem' }} className="md:grid-cols-3">
-        {AUDIENCES.map((a, i) => {
-          const selected = audience === a.id
-          return (
-            <button
-              key={a.id}
-              type="button"
-              onClick={() => setAudience(a.id)}
-              aria-pressed={selected}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                gap: '0.5rem',
-                minHeight: '48px',
-                borderRadius: '1.5rem',
-                border: `2px solid ${selected ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                background: selected ? TILES[i % TILES.length] : 'var(--color-surface)',
-                padding: '1.5rem',
-                textAlign: 'start',
-                cursor: 'pointer',
-                boxShadow: selected ? '0 6px 0 0 var(--color-border)' : 'none',
-              }}
-            >
-              <span aria-hidden="true" style={{ fontSize: '2rem' }}>{a.emoji}</span>
-              <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                {a.label}{selected ? ' ✓' : ''}
-              </span>
-              <span style={{ fontSize: '1rem', color: 'var(--color-text-secondary)' }}>{a.blurb}</span>
-            </button>
-          )
-        })}
-      </div>
-
-      <h3 style={{ marginTop: '2.5rem', fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-        Kids worlds — all 15
-      </h3>
-      <p style={{ marginTop: '0.5rem', color: 'var(--color-text-secondary)' }}>
-        Tap a world to switch to Kids and apply it. Tapping a world turns off a role look, so the world&apos;s own colours
-        show — a role look otherwise keeps its colours on top. Tap any world for its short intro (under a minute, Skip anytime).
-      </p>
-      <ul style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', listStyle: 'none', padding: 0 }} aria-label="Kids themes">
-        {KIDS_THEMES.map((k, i) => {
-          const selected = audience === 'kids' && kidsTheme === k.id
-          return (
-            <li key={k.id}>
+      {!pickedRole && (
+        <div style={{ marginTop: '2rem', display: 'grid', gap: '1.5rem' }} className="md:grid-cols-2 lg:grid-cols-4">
+          {ROLE_PILLARS.map((p, i) => {
+            const selected = activeRole === p.id
+            const prominent = p.prominent
+            return (
               <button
+                key={p.id}
                 type="button"
-                onClick={() => { setAudience('kids'); setKidsTheme(k.id); const intro = getThemeIntro(k.id); if (intro) requestIntro(intro) }}
+                onClick={() => pickRole(p.id)}
                 aria-pressed={selected}
                 style={{
-                  display: 'inline-flex',
-                  minHeight: '48px',
-                  alignItems: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
                   gap: '0.5rem',
-                  borderRadius: '9999px',
+                  minHeight: '48px',
+                  borderRadius: '1.5rem',
                   border: `2px solid ${selected ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                  background: selected ? TILES[i % TILES.length] : 'var(--color-surface)',
-                  padding: '0 1.25rem',
-                  fontSize: '1rem',
-                  fontWeight: 700,
-                  color: 'var(--color-text-primary)',
+                  background: prominent
+                    ? 'linear-gradient(135deg, #EC4899 0%, #8B5CF6 50%, #0891B2 100%)'
+                    : (selected ? TILES[i % TILES.length] : 'var(--color-surface)'),
+                  padding: '1.5rem',
+                  textAlign: 'start',
                   cursor: 'pointer',
+                  boxShadow: selected || prominent ? '0 6px 0 0 var(--color-border)' : 'none',
                 }}
               >
-                {k.emoji} {k.label}
+                <span aria-hidden="true" style={{ fontSize: '2rem' }}>{p.emoji}</span>
+                <span style={{ fontSize: '1.5rem', fontWeight: 700, color: prominent ? '#fff' : 'var(--color-text-primary)' }}>
+                  {p.label}{selected ? ' ✓' : ''}
+                </span>
+                <span style={{ fontSize: '1rem', color: prominent ? 'rgba(255,255,255,0.9)' : 'var(--color-text-secondary)' }}>{p.blurb}</span>
+                {prominent && p.prominentNote && (
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#fff' }}>{p.prominentNote}</span>
+                )}
               </button>
-            </li>
-          )
-        })}
-      </ul>
+            )
+          })}
+        </div>
+      )}
 
-      <h3 style={{ marginTop: '2.5rem', fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-        Role looks — Teacher, Student, Parents, Creator
-      </h3>
-      <p style={{ marginTop: '0.5rem', color: 'var(--color-text-secondary)' }}>
-        A role look is saved on this device only. Tap again to turn it off.
-      </p>
-      <ul style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', listStyle: 'none', padding: 0 }} aria-label="Role looks">
-        {ROLES.map((r) => {
-          const selected = roleTheme === r.id
-          return (
-            <li key={r.id}>
-              <button
-                type="button"
-                onClick={() => setRoleTheme(selected ? null : r.id)}
-                aria-pressed={selected}
-                style={{
-                  display: 'inline-flex',
-                  minHeight: '48px',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  borderRadius: '9999px',
-                  border: `2px solid ${selected ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                  background: selected ? 'var(--color-surface-alt)' : 'var(--color-surface)',
-                  padding: '0 1.25rem',
-                  fontSize: '1rem',
-                  fontWeight: 700,
-                  color: 'var(--color-text-primary)',
-                  cursor: 'pointer',
-                }}
-              >
-                {r.emoji} {r.label}
-              </button>
-            </li>
-          )
-        })}
-      </ul>
+      {pickedRole && pickedPillar && (
+        <div style={{ marginTop: '2rem' }}>
+          <button
+            type="button"
+            onClick={() => setPickedRole(null)}
+            style={{
+              minHeight: '48px',
+              borderRadius: '9999px',
+              border: '2px solid var(--color-border)',
+              background: 'var(--color-surface)',
+              padding: '0 1.25rem',
+              fontSize: '1rem',
+              fontWeight: 700,
+              color: 'var(--color-text-primary)',
+              cursor: 'pointer',
+            }}
+          >
+            ← Change role
+          </button>
+          <h3 style={{ marginTop: '1.5rem', fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+            {pickedPillar.emoji} {pickedPillar.label} themes
+          </h3>
+          {pickedPillar.prominentNote && (
+            <p style={{ marginTop: '0.5rem', color: 'var(--color-text-secondary)' }}>{pickedPillar.prominentNote}</p>
+          )}
+
+          {pickedRole === 'kids' && (
+            <>
+              <h4 style={{ marginTop: '1.5rem', fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                Kids worlds — all 15
+              </h4>
+              <p style={{ marginTop: '0.5rem', color: 'var(--color-text-secondary)' }}>
+                Tap a world to switch to Kids and apply it. Tapping a world turns off a role look, so the world&apos;s own
+                colours show — a role look otherwise keeps its colours on top. Tap any world for its short intro (under a
+                minute, Skip anytime).
+              </p>
+              <ul style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', listStyle: 'none', padding: 0 }} aria-label="Kids themes">
+                {KIDS_WORLDS.map((k, i) => {
+                  const selected = audience === 'kids' && kidsTheme === k.id && !themeVariant
+                  return (
+                    <li key={k.id}>
+                      <button
+                        type="button"
+                        onClick={() => { setAudience('kids'); setKidsTheme(k.id); const intro = getThemeIntro(k.id); if (intro) requestIntro(intro) }}
+                        aria-pressed={selected}
+                        style={{
+                          display: 'inline-flex',
+                          minHeight: '48px',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          borderRadius: '9999px',
+                          border: `2px solid ${selected ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                          background: selected ? TILES[i % TILES.length] : 'var(--color-surface)',
+                          padding: '0 1.25rem',
+                          fontSize: '1rem',
+                          fontWeight: 700,
+                          color: 'var(--color-text-primary)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {k.emoji} {k.label}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+
+              <h4 style={{ marginTop: '2rem', fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                Gen Alpha themes
+              </h4>
+              <p style={{ marginTop: '0.5rem', color: 'var(--color-text-secondary)' }}>
+                The themes Gen Alpha loves — for kids who make games for their friends.
+              </p>
+            </>
+          )}
+
+          <div style={{ marginTop: '1rem', display: 'grid', gap: '1rem' }} className="md:grid-cols-2 lg:grid-cols-3">
+            {roleThemes.map((t) => {
+              const selected = themeVariant === t.id
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setThemeVariant(t.id)}
+                  aria-pressed={selected}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    gap: '0.5rem',
+                    minHeight: '48px',
+                    borderRadius: '1.5rem',
+                    border: `2px solid ${selected ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                    background: t.background,
+                    padding: '1.25rem',
+                    textAlign: 'start',
+                    cursor: 'pointer',
+                    boxShadow: selected ? '0 6px 0 0 var(--color-border)' : 'none',
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: '2.5rem',
+                      height: '2.5rem',
+                      borderRadius: '9999px',
+                      background: t.primary,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.25rem',
+                    }}
+                  >
+                    {t.emoji}
+                  </span>
+                  <span style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                    {t.name}{selected ? ' ✓' : ''}
+                  </span>
+                  <span style={{ fontSize: '1rem', color: 'var(--color-text-secondary)' }}>{t.blurb}</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                    {t.gen} · Font: {FONT_LABELS[t.font]}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </section>
   )
 }

@@ -472,29 +472,350 @@
 }
 
 /* Creator's own palette — SAFE fixed list only, never user CSS. */
-[data-theme][data-role-theme="creator"][data-creator-palette="sunset"] {
+[data-theme][data-role-theme="creator"][data-creator-palette="sunset"]:not([data-theme-variant]) {
   --color-primary: #C0392B; --color-primary-dark: #922B21;
   --gradient-btn: linear-gradient(135deg, #C0392B 0%, #F39C12 100%);
 }
-[data-theme][data-role-theme="creator"][data-creator-palette="forest"] {
+[data-theme][data-role-theme="creator"][data-creator-palette="forest"]:not([data-theme-variant]) {
   --color-primary: #2E7D32; --color-primary-dark: #1B5E20;
   --gradient-btn: linear-gradient(135deg, #2E7D32 0%, #F9A825 100%);
 }
-[data-theme][data-role-theme="creator"][data-creator-palette="ocean-blue"] {
+[data-theme][data-role-theme="creator"][data-creator-palette="ocean-blue"]:not([data-theme-variant]) {
   --color-primary: #0277BD; --color-primary-dark: #01579B;
   --gradient-btn: linear-gradient(135deg, #0277BD 0%, #00897B 100%);
 }
-[data-theme][data-role-theme="creator"][data-creator-palette="plum"] {
+[data-theme][data-role-theme="creator"][data-creator-palette="plum"]:not([data-theme-variant]) {
   --color-primary: #6A1B9A; --color-primary-dark: #4A148C;
   --gradient-btn: linear-gradient(135deg, #6A1B9A 0%, #E040FB 100%);
 }
-[data-theme][data-role-theme="creator"][data-creator-palette="slate"] {
+[data-theme][data-role-theme="creator"][data-creator-palette="slate"]:not([data-theme-variant]) {
   --color-primary: #37474F; --color-primary-dark: #263238;
   --gradient-btn: linear-gradient(135deg, #37474F 0%, #78909C 100%);
 }
-[data-theme][data-role-theme="creator"][data-creator-palette="gold"] {
+[data-theme][data-role-theme="creator"][data-creator-palette="gold"]:not([data-theme-variant]) {
   --color-primary: #B7950B; --color-primary-dark: #7D6608;
   --gradient-btn: linear-gradient(135deg, #B7950B 0%, #E67E22 100%);
+}
+
+/* ============================================================
+   ROLE-FIRST THEME VARIANTS (build-list item 8, 2026-11-07)
+   One rule per entry in src/lib/role-themes.ts, applied as
+   data-theme-variant on <html> via the theme store. These rules sit
+   AFTER the role looks and kids worlds (same specificity, later in
+   the file) so a picked variant always wins over the look underneath
+   it. The legacy creator palettes above are scoped with
+   :not([data-theme-variant]) so they never fight a variant.
+   Fonts are part of each theme: Gen Z = bold modern Inter; Gen
+   Alpha = playful Fredoka One display + Nunito body; teachers and
+   parents = Inter (clean/professional) or Nunito (warm/calm). All
+   three fonts are already loaded by the @import at the top of this
+   file — no new font dependency.
+   ============================================================ */
+
+/* --- Teachers + Parents share these 5 --- */
+
+/* Clean Minimal (Warm) */
+[data-theme][data-theme-variant="clean-minimal"] {
+  --color-primary:        #2F6B5E;
+  --color-primary-light:  #6FA99A;
+  --color-primary-dark:   #1E4A41;
+  --color-secondary:      #C98A5B;
+  --color-accent:         #E8B48A;
+  --color-background:     #FDFBF7;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #F5EFE6;
+  --color-text-primary:   #232323;
+  --color-text-secondary: #5A5A5A;
+  --color-text-muted:     #8A8A8A;
+  --color-border:         #E5DDD2;
+  --gradient-hero:        linear-gradient(135deg, #FDFBF7 0%, #F5EFE6 100%);
+  --gradient-btn:         linear-gradient(135deg, #2F6B5E 0%, #4A8A7A 100%);
+  --font-display:         'Inter', system-ui, sans-serif;
+  --font-body:            'Inter', system-ui, sans-serif;
+}
+
+/* Calm / Focused (Low-Stimulation) */
+[data-theme][data-theme-variant="calm-focused"] {
+  --color-primary:        #5B7A8C;
+  --color-primary-light:  #8FA9B8;
+  --color-primary-dark:   #3D5A68;
+  --color-secondary:      #7A9A7E;
+  --color-accent:         #A8C3A0;
+  --color-background:     #F2F5F3;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #E9EFEA;
+  --color-text-primary:   #2A3438;
+  --color-text-secondary: #55636A;
+  --color-text-muted:     #8A9AA3;
+  --color-border:         #D5DEDD;
+  --gradient-hero:        linear-gradient(135deg, #F2F5F3 0%, #E9EFEA 100%);
+  --gradient-btn:         linear-gradient(135deg, #5B7A8C 0%, #7A9A7E 100%);
+  --font-display:         'Nunito', system-ui, sans-serif;
+  --font-body:            'Nunito', system-ui, sans-serif;
+}
+
+/* Warm Nature (Biophilic Earthy) */
+[data-theme][data-theme-variant="warm-nature"] {
+  --color-primary:        #4A6B3A;
+  --color-primary-light:  #7A9A5F;
+  --color-primary-dark:   #33491F;
+  --color-secondary:      #8A6D3B;
+  --color-accent:         #C9A86A;
+  --color-background:     #F7F3EA;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #EFE7D3;
+  --color-text-primary:   #2E2A1F;
+  --color-text-secondary: #5C5545;
+  --color-text-muted:     #8A8171;
+  --color-border:         #E0D5BE;
+  --gradient-hero:        linear-gradient(135deg, #F7F3EA 0%, #EFE7D3 100%);
+  --gradient-btn:         linear-gradient(135deg, #4A6B3A 0%, #8A6D3B 100%);
+  --font-display:         'Nunito', system-ui, sans-serif;
+  --font-body:            'Nunito', system-ui, sans-serif;
+}
+
+/* Professional / Trust (Structured Dashboard) */
+[data-theme][data-theme-variant="professional-trust"] {
+  --color-primary:        #1F3A5F;
+  --color-primary-light:  #4A6B8A;
+  --color-primary-dark:   #12263F;
+  --color-secondary:      #2E7D6B;
+  --color-accent:         #7FB3D5;
+  --color-background:     #F2F4F7;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #E8EDF2;
+  --color-text-primary:   #16222E;
+  --color-text-secondary: #33475B;
+  --color-text-muted:     #6B7C8D;
+  --color-border:         #C9D6DF;
+  --gradient-hero:        linear-gradient(135deg, #F2F4F7 0%, #E8EDF2 100%);
+  --gradient-btn:         linear-gradient(135deg, #1F3A5F 0%, #2E7D6B 100%);
+  --font-display:         'Inter', system-ui, sans-serif;
+  --font-body:            'Inter', system-ui, sans-serif;
+}
+
+/* Soft Friendly Classroom */
+[data-theme][data-theme-variant="soft-classroom"] {
+  --color-primary:        #D97757;
+  --color-primary-light:  #E8A88F;
+  --color-primary-dark:   #B25A3C;
+  --color-secondary:      #E8A87C;
+  --color-accent:         #F5CBA7;
+  --color-background:     #FFF8F3;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #FDEBD0;
+  --color-text-primary:   #3A2A22;
+  --color-text-secondary: #6B4A3A;
+  --color-text-muted:     #9A7A68;
+  --color-border:         #F0D5C4;
+  --gradient-hero:        linear-gradient(135deg, #FFF8F3 0%, #FDEBD0 100%);
+  --gradient-btn:         linear-gradient(135deg, #D97757 0%, #E8A87C 100%);
+  --font-display:         'Nunito', system-ui, sans-serif;
+  --font-body:            'Nunito', system-ui, sans-serif;
+}
+
+/* --- Gen Alpha (kids' creator side) --- */
+
+/* Gaming / Build-a-World */
+[data-theme][data-theme-variant="gaming-world"] {
+  --color-primary:        #7C3AED;
+  --color-primary-light:  #A78BFA;
+  --color-primary-dark:   #5B21B6;
+  --color-secondary:      #84CC16;
+  --color-accent:         #FACC15;
+  --color-background:     #F5F3FF;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #EDE9FE;
+  --color-text-primary:   #1E1B2E;
+  --color-text-secondary: #4B4566;
+  --color-text-muted:     #8A84A8;
+  --color-border:         #DDD6FE;
+  --gradient-hero:        linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%);
+  --gradient-btn:         linear-gradient(135deg, #7C3AED 0%, #84CC16 100%);
+  --font-display:         'Fredoka One', 'Nunito', system-ui, sans-serif;
+  --font-body:            'Nunito', system-ui, sans-serif;
+}
+
+/* Superheroes */
+[data-theme][data-theme-variant="superheroes"] {
+  --color-primary:        #DC2626;
+  --color-primary-light:  #F87171;
+  --color-primary-dark:   #991B1B;
+  --color-secondary:      #1D4ED8;
+  --color-accent:         #FACC15;
+  --color-background:     #FEF2F2;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #FEE2E2;
+  --color-text-primary:   #1F2937;
+  --color-text-secondary: #4B5563;
+  --color-text-muted:     #9CA3AF;
+  --color-border:         #FECACA;
+  --gradient-hero:        linear-gradient(135deg, #FEF2F2 0%, #DBEAFE 100%);
+  --gradient-btn:         linear-gradient(135deg, #DC2626 0%, #1D4ED8 100%);
+  --font-display:         'Fredoka One', 'Nunito', system-ui, sans-serif;
+  --font-body:            'Nunito', system-ui, sans-serif;
+}
+
+/* Animals & Cute Creatures */
+[data-theme][data-theme-variant="cute-creatures"] {
+  --color-primary:        #EC4899;
+  --color-primary-light:  #F9A8D4;
+  --color-primary-dark:   #BE185D;
+  --color-secondary:      #F59E0B;
+  --color-accent:         #FBBF24;
+  --color-background:     #FDF2F8;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #FCE7F3;
+  --color-text-primary:   #3A1F2E;
+  --color-text-secondary: #6B4A5C;
+  --color-text-muted:     #A8849A;
+  --color-border:         #F9A8D4;
+  --gradient-hero:        linear-gradient(135deg, #FDF2F8 0%, #FEF3C7 100%);
+  --gradient-btn:         linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
+  --font-display:         'Fredoka One', 'Nunito', system-ui, sans-serif;
+  --font-body:            'Nunito', system-ui, sans-serif;
+}
+
+/* Dinosaurs */
+[data-theme][data-theme-variant="dinosaurs"] {
+  --color-primary:        #15803D;
+  --color-primary-light:  #4ADE80;
+  --color-primary-dark:   #14532D;
+  --color-secondary:      #B45309;
+  --color-accent:         #FBBF24;
+  --color-background:     #F0FDF4;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #DCFCE7;
+  --color-text-primary:   #1A2E1F;
+  --color-text-secondary: #3F5A44;
+  --color-text-muted:     #7A9A7E;
+  --color-border:         #BBF7D0;
+  --gradient-hero:        linear-gradient(135deg, #F0FDF4 0%, #FEF3C7 100%);
+  --gradient-btn:         linear-gradient(135deg, #15803D 0%, #B45309 100%);
+  --font-display:         'Fredoka One', 'Nunito', system-ui, sans-serif;
+  --font-body:            'Nunito', system-ui, sans-serif;
+}
+
+/* Space Adventure */
+[data-theme][data-theme-variant="space-adventure"] {
+  --color-primary:        #6D28D9;
+  --color-primary-light:  #A78BFA;
+  --color-primary-dark:   #4C1D95;
+  --color-secondary:      #0891B2;
+  --color-accent:         #FACC15;
+  --color-background:     #F5F3FF;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #EDE9FE;
+  --color-text-primary:   #1E1B2E;
+  --color-text-secondary: #4B4566;
+  --color-text-muted:     #8A84A8;
+  --color-border:         #DDD6FE;
+  --gradient-hero:        linear-gradient(135deg, #F5F3FF 0%, #CFFAFE 100%);
+  --gradient-btn:         linear-gradient(135deg, #6D28D9 0%, #0891B2 100%);
+  --font-display:         'Fredoka One', 'Nunito', system-ui, sans-serif;
+  --font-body:            'Nunito', system-ui, sans-serif;
+}
+
+/* --- Gen Z (creators) --- */
+
+/* Dopamine Brights / Neon Gradients */
+[data-theme][data-theme-variant="dopamine-brights"] {
+  --color-primary:        #EC4899;
+  --color-primary-light:  #F9A8D4;
+  --color-primary-dark:   #BE185D;
+  --color-secondary:      #F97316;
+  --color-accent:         #FACC15;
+  --color-background:     #FFF1F2;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #FCE7F3;
+  --color-text-primary:   #1F1B2E;
+  --color-text-secondary: #5A5470;
+  --color-text-muted:     #9A94B0;
+  --color-border:         #FBCFE8;
+  --gradient-hero:        linear-gradient(135deg, #FCE7F3 0%, #FFEDD5 50%, #FEF9C3 100%);
+  --gradient-btn:         linear-gradient(135deg, #EC4899 0%, #F97316 100%);
+  --font-display:         'Inter', system-ui, sans-serif;
+  --font-body:            'Inter', system-ui, sans-serif;
+}
+
+/* Y2K / Frutiger Aero */
+[data-theme][data-theme-variant="y2k-aero"] {
+  --color-primary:        #0891B2;
+  --color-primary-light:  #22D3EE;
+  --color-primary-dark:   #155E75;
+  --color-secondary:      #7C3AED;
+  --color-accent:         #A5F3FC;
+  --color-background:     #F0FDFA;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #CCFBF1;
+  --color-text-primary:   #134E4A;
+  --color-text-secondary: #3F6B6B;
+  --color-text-muted:     #7A9A9A;
+  --color-border:         #99F6E4;
+  --gradient-hero:        linear-gradient(135deg, #F0FDFA 0%, #CFFAFE 50%, #EDE9FE 100%);
+  --gradient-btn:         linear-gradient(135deg, #0891B2 0%, #7C3AED 100%);
+  --font-display:         'Inter', system-ui, sans-serif;
+  --font-body:            'Inter', system-ui, sans-serif;
+}
+
+/* Dark Mode Luxe / Neon-Noir */
+[data-theme][data-theme-variant="dark-luxe"] {
+  --color-primary:        #A78BFA;
+  --color-primary-light:  #C4B5FD;
+  --color-primary-dark:   #8B5CF6;
+  --color-secondary:      #22D3EE;
+  --color-accent:         #F472B6;
+  --color-background:     #0F0F1A;
+  --color-surface:        #1A1A2E;
+  --color-surface-alt:    #23233A;
+  --color-text-primary:   #F5F5F5;
+  --color-text-secondary: #D4D4D8;
+  --color-text-muted:     #A1A1AA;
+  --color-border:         #3F3F56;
+  --gradient-hero:        linear-gradient(135deg, #1A1A2E 0%, #23233A 100%);
+  --gradient-btn:         linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+  --font-display:         'Inter', system-ui, sans-serif;
+  --font-body:            'Inter', system-ui, sans-serif;
+}
+
+/* Maximalism / Cluttercore / Imperfect-by-Design */
+[data-theme][data-theme-variant="maximalism"] {
+  --color-primary:        #F97316;
+  --color-primary-light:  #FB923C;
+  --color-primary-dark:   #C2410C;
+  --color-secondary:      #8B5CF6;
+  --color-accent:         #EC4899;
+  --color-background:     #FFF7ED;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #FFEDD5;
+  --color-text-primary:   #292524;
+  --color-text-secondary: #57534E;
+  --color-text-muted:     #A8A29E;
+  --color-border:         #FED7AA;
+  --gradient-hero:        linear-gradient(135deg, #FFF7ED 0%, #F5F3FF 50%, #FDF2F8 100%);
+  --gradient-btn:         linear-gradient(135deg, #F97316 0%, #8B5CF6 100%);
+  --font-display:         'Inter', system-ui, sans-serif;
+  --font-body:            'Inter', system-ui, sans-serif;
+}
+
+/* Anime / Cyberpunk */
+[data-theme][data-theme-variant="anime-cyberpunk"] {
+  --color-primary:        #D946EF;
+  --color-primary-light:  #E879F9;
+  --color-primary-dark:   #A21CAF;
+  --color-secondary:      #22D3EE;
+  --color-accent:         #FACC15;
+  --color-background:     #FDF4FF;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #FAE8FF;
+  --color-text-primary:   #2E1A33;
+  --color-text-secondary: #5B4A63;
+  --color-text-muted:     #9A8AA3;
+  --color-border:         #F0ABFC;
+  --gradient-hero:        linear-gradient(135deg, #FDF4FF 0%, #CFFAFE 100%);
+  --gradient-btn:         linear-gradient(135deg, #D946EF 0%, #22D3EE 100%);
+  --font-display:         'Inter', system-ui, sans-serif;
+  --font-body:            'Inter', system-ui, sans-serif;
 }
 
 /* ============================================================
