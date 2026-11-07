@@ -103,6 +103,7 @@ export const DB_TYPE_BY_SLUG: Record<string, string> = {
   'slingshot-aim': 'slingshot-aim',
   'brick-bounce': 'brick-bounce',
   'rock-blaster': 'rock-blaster',
+  'ladder-climb': 'ladder-climb',
 }
 
 export interface ProgrammaticActivity {

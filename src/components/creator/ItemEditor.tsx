@@ -63,6 +63,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'slingshot-aim': { prompt: 'Question for this round', answer: 'Correct answer tower' },
   'brick-bounce': { prompt: 'Question for this wall', answer: 'Correct answer brick' },
   'rock-blaster': { prompt: 'Question for this space', answer: 'Correct answer asteroid' },
+  'ladder-climb': { prompt: 'Question for this tower', answer: 'Correct answer ladder' },
 }
 
 const fieldStyle: React.CSSProperties = {

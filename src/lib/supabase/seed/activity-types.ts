@@ -716,6 +716,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Rock Blaster',
     description_en: 'Fly your ship through space and blast the asteroid with the right answer',
   },
+  {
+    slug: 'ladder-climb',
+    icon: '🪜',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Ladder Climb',
+    name_ur: 'Ladder Climb',
+    name_ar: 'Ladder Climb',
+    name_hi: 'Ladder Climb',
+    name_es: 'Ladder Climb',
+    name_fr: 'Ladder Climb',
+    description_en: 'Climb the ladder to the right answer and dodge the rolling barrels',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

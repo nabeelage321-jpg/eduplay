@@ -133,6 +133,7 @@ export const NOT_PRINTABLE_WORKSHEET_REASONS: Record<string, string> = {
   'slingshot-aim': 'This game needs its slingshot, flying stones, and towers, so it cannot be printed as a text worksheet yet.',
   'brick-bounce': 'This game needs its paddle, bouncing ball, and bricks, so it cannot be printed as a text worksheet yet.',
   'rock-blaster': 'This game needs its drifting ship, asteroids, and shooting, so it cannot be printed as a text worksheet yet.',
+  'ladder-climb': 'This game needs its platforms, ladders, rolling barrels, and climbing, so it cannot be printed as a text worksheet yet.',
 }
 
 export function isPrintableWorksheetType(slug: string | undefined | null): boolean {

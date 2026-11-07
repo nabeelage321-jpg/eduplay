@@ -63,4 +63,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'slingshot-aim',    icon: '🎯', name: 'Slingshot Aim',    desc: 'Aim the slingshot and knock down the tower with the right answer' },
   { slug: 'brick-bounce',     icon: '🧱', name: 'Brick Bounce',     desc: 'Bounce the ball off the paddle to smash the bricks with the right answer' },
   { slug: 'rock-blaster',      icon: '🪨', name: 'Rock Blaster',      desc: 'Fly your ship through space and blast the asteroid with the right answer' },
+  { slug: 'ladder-climb',      icon: '🪜', name: 'Ladder Climb',      desc: 'Climb the ladder to the right answer and dodge the rolling barrels' },
 ]

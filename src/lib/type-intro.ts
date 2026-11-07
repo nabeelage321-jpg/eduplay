@@ -64,6 +64,10 @@
  *     crash into any asteroid costs one life and ends the
  *     round; spending all 6 bullets without blasting the
  *     correct asteroid costs one life and ends the round).
+ *     ladder-climb: 10 pts per correct ladder (1 per round), 3
+ *     lives (a wrong ladder costs no life — climb back down
+ *     and try another; a barrel hit costs one life and ends
+ *     the round).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -473,6 +477,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Hold the left/right arrow keys to turn, hold up to thrust, and press Space to fire — or use the on-screen turn, thrust, and FIRE buttons. Tap an asteroid to shoot straight at it.',
     timer: 'No timer — take your time to aim, but you only get 6 bullets per round.',
     lives: 'You have 3 lives — a wrong asteroid only wastes a bullet, but crashing into any asteroid costs one life and ends the round, and spending all 6 bullets without blasting the correct asteroid costs one life and ends the round.',
+  }),
+  'ladder-climb': rules({
+    howTo: 'Climb the ladders between the platforms to the top — the ladder with the right answer at its top wins the round. Barrels roll along the platforms and drop down a level at each edge, so time your climb between them. Or tap a ladder and the kid walks to it and climbs it on his own.',
+    scoring: 'Each correct ladder climbed earns 10 points — one right-answer ladder per round.',
+    objective: 'Climb the correct ladder in every round without running out of lives.',
+    controls: 'Hold the left/right arrow keys to walk, hold up/down to climb a ladder, and press Space to jump over a barrel — or use the on-screen walk, climb, and JUMP buttons. Tap a ladder to climb it.',
+    timer: 'No timer — take your time to climb, but the barrels keep rolling.',
+    lives: 'You have 3 lives — a wrong ladder costs no life, just the climb back down, but a barrel hit costs one life and ends the round.',
   }),
 }
 

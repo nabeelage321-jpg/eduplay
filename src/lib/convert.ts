@@ -34,6 +34,7 @@ import { buildBlockDropRound } from '@/lib/block-drop'
 import { buildSlingshotAimRound } from '@/lib/slingshot-aim'
 import { buildBrickBounceRound } from '@/lib/brick-bounce'
 import { buildRockBlasterRound } from '@/lib/rock-blaster'
+import { buildLadderClimbRound } from '@/lib/ladder-climb'
 
 export interface ConvertTarget {
   slug: string
@@ -95,6 +96,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'slingshot-aim',    icon: '🎯', name: 'Slingshot Aim' },
   { slug: 'brick-bounce',     icon: '🧱', name: 'Brick Bounce' },
   { slug: 'rock-blaster',      icon: '🪨', name: 'Rock Blaster' },
+  { slug: 'ladder-climb',      icon: '🪜', name: 'Ladder Climb' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -632,6 +634,27 @@ export function canConvertTo(
             ok: false,
             reason:
               'Rock Blaster needs at least two different answers to borrow as wrong asteroids in every round — one of these questions has no other answers to borrow from.',
+          }
+
+    // Ladder Climb (type 54): the round is generated from the
+    // game's own items — one tower per question, the correct
+    // answer at the top of one ladder and wrong answers borrowed
+    // from the other items at the tops of the rest. A round needs
+    // at least two different answers to borrow, or the tower has
+    // no choice in it.
+    case 'ladder-climb':
+      return items.every((item) =>
+        buildLadderClimbRound(
+          item.prompt,
+          item.answer,
+          items.map((i) => i.answer),
+        ),
+      )
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Ladder Climb needs at least two different answers to borrow as wrong ladders in every round — one of these questions has no other answers to borrow from.',
           }
 
     default:

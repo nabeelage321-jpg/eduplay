@@ -100,6 +100,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'slingshot-aim', label: 'Slingshot Aim' },
   { value: 'brick-bounce', label: 'Brick Bounce' },
   { value: 'rock-blaster', label: 'Rock Blaster' },
+  { value: 'ladder-climb', label: 'Ladder Climb' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [
