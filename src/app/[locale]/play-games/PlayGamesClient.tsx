@@ -73,13 +73,15 @@ const tileIconStyle: React.CSSProperties = { fontSize: '1.75rem', marginBottom: 
 const tileNameStyle: React.CSSProperties = {
   color: 'var(--color-text-primary)',
   fontFamily: 'var(--font-display)',
-  fontSize: '0.8rem',
-  fontWeight: 700,
-  marginBottom: '0.2rem',
+  fontSize: '1.05rem',
+  fontWeight: 800,
+  lineHeight: 1.2,
+  overflowWrap: 'break-word',
+  marginBottom: '0.25rem',
 }
 const tileDescStyle: React.CSSProperties = {
   color: 'var(--color-text-muted)',
-  fontSize: '0.68rem',
+  fontSize: '0.62rem',
   fontFamily: 'var(--font-body)',
   lineHeight: 1.3,
 }
@@ -234,8 +236,8 @@ export function PlayGamesClient({ locale }: { locale: string }) {
                       <p
                         style={{
                           color: 'var(--color-primary)',
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
+                          fontSize: '0.65rem',
+                          fontWeight: 600,
                           marginTop: '0.5rem',
                           lineHeight: 1.3,
                         }}
@@ -258,8 +260,8 @@ export function PlayGamesClient({ locale }: { locale: string }) {
                     <p
                       style={{
                         color: 'var(--color-text-muted)',
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
+                        fontSize: '0.65rem',
+                        fontWeight: 600,
                         marginTop: '0.5rem',
                         lineHeight: 1.3,
                       }}
@@ -273,8 +275,8 @@ export function PlayGamesClient({ locale }: { locale: string }) {
                           display: 'inline-block',
                           marginTop: '0.4rem',
                           color: 'var(--color-primary)',
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
+                          fontSize: '0.65rem',
+                          fontWeight: 600,
                         }}
                       >
                         Make the first one →
