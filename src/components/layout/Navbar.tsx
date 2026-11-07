@@ -73,13 +73,19 @@ export default function Navbar({ locale }: NavbarProps) {
           )}
         </Link>
 
-        {/* Desktop nav */}
+        {/* Desktop nav — kid-friendly nav buttons (owner order
+            2026-11-07, launch day): bigger text + bigger padding +
+            playful pill shape, same labels, destinations, order.
+            Only the desktop row is styled here; the mobile menu,
+            the Dashboard blue pill, logo, language, palette and
+            user chip are untouched. */}
         <div className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="btn-ghost text-sm font-medium"
+              className="btn-ghost"
+              style={{ display: 'inline-flex', minHeight: '48px', alignItems: 'center', padding: '0.625rem 1.125rem', borderRadius: '9999px', fontSize: '1.125rem', fontWeight: 700 }}
             >
               {link.label}
             </Link>
