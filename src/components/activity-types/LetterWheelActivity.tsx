@@ -26,12 +26,10 @@ import InteractiveSoundToggle from './InteractiveSoundToggle'
  * adapter passes creator rows through untouched.
  *
  * Player-visible beats:
- * - How to Play FIRST, before any play, explaining how to play,
- *   how scores are given, the objective, the controls, the
- *   letters, the timer position, and how you win/finish — with a
- *   Skip button that starts play straight away. The same page is
- *   reachable again mid-game from the "How to play" button, and
- *   returning from it resumes the game; it never resets progress.
+ * - How to Play on demand only — the shared PlayIntro on the play page shows the instructions first, so this page is
+ *   never shown automatically at start; it explains how to play, how scores are given, the objective, the controls,
+ *   the letters, the timer position, and how you win/finish — with a "Back to game" button. The same page is
+ *   re-readable mid-game from the "How to play" button, and returning from it resumes the game; it never resets progress.
  * - One letter per definition. The wheel letter is the first
  *   letter of the answer — unless the definition itself states a
  *   letter ("...the letter X..."), in which case that stated
@@ -89,8 +87,8 @@ export function wheelLetterFor(item: ActivityItem): { letter: string; contains: 
 
 export default function LetterWheelActivity({ items, locale, onComplete }: ActivityProps) {
   const [letters, setLetters] = useState<WheelLetter[]>([])
-  const [showHowto, setShowHowto] = useState(true)
-  const [started, setStarted] = useState(false)
+  const [showHowto, setShowHowto] = useState(false)
+  const [started, setStarted] = useState(true)
   const [current, setCurrent] = useState(0)
   const [typed, setTyped] = useState('')
   const [results, setResults] = useState<(boolean | null)[]>([])
@@ -123,8 +121,8 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
       built.push({ prompt: item.prompt, answer: item.answer, letter: wl.letter, contains: wl.contains })
     }
     setLetters(built)
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setCurrent(0)
     setTyped('')
     setResults(built.map(() => null))
@@ -249,8 +247,8 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
 
   function playAgain() {
     playEduSound('click', readInteractiveSoundOn())
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setCurrent(0)
     setTyped('')
     setResults(letters.map(() => null))
@@ -273,7 +271,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
   const missedCount = results.filter((r) => r === false).length
   const skippedAnsweredCount = [...skipped].filter((i) => results[i] === true).length
 
-  // ---- How to Play: FIRST, before play, and re-readable mid-game. ----
+  // ---- How to Play: on demand only, re-readable mid-game. ----
   if (showHowto) {
     return (
       <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto', color: 'var(--color-text-primary)' }}>
