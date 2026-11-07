@@ -187,9 +187,16 @@ export default function JoinGameScreen({ locale }: JoinGameScreenProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
+        className="w-full max-w-3xl"
         style={{ position: 'relative' }}
       >
+        {/* JOIN LAYOUT 2026-11-07 — instructions sit BESIDE the form on
+            desktop (two columns) so a kid reads the steps and types the
+            code in one view, no scrolling; on mobile the steps stack
+            right under the form. Layout only — every field, button,
+            and word is unchanged. */}
+        <div className="md:grid md:grid-cols-[minmax(0,1fr)_280px] md:gap-6 md:items-start">
+          <div>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
           <Image src="/eduplay-mascot.png" alt="" width={96} height={96} style={{ width: 96, height: 96, objectFit: 'contain' }} priority={false} />
         </div>
@@ -322,12 +329,22 @@ export default function JoinGameScreen({ locale }: JoinGameScreenProps) {
             {t('askTeacherCode')}
           </p>
         </div>
+        </div>
 
-        <ol className="mt-6 space-y-2" style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
-          <li>1. {t('joinStep1')}</li>
-          <li>2. {t('joinStep2')}</li>
-          <li>3. {t('joinStep3')}</li>
-        </ol>
+        {/* Steps panel, right column on desktop (mt aligns it with the
+            form card top: 96px mascot + 1rem gap); stacked under the
+            form on mobile. Same three steps, same wording. */}
+        <aside
+          className="mt-6 md:mt-[112px] rounded-lg p-5"
+          style={{ backgroundColor: 'var(--color-surface)' }}
+        >
+          <ol className="space-y-2" style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
+            <li>1. {t('joinStep1')}</li>
+            <li>2. {t('joinStep2')}</li>
+            <li>3. {t('joinStep3')}</li>
+          </ol>
+        </aside>
+        </div>
       </motion.div>
     </div>
   )
