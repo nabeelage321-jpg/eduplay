@@ -91,6 +91,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'apple-snake', label: 'Apple Snake' },
   { value: 'flutter-flight', label: 'Flutter Flight' },
   { value: 'sweet-match', label: 'Sweet Match' },
+  { value: 'star-shooter', label: 'Star Shooter' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

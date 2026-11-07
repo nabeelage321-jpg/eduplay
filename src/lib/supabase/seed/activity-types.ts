@@ -599,6 +599,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Sweet Match',
     description_en: 'Swap sweets to match the word or sum',
   },
+  {
+    slug: 'star-shooter',
+    icon: '👾',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Star Shooter',
+    name_ur: 'Star Shooter',
+    name_ar: 'Star Shooter',
+    name_hi: 'Star Shooter',
+    name_es: 'Star Shooter',
+    name_fr: 'Star Shooter',
+    description_en: 'Shoot the invader with the right answer',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

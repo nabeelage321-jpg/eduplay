@@ -94,6 +94,7 @@ export const DB_TYPE_BY_SLUG: Record<string, string> = {
   'apple-snake': 'apple-snake',
   'flutter-flight': 'flutter-flight',
   'sweet-match': 'sweet-match',
+  'star-shooter': 'star-shooter',
 }
 
 export interface ProgrammaticActivity {

@@ -35,6 +35,9 @@
  *     hit, ground touch, or time-up costs one).
  *     sweet-match: 10 pts, 60s/round, 3 lives (only a time-up
  *     costs one — a wrong swap just swaps back; cascades +5).
+ *     star-shooter: 10 pts, 3 lives (a wrong shot wastes the
+ *     shot only — a landing costs one; invaders land after 4
+ *     descent steps, one step every 3.5s).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -372,6 +375,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Tap a sweet, then tap a sweet next to it to swap — or drag one sweet onto its neighbour.',
     timer: '60 seconds per round.',
     lives: 'You have 3 lives — only a time-up costs one; a wrong swap just swaps back.',
+  }),
+  'star-shooter': rules({
+    howTo: 'Move your ship under the invader carrying the correct answer and shoot it before the invaders land.',
+    scoring: 'Each correct invader earns 10 points.',
+    objective: 'Shoot the right invader in every sky without running out of lives.',
+    controls: 'Arrow keys or A/D to move, Space to shoot — or the on-screen arrows and FIRE button; tap the sky to move your ship.',
+    timer: 'The invaders step down every few seconds and land after 4 steps.',
+    lives: 'You have 3 lives — a wrong shot only wastes the shot; an invader landing costs one.',
   }),
 }
 

@@ -58,6 +58,7 @@ const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
   'apple-snake':      lazy(() => import('./AppleSnakeActivity')),
   'flutter-flight':   lazy(() => import('./FlutterFlightActivity')),
   'sweet-match':      lazy(() => import('./SweetMatchActivity')),
+  'star-shooter':     lazy(() => import('./StarShooterActivity')),
 }
 
 interface ActivityPlayerProps {

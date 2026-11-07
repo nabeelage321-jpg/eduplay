@@ -80,6 +80,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'apple-snake',     icon: '🍎', name: 'Apple Snake' },
   { slug: 'flutter-flight',  icon: '🐦', name: 'Flutter Flight' },
   { slug: 'sweet-match',     icon: '🍬', name: 'Sweet Match' },
+  { slug: 'star-shooter',    icon: '👾', name: 'Star Shooter' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -445,6 +446,21 @@ export function canConvertTo(
             ok: false,
             reason:
               'Sweet Match needs every question to hold a simple sum or an answer of at least 3 letters — one of these questions has neither, so it has no target to match.',
+          }
+
+    // Star Shooter (type 45): the sky is generated from the game's
+    // own items — one sky per question, the invaders are the
+    // correct answer plus wrong answers borrowed from the other
+    // items, exactly like Flutter Flight. A round needs at least
+    // one wrong invader whose label differs from the correct
+    // answer, or the sky has no choice in it.
+    case 'star-shooter':
+      return items.every((_, i) => hasBorrowableWrong(items, i))
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Star Shooter needs at least one different answer to borrow as a wrong invader in every sky — one of these questions has no other answer to borrow from.',
           }
 
     default:

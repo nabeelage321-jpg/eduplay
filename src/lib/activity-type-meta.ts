@@ -54,4 +54,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'apple-snake',     icon: '🍎', name: 'Apple Snake',     desc: 'Eat the right apple and grow' },
   { slug: 'flutter-flight',  icon: '🐦', name: 'Flutter Flight',  desc: 'Flap through the gate with the right answer' },
   { slug: 'sweet-match',     icon: '🍬', name: 'Sweet Match',     desc: 'Swap sweets to match the word or sum' },
+  { slug: 'star-shooter',    icon: '👾', name: 'Star Shooter',    desc: 'Shoot the invader with the right answer' },
 ]
