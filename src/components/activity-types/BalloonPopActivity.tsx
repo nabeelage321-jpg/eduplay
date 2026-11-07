@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, shuffleArray, isRTL, getRandomFeedback } from './shared'
+import { choiceRoundLabels } from '@/lib/convert'
 import type { ActivityItem } from '@/types'
 
 interface Balloon {
@@ -34,9 +35,15 @@ export default function BalloonPopActivity({ items, locale, onComplete }: Activi
 
   useEffect(() => {
     if (!item) return
-    const allAnswers = items.map((i) => i.answer)
-    const wrong = shuffleArray(allAnswers.filter((a) => a !== item.answer)).slice(0, 3)
-    const opts = shuffleArray([item.answer, ...wrong])
+    // BALLOON CONVERT 2026-11-07: the round's balloons come from the
+    // shared adapter — the question's own options when it has them,
+    // otherwise wrong balloons borrowed from the other items'
+    // answers (nothing invented). The adapter returns null only for
+    // a lone question with no options and nothing to borrow; native
+    // play never passes the convert gate, so it falls back to
+    // today's single-balloon round instead of an empty arena.
+    const labels = choiceRoundLabels(items, currentIdx) ?? [item.answer]
+    const opts = shuffleArray(labels)
     const bs: Balloon[] = opts.map((label, i) => ({
       id: `b-${currentIdx}-${i}`,
       label,

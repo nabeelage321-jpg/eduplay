@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, shuffleArray, isRTL, getRandomFeedback } from './shared'
+import { choiceRoundLabels } from '@/lib/convert'
 
 interface Mole {
   id: number
@@ -26,8 +27,17 @@ export default function WhackAMoleActivity({ items, locale, onComplete }: Activi
 
   const setupMoles = useCallback(() => {
     if (!item) return
-    const allAnswers = items.map((i) => i.answer)
-    const wrong = shuffleArray(allAnswers.filter((a) => a !== item.answer)).slice(0, 8)
+    // WHACK CONVERT 2026-11-07 (universal pass): mole labels come
+    // from the shared choice-round adapter — the question's own
+    // options when it has them, otherwise wrong moles borrowed
+    // from the other items' answers (nothing invented). The
+    // correct answer still appears on three moles, exactly as
+    // native Whack-a-Mole always did; a lone question with no
+    // options and nothing to borrow falls back to today's
+    // single-answer moles, and the convert gate refuses that
+    // case up front instead.
+    const labels = choiceRoundLabels(items, currentIdx, 8) ?? [item.answer]
+    const wrong = labels.filter((l) => l !== item.answer)
     const opts = shuffleArray([...Array(3).fill(item.answer), ...wrong]).slice(0, 9)
     setMoles(opts.map((label, i) => ({ id: i, label, isCorrect: label === item.answer, visible: false, hit: false })))
     setTimeLeft(20)

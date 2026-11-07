@@ -66,10 +66,14 @@ import {
  *   same page is re-readable mid-game from the "How to play"
  *   button, and returning from it resumes the game; it never
  *   resets progress.
- * - Convert: INCOMPATIBLE (a maze cannot play another game's
- *   questions) — see convert.ts. Print: NOT printable (needs
- *   its maze) — see print-worksheet.ts. Sitemap type list stays
- *   at 23 by decision — see seo/sitemap.ts.
+ * - Convert: COMPATIBLE (2026-11-07 universal pass) — the maze is
+ *   generated from the game's own items, one maze per question,
+ *   tiles are the correct answer plus wrong answers borrowed from
+ *   the other items, so any plain question list with at least two
+ *   distinct answers plays. A lone question with nothing to borrow
+ *   keeps the plain message — see convert.ts. Print: NOT printable
+ *   (needs its maze) — see print-worksheet.ts. Sitemap type list
+ *   stays at 23 by decision — see seo/sitemap.ts.
  *
  * Stability (the 2026-11-02 quiz lesson): rounds are built once
  * per item CONTENT (fingerprint + ref guard), never on render,

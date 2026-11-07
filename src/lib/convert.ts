@@ -112,18 +112,6 @@ const INCOMPATIBLE_REASONS: Record<string, string> = {
     'Crossword needs answers that fit its grid, and words that do not fit are dropped — so this game’s questions are not forced into it.',
   'spin-wheel':
     'Spin Wheel picks a label to show, it does not ask the game’s questions — so playing these questions there would hide the questions.',
-  'random-wheel':
-    'Random Wheel picks a label to show, it does not ask the game’s questions — so playing these questions there would hide the questions.',
-  'balloon-pop':
-    'Balloon Pop needs its own rounds of balloons with one correct balloon each — a plain question list does not carry that.',
-  'whack-a-mole':
-    'Whack-a-Mole needs its own rounds of moles with one correct mole each — a plain question list does not carry that.',
-  'open-box':
-    'Open the Box needs its own boxes with hidden items and options — a plain question list does not carry that.',
-  'categorize':
-    'Categorize needs items sorted into groups the teacher defined — these questions do not carry groups.',
-  'order':
-    'Order needs one ordered round where the sequence itself is the answer — these questions do not carry an order.',
   'labelled-diagram':
     'Labelled Diagram needs an image with labels on it — these questions do not carry an image.',
   'dialogue':
@@ -134,8 +122,50 @@ const INCOMPATIBLE_REASONS: Record<string, string> = {
     'Jigsaw Puzzle needs a picture to rebuild — these questions do not carry a picture.',
   'video-quiz':
     'Video Quiz needs a video with questions timed to it — these questions do not carry a video.',
-  'maze-run':
-    'Maze Run needs its own maze with answer tiles placed in it — these questions do not carry a maze.',
+}
+
+/**
+ * Choice-round adapter (2026-11-07: Balloon Pop first, then the
+ * universal-convert pass — Whack-a-Mole uses the same rule). One
+ * round per question; the returned labels are the round's choices.
+ * Pure and deterministic — the player shuffles before rendering,
+ * exactly as it already does.
+ *
+ * - The question's OWN options win when it has them: distinct,
+ *   non-empty, at least 2, and including the correct answer — the
+ *   choices are the correct answer + its distractors, as saved.
+ *   Capped at maxWrong + 1 labels, with the correct answer kept.
+ * - Otherwise the wrong choices are borrowed from the OTHER items'
+ *   answers (the Speed Judge pattern: another item's answer, nothing
+ *   invented), up to maxWrong, distinct, never the correct answer.
+ * - Returns null when a round cannot be formed: a single item with
+ *   no options and nothing to borrow from has only one choice, so
+ *   there is no choice to play — the gate keeps the plain
+ *   cannot-play message instead of a one-choice giveaway round.
+ * Exactly one returned label ever equals the item's answer.
+ */
+export function choiceRoundLabels(items: ActivityItem[], index: number, maxWrong = 3): string[] | null {
+  const item = items[index]
+  if (!item || !item.answer) return null
+  const own = Array.from(new Set((item.answers ?? []).filter((a) => a !== '')))
+  if (own.length >= 2 && own.includes(item.answer)) {
+    const picked = own.slice(0, maxWrong + 1)
+    return picked.includes(item.answer) ? picked : [item.answer, ...picked.slice(0, maxWrong)]
+  }
+  const borrowed = Array.from(
+    new Set(items.map((i) => i.answer).filter((a) => a !== '' && a !== item.answer)),
+  ).slice(0, maxWrong)
+  if (borrowed.length === 0) return null
+  return [item.answer, ...borrowed]
+}
+
+/** True when some OTHER item has a different, non-empty answer to
+ *  borrow as a wrong choice — the shared "is there a choice at
+ *  all" test for rounds that borrow their distractors. */
+function hasBorrowableWrong(items: ActivityItem[], index: number): boolean {
+  const answer = items[index]?.answer
+  if (!answer) return false
+  return items.some((i, j) => j !== index && i.answer !== '' && i.answer !== answer)
 }
 
 /**
@@ -195,11 +225,39 @@ export function canConvertTo(
     // to — the item's answer is never shown and never
     // scored as a right answer, because opinions have no
     // right answer; nothing is dropped, nothing invented.
+    // Open the Box reveals every item verbatim (prompt + answer
+    // inside its own box) — no options, no choice, nothing
+    // needed beyond the items themselves. Random Wheel's
+    // segments ARE the game's questions: it picks one to answer
+    // aloud and never shows the answers — unlike Spin Wheel,
+    // whose segments are the answers, which would hide the
+    // questions and spoil them (Spin Wheel stays refused).
     case 'picture-answer':
     case 'memory-recall':
     case 'claim-line':
     case 'opinion-cloud':
+    case 'open-box':
+    case 'random-wheel':
       return { ok: true, reason: '' }
+
+    // Balloon Pop + Whack-a-Mole (2026-11-07, owner order then
+    // universal pass): each question is one choice round — the
+    // choices are the question's own options, or wrong choices
+    // borrowed from other items' answers when it has none (the
+    // shared choiceRoundLabels adapter; Whack-a-Mole's player
+    // reads the same adapter, keeping its three correct moles).
+    // A round needs at least two choices (one correct, one
+    // wrong); a lone question with no options and nothing to
+    // borrow keeps the plain message instead of a giveaway.
+    case 'balloon-pop':
+    case 'whack-a-mole':
+      return items.every((_, i) => choiceRoundLabels(items, i) !== null)
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              `${label} needs at least two choices in every round — one of these questions has no options and no other answer to borrow a wrong choice from.`,
+          }
 
     // Number Slider slides a marker to a number on a line, so
     // it needs every answer to BE a number: a word answer
@@ -278,6 +336,51 @@ export function canConvertTo(
         : {
             ok: false,
             reason: 'Bingo needs at least 8 items for its card — this game has fewer.',
+          }
+
+    // Categorize (2026-11-07 universal pass): the player derives
+    // its buckets from the game's own answers — each question is
+    // dragged into the bucket named by its answer. Nothing is
+    // invented, but one bucket is no game: at least two distinct
+    // answers are needed, or every question lands in the same
+    // bucket with no choice to make.
+    case 'categorize': {
+      const distinct = new Set(items.map((i) => i.answer)).size
+      return distinct >= 2
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Categorize needs at least two different answers to sort into — every answer here is the same, so there would be only one bucket.',
+          }
+    }
+
+    // Order (2026-11-07 universal pass): the player takes the
+    // items' saved order as the correct order and shuffles it for
+    // play — for a times table that is the table order, for other
+    // games the teacher's saved question order. Nothing is
+    // invented; a single item has no order to arrange.
+    case 'order':
+      return items.length >= 2
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason: 'Order needs at least 2 items to arrange — this game has only one.',
+          }
+
+    // Maze Run (2026-11-07 universal pass): the maze itself is
+    // generated from the game's own items — one maze per question,
+    // tiles are the correct answer plus wrong answers borrowed
+    // from the other items, exactly like Quiz builds options.
+    // A round needs at least one wrong tile whose label differs
+    // from the correct answer, or the maze has no choice in it.
+    case 'maze-run':
+      return items.every((_, i) => hasBorrowableWrong(items, i))
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Maze Run needs at least one different answer to borrow as a wrong tile in every maze — one of these questions has no other answer to borrow from.',
           }
 
     default:
