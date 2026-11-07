@@ -58,4 +58,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'jump-blocks',     icon: '🧱', name: 'Jump Blocks',     desc: 'Run and jump to hit the block with the right answer' },
   { slug: 'fruit-slice',      icon: '🍉', name: 'Fruit Slice',      desc: 'Slice the fruit with the right answer' },
   { slug: 'river-hop',       icon: '🌊', name: 'River Hop',       desc: 'Hop the pads in counting order to cross the river' },
+  { slug: 'lane-runner',      icon: '🏃', name: 'Lane Runner',      desc: 'Run the lanes and race through the gate with the right answer' },
 ]

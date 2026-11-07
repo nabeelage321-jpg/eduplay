@@ -45,6 +45,9 @@
  *     river-hop: 10 pts per crossing, 3 lives (a wrong pad, a
  *     splash, or a car hit costs one life and restarts the
  *     sequence from the start bank).
+ *     lane-runner: 10 pts per correct gate, 3 lives (a wrong
+ *     gate or a barrier crash costs one life and ends the round;
+ *     coins earn no points).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -414,6 +417,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Arrow keys or W/A/S/D to hop — or the on-screen hop buttons.',
     timer: 'No timer — but the pads and cars keep moving, so time your hops.',
     lives: 'You have 3 lives — a wrong pad, a splash, or a car hit costs one life and sends you back to the start bank.',
+  }),
+  'lane-runner': rules({
+    howTo: 'Run down the 3-lane track and race through the gate with the right answer — follow the coins, they run down the right gate’s lane.',
+    scoring: 'Each right gate earns 10 points; coins earn none.',
+    objective: 'Run through the right gate in every round without running out of lives.',
+    controls: 'Left/right arrow keys or A/D to switch lanes, up arrow, W, or Space to jump — or the on-screen lane and JUMP buttons, or tap a lane.',
+    timer: 'No timer — but the gates take about 3 seconds to reach you, so read the question and pick a lane.',
+    lives: 'You have 3 lives — a wrong gate or a barrier crash costs one life and ends the round.',
   }),
 }
 

@@ -128,6 +128,7 @@ export const NOT_PRINTABLE_WORKSHEET_REASONS: Record<string, string> = {
   'jump-blocks': 'This game needs its level and jumping kid, so it cannot be printed as a text worksheet yet.',
   'fruit-slice': 'This game needs its flying fruits and slicing, so it cannot be printed as a text worksheet yet.',
   'river-hop': 'This game needs its river, moving pads and cars, so it cannot be printed as a text worksheet yet.',
+  'lane-runner': 'This game needs its moving track, gates, coins and barriers, so it cannot be printed as a text worksheet yet.',
 }
 
 export function isPrintableWorksheetType(slug: string | undefined | null): boolean {

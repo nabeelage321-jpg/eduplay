@@ -651,6 +651,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'River Hop',
     description_en: 'Hop the pads in counting order to cross the river',
   },
+  {
+    slug: 'lane-runner',
+    icon: '🏃',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Lane Runner',
+    name_ur: 'Lane Runner',
+    name_ar: 'Lane Runner',
+    name_hi: 'Lane Runner',
+    name_es: 'Lane Runner',
+    name_fr: 'Lane Runner',
+    description_en: 'Run the lanes and race through the gate with the right answer',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

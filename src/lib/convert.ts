@@ -29,6 +29,7 @@ import type { ActivityItem } from '@/types'
 import { parseNumberAnswer } from '@/lib/number-slider'
 import { canBuildSweetMatchTarget } from '@/lib/sweet-match'
 import { sequenceTerms, borrowNumericWrongAnswers, RIVER_HOP_MIN_NUMERIC_WRONGS } from '@/lib/river-hop'
+import { borrowWrongAnswers as borrowLaneRunnerWrongAnswers, LANE_RUNNER_MAX_WRONGS } from '@/lib/lane-runner'
 
 export interface ConvertTarget {
   slug: string
@@ -85,6 +86,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'jump-blocks',     icon: '🧱', name: 'Jump Blocks' },
   { slug: 'fruit-slice',      icon: '🍉', name: 'Fruit Slice' },
   { slug: 'river-hop',       icon: '🌊', name: 'River Hop' },
+  { slug: 'lane-runner',      icon: '🏃', name: 'Lane Runner' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -519,6 +521,26 @@ export function canConvertTo(
             ok: false,
             reason:
               'River Hop needs every question to have a whole-number answer of 4 or more, with at least two different number answers to borrow as wrong pads — one of these questions does not.',
+          }
+
+    // Lane Runner (type 49): the round is generated from the
+    // game's own items — one round per question, the gates are
+    // the item's own answer plus two wrong answers borrowed from
+    // the other items. A round needs at least two different
+    // answers to borrow, or the gates have no choice in them.
+    case 'lane-runner':
+      return items.every((item) => {
+        const wrongs = borrowLaneRunnerWrongAnswers(
+          items.map((i) => i.answer),
+          item.answer,
+        )
+        return wrongs.length >= LANE_RUNNER_MAX_WRONGS
+      })
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Lane Runner needs at least two different answers to borrow as wrong gates in every round — one of these questions has no other answers to borrow from.',
           }
 
     default:
