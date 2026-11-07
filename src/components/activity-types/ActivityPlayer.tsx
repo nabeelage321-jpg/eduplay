@@ -68,6 +68,7 @@ const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
   'brick-bounce':       lazy(() => import('./BrickBounceActivity')),
   'rock-blaster':        lazy(() => import('./RockBlasterActivity')),
   'ladder-climb':        lazy(() => import('./LadderClimbActivity')),
+  'beat-tap':            lazy(() => import('./BeatTapActivity')),
 }
 
 interface ActivityPlayerProps {

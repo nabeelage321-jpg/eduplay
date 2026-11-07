@@ -35,6 +35,7 @@ import { buildSlingshotAimRound } from '@/lib/slingshot-aim'
 import { buildBrickBounceRound } from '@/lib/brick-bounce'
 import { buildRockBlasterRound } from '@/lib/rock-blaster'
 import { buildLadderClimbRound } from '@/lib/ladder-climb'
+import { buildBeatTapRound } from '@/lib/beat-tap'
 
 export interface ConvertTarget {
   slug: string
@@ -97,6 +98,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'brick-bounce',     icon: '🧱', name: 'Brick Bounce' },
   { slug: 'rock-blaster',      icon: '🪨', name: 'Rock Blaster' },
   { slug: 'ladder-climb',      icon: '🪜', name: 'Ladder Climb' },
+  { slug: 'beat-tap',          icon: '🥁', name: 'Beat Tap' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -655,6 +657,27 @@ export function canConvertTo(
             ok: false,
             reason:
               'Ladder Climb needs at least two different answers to borrow as wrong ladders in every round — one of these questions has no other answers to borrow from.',
+          }
+
+    // Beat Tap (type 55): the round is generated from the
+    // game's own items — one track per question, the correct
+    // answer on one falling note and wrong answers borrowed
+    // from the other items on the rest. A round needs at
+    // least two different answers to borrow, or the track has
+    // no choice in it.
+    case 'beat-tap':
+      return items.every((item) =>
+        buildBeatTapRound(
+          item.prompt,
+          item.answer,
+          items.map((i) => i.answer),
+        ),
+      )
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Beat Tap needs at least two different answers to borrow as wrong notes in every round — one of these questions has no other answers to borrow from.',
           }
 
     default:

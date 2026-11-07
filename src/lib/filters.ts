@@ -101,6 +101,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'brick-bounce', label: 'Brick Bounce' },
   { value: 'rock-blaster', label: 'Rock Blaster' },
   { value: 'ladder-climb', label: 'Ladder Climb' },
+  { value: 'beat-tap', label: 'Beat Tap' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

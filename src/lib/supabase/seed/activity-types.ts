@@ -729,6 +729,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Ladder Climb',
     description_en: 'Climb the ladder to the right answer and dodge the rolling barrels',
   },
+  {
+    slug: 'beat-tap',
+    icon: '🥁',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Beat Tap',
+    name_ur: 'Beat Tap',
+    name_ar: 'Beat Tap',
+    name_hi: 'Beat Tap',
+    name_es: 'Beat Tap',
+    name_fr: 'Beat Tap',
+    description_en: 'Tap the drum when the note with the right answer crosses the line — on the beat',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

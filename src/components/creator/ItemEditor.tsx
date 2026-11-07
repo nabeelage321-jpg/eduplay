@@ -64,6 +64,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'brick-bounce': { prompt: 'Question for this wall', answer: 'Correct answer brick' },
   'rock-blaster': { prompt: 'Question for this space', answer: 'Correct answer asteroid' },
   'ladder-climb': { prompt: 'Question for this tower', answer: 'Correct answer ladder' },
+  'beat-tap': { prompt: 'Question for this beat', answer: 'Correct answer note' },
 }
 
 const fieldStyle: React.CSSProperties = {

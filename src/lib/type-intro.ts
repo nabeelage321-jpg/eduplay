@@ -68,6 +68,10 @@
  *     lives (a wrong ladder costs no life — climb back down
  *     and try another; a barrel hit costs one life and ends
  *     the round).
+ *     beat-tap: 10 pts per correct on-beat tap (1 per round),
+ *     3 lives (a wrong note or an off-beat tap breaks the
+ *     streak but costs no life; letting the correct note pass
+ *     the line untapped costs one life and ends the round).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -485,6 +489,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Hold the left/right arrow keys to walk, hold up/down to climb a ladder, and press Space to jump over a barrel — or use the on-screen walk, climb, and JUMP buttons. Tap a ladder to climb it.',
     timer: 'No timer — take your time to climb, but the barrels keep rolling.',
     lives: 'You have 3 lives — a wrong ladder costs no life, just the climb back down, but a barrel hit costs one life and ends the round.',
+  }),
+  'beat-tap': rules({
+    howTo: 'Notes fall down the track, one per beat, and every note carries an answer — tap the drum the moment the note with the right answer crosses the line. The drum thumps on every beat and the line flashes with it, so feel the rhythm. Or tap a note on the track, or press Space.',
+    scoring: 'Each correct on-beat tap earns 10 points — one right-answer note per round. A tap right on the beat is PERFECT, a slightly wider one is GOOD — both earn the same 10 points.',
+    objective: 'Tap the right note on the beat in every round without running out of lives — and keep your streak going.',
+    controls: 'Tap the big drum, press Space, or tap a note on the track — the moment it crosses the line.',
+    timer: 'No timer — the notes set the pace, one per beat, and the right note falls in a different place every round.',
+    lives: 'You have 3 lives — a wrong note or an off-beat tap only breaks your streak, but letting the right-answer note pass the line untapped costs one life and ends the round.',
   }),
 }
 
