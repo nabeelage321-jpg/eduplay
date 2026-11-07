@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { isRTL, shuffleArray } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 import { playGameSound, readSoundOn } from '@/lib/game-sound'
 
 /**
@@ -293,7 +294,7 @@ export default function JigsawActivity({ items, locale, onComplete }: ActivityPr
         <div style={{ fontSize: '3rem' }}>🧩</div>
         <h2 style={{ fontFamily: 'var(--font-display)' }}>Puzzle Complete!</h2>
         <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 700 }}>
-          Score: {Math.round(score)} / 100
+          <ScorePill score={Math.round(score)} total={100} big />
         </p>
         <p style={{ color: 'var(--color-text-muted)' }}>
           {totalPieces} of {totalPieces} pieces placed

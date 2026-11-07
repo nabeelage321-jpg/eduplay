@@ -225,15 +225,15 @@ export default function PlayIntro({
           style={{
             marginTop: '0.6rem',
             width: '100%',
-            padding: '0.8rem',
-            borderRadius: '1rem',
-            border: 'none',
+            padding: '1rem',
+            borderRadius: '1.1rem',
+            border: '3px solid #fff',
             background: 'linear-gradient(90deg, #ff5a8a, #f59e0b, #22c55e, #3b82f6)',
             color: '#fff',
             fontFamily: FUNKY_FONT,
-            fontSize: '1.15rem',
+            fontSize: '1.35rem',
             cursor: 'pointer',
-            boxShadow: '0 6px 20px rgba(255, 90, 138, 0.4)',
+            boxShadow: '0 5px 0 rgba(0,0,0,0.18), 0 10px 24px rgba(255, 90, 138, 0.45)',
             textShadow: '0 2px 4px rgba(0,0,0,0.2)',
           }}
         >

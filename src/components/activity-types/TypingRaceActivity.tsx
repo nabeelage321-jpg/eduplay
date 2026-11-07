@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, isRTL } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 
 const SECONDS_PER_ITEM = 30
 
@@ -91,7 +92,7 @@ export default function TypingRaceActivity({ items, locale, onComplete }: Activi
       <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-primary)' }}>
         <div style={{ fontSize: '3rem' }}>⌨️</div>
         <h2 style={{ fontFamily: 'var(--font-display)', marginTop: '0.5rem' }}>Race Finished!</h2>
-        <p style={{ color: 'var(--color-text-secondary)' }}>Score: {score} · Best streak: {bestStreak}</p>
+        <p style={{ color: 'var(--color-text-secondary)' }}><ScorePill score={score} big /> · Best streak: {bestStreak}</p>
       </div>
     )
   }
@@ -103,7 +104,7 @@ export default function TypingRaceActivity({ items, locale, onComplete }: Activi
         <span>Item {index + 1} / {items.length}</span>
         <span>⏱ {timeLeft}s</span>
         <span>🔥 Streak: {streak}</span>
-        <span>Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong></span>
+        <ScorePill score={score} />
       </div>
       <p style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '1rem' }}>{item.prompt}</p>
       <input

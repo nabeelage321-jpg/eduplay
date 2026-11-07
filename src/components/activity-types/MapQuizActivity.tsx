@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { isRTL } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 import { playGameSound, readSoundOn } from '@/lib/game-sound'
 
 /**
@@ -235,7 +236,7 @@ export default function MapQuizActivity({ items, locale, onComplete }: ActivityP
         <div style={{ fontSize: '3rem' }}>📍</div>
         <h2 style={{ fontFamily: 'var(--font-display)' }}>Map Complete!</h2>
         <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 700 }}>
-          Score: {Math.round(score)} / 100
+          <ScorePill score={Math.round(score)} total={100} big />
         </p>
         <p style={{ color: 'var(--color-text-muted)' }}>
           {correctCount} of {points.length} points found
@@ -258,7 +259,7 @@ export default function MapQuizActivity({ items, locale, onComplete }: ActivityP
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '640px', margin: '0 auto', textAlign: 'center' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
         <span>Point {current + 1} / {points.length}</span>
-        <span>Score: {Math.round(score)} / 100</span>
+        <ScorePill score={Math.round(score)} total={100} />
         <span>Found: {correctCount}</span>
       </div>
 

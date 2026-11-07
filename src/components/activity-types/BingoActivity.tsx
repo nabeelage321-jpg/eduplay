@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, shuffleArray, isRTL } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 import { bingoPromptOrder } from '@/lib/bingo'
 
 /**
@@ -98,7 +99,7 @@ export default function BingoActivity({ items, locale, onComplete }: ActivityPro
       <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-primary)' }}>
         <div style={{ fontSize: '3rem' }}>🎱</div>
         <h2 style={{ fontFamily: 'var(--font-display)', marginTop: '0.5rem' }}>BINGO!</h2>
-        <p style={{ color: 'var(--color-text-secondary)' }}>Score: {score} (includes +50 bingo bonus)</p>
+        <p style={{ color: 'var(--color-text-secondary)' }}><ScorePill score={score} big /> (includes +50 bingo bonus)</p>
       </div>
     )
   }
@@ -135,7 +136,7 @@ export default function BingoActivity({ items, locale, onComplete }: ActivityPro
         })}
       </div>
       <div style={{ marginTop: '1rem', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-        Marked: {marked.size} / {card.length} · Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong>
+        Marked: {marked.size} / {card.length} · <ScorePill score={score} />
       </div>
     </div>
   )

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, shuffleArray, isRTL, getRandomFeedback } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 import { playGameSound, readSoundOn } from '@/lib/game-sound'
 
 interface WordToken {
@@ -79,7 +80,7 @@ export default function UnjumbleActivity({ items, locale, onComplete }: Activity
         style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-primary)' }}>
         <div style={{ fontSize: '3rem' }}>📖</div>
         <h2 style={{ fontFamily: 'var(--font-display)' }}>Unjumble Done!</h2>
-        <p style={{ color: 'var(--color-text-secondary)' }}>Score: {score}</p>
+        <p style={{ color: 'var(--color-text-secondary)' }}><ScorePill score={score} big /></p>
       </motion.div>
     )
   }
@@ -187,7 +188,7 @@ export default function UnjumbleActivity({ items, locale, onComplete }: Activity
         )}
       </AnimatePresence>
       <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-        Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong>
+        <ScorePill score={score} />
       </p>
     </div>
   )

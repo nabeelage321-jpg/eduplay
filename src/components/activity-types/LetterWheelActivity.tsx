@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { isRTL } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 import type { ActivityItem } from '@/types'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
 import InteractiveSoundToggle from './InteractiveSoundToggle'
@@ -321,7 +322,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
         <div style={{ fontSize: '3rem', marginBottom: '1rem' }} aria-hidden="true">🔠</div>
         <h2 style={{ fontSize: '1.5rem', fontFamily: 'var(--font-display)', marginBottom: '0.5rem' }}>Wheel Complete!</h2>
         <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.25rem' }}>
-          Score: {Math.round(score)} / 100
+          <ScorePill score={Math.round(score)} total={100} big />
         </p>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
           {correctCount} of {letters.length} letters correct
@@ -368,7 +369,7 @@ export default function LetterWheelActivity({ items, locale, onComplete }: Activ
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-        <motion.span key={Math.round(score)} initial={{ scale: 1.35 }} animate={{ scale: 1 }} transition={{ duration: 0.25 }} style={{ display: 'inline-block' }} aria-live="polite">Score: <strong style={{ color: 'var(--color-primary)' }}>{Math.round(score)} / 100</strong></motion.span>
+        <ScorePill score={Math.round(score)} total={100} />
         <span aria-live="polite">{correctCount} of {letters.length} letters correct</span>
         <button
           onClick={() => setShowHowto(true)}

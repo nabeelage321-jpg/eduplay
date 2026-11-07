@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, shuffleArray, isRTL } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 
 interface Tile {
   id: number
@@ -71,7 +72,7 @@ export default function MemoryMatchActivity({ items, locale, onComplete }: Activ
       <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-primary)' }}>
         <div style={{ fontSize: '3rem' }}>🧠</div>
         <h2 style={{ fontFamily: 'var(--font-display)', marginTop: '0.5rem' }}>All Matched!</h2>
-        <p style={{ color: 'var(--color-text-secondary)' }}>Score: {score}</p>
+        <p style={{ color: 'var(--color-text-secondary)' }}><ScorePill score={score} big /></p>
       </div>
     )
   }
@@ -109,7 +110,7 @@ export default function MemoryMatchActivity({ items, locale, onComplete }: Activ
         })}
       </div>
       <div style={{ marginTop: '1rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-        {matched.size} / {items.length} matched · Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong>
+        {matched.size} / {items.length} matched · <ScorePill score={score} />
       </div>
     </div>
   )

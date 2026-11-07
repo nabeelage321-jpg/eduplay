@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, shuffleArray, isRTL } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 
 interface Question {
   prompt: string
@@ -85,7 +86,7 @@ export default function GameshowQuizActivity({ items, locale, onComplete }: Acti
         style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-primary)' }}>
         <div style={{ fontSize: '3rem' }}>🎬</div>
         <h2 style={{ fontFamily: 'var(--font-display)' }}>Gameshow Complete!</h2>
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.25rem' }}>Final Score: {score}</p>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.25rem' }}><ScorePill score={score} big /></p>
       </motion.div>
     )
   }

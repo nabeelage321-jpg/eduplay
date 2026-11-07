@@ -173,9 +173,11 @@ export default function PlayShell({ title, score, finished, onElapsed, autoStart
         <button
           onClick={() => { playEduSound('click', soundOn); setCount(COUNTDOWN_SECONDS); setPhase('countdown') }}
           style={{
-            background: 'var(--color-primary)', color: '#fff', border: 'none',
-            borderRadius: 'var(--radius)', padding: '0.875rem 2.5rem',
-            fontSize: '1.125rem', fontFamily: FUNKY_FONT, cursor: 'pointer',
+            background: 'linear-gradient(135deg, #ff6b9d, #a855f7 50%, #3b82f6)', color: '#fff', border: '3px solid #fff',
+            borderRadius: '1rem', padding: '1rem 3rem',
+            fontSize: '1.35rem', fontFamily: FUNKY_FONT, cursor: 'pointer',
+            boxShadow: '0 4px 0 rgba(0,0,0,0.18), 0 8px 20px rgba(168,85,247,0.45)',
+            textShadow: '0 2px 4px rgba(0,0,0,0.25)',
           }}
         >
           Start
@@ -187,9 +189,16 @@ export default function PlayShell({ title, score, finished, onElapsed, autoStart
   if (phase === 'countdown') {
     return (
       <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--color-text-primary)' }}>
-        <div aria-live="polite" style={{ fontSize: '4rem', fontFamily: 'var(--font-display)' }}>
+        <motion.div
+          key={count}
+          aria-live="polite"
+          initial={{ scale: 1.6, rotate: -6 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ duration: 0.35 }}
+          style={{ fontSize: '5rem', fontFamily: 'var(--font-display)', color: '#a855f7', textShadow: '0 4px 0 rgba(0,0,0,0.12)' }}
+        >
           {count}
-        </div>
+        </motion.div>
       </div>
     )
   }
@@ -200,33 +209,30 @@ export default function PlayShell({ title, score, finished, onElapsed, autoStart
     <PlayShellStatusContext.Provider value={status}>
       <div>
         <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem',
           padding: '0.5rem 1rem', color: 'var(--color-text-muted)', fontSize: '0.9rem',
         }}>
           <span aria-label={`Elapsed time ${formatElapsed(elapsed)}`}>⏱ {formatElapsed(elapsed)}</span>
           {/* BATCH 1 (item 8, lively screen): the score POPS every
               time it changes, so a correct answer feels alive.
               BOLD + COLOURFUL (owner 12:55 PKT) — a gradient pill,
-              not small plain text. */}
-          <motion.span
-            key={score}
-            initial={{ scale: 1.5 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.3 }}
-            style={{ fontFamily: FUNKY_FONT }}
-          >
-            <ScorePill score={score} />
-          </motion.span>
+              not small plain text. KID-STYLE UPGRADE 2026-11-07:
+              the pill itself is now big + chunky and pops on its
+              own, so the shell no longer wraps it in a second
+              pop animation. */}
+          <ScorePill score={score} />
           {!finished && phase === 'playing' && (
             <button
               onClick={() => { playEduSound('click', soundOn); setPhase('paused') }}
               style={{
-                background: 'var(--color-surface)', color: 'var(--color-text-primary)',
-                border: '1px solid var(--color-border)', borderRadius: 'var(--radius)',
-                padding: '0.375rem 0.875rem', cursor: 'pointer', fontSize: '0.9rem',
+                background: 'linear-gradient(135deg, #f59e0b, #ff6b9d)', color: '#fff',
+                border: '2px solid #fff', borderRadius: '9999px',
+                padding: '0.6rem 1.25rem', cursor: 'pointer', fontSize: '1rem',
+                fontFamily: FUNKY_FONT, boxShadow: '0 3px 0 rgba(0,0,0,0.15), 0 6px 14px rgba(245,158,11,0.4)',
+                textShadow: '0 1px 3px rgba(0,0,0,0.2)',
               }}
             >
-              Pause
+              ⏸ Pause
             </button>
           )}
           {!finished && phase === 'paused' && (
@@ -248,12 +254,14 @@ export default function PlayShell({ title, score, finished, onElapsed, autoStart
               <button
                 onClick={() => { playEduSound('click', soundOn); setPhase('playing') }}
                 style={{
-                  background: 'var(--color-primary)', color: '#fff', border: 'none',
-                  borderRadius: 'var(--radius)', padding: '0.75rem 2rem',
-                  fontSize: '1rem', fontFamily: 'var(--font-display)', cursor: 'pointer',
+                  background: 'linear-gradient(135deg, #22c55e, #3b82f6)', color: '#fff', border: '3px solid #fff',
+                  borderRadius: '1rem', padding: '0.9rem 2.25rem',
+                  fontSize: '1.15rem', fontFamily: 'var(--font-display)', cursor: 'pointer',
+                  boxShadow: '0 4px 0 rgba(0,0,0,0.18), 0 8px 20px rgba(34,197,94,0.4)',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
                 }}
               >
-                Resume
+                ▶ Resume
               </button>
             </div>
           )}

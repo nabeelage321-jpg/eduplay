@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, type CSSProperties } from 're
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { isRTL, SCORE_PER_CORRECT, shuffleArray } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 import PlayShell, { usePlayShellStatus } from './PlayShell'
 import type { ActivityItem } from '@/types'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
@@ -370,7 +371,7 @@ function MazeRunGame({ items, locale, onComplete, onProgress }: MazeRunGameProps
           {won ? 'Maze Complete!' : 'Out of lives!'}
         </h2>
         <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.25rem' }}>
-          Score: {score} / {rounds.length * SCORE_PER_CORRECT}
+          <ScorePill score={score} total={rounds.length * SCORE_PER_CORRECT} big />
         </p>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
           {correctCount} of {rounds.length} mazes correct
@@ -421,7 +422,7 @@ function MazeRunGame({ items, locale, onComplete, onProgress }: MazeRunGameProps
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem', flexWrap: 'wrap', gap: '0.4rem' }}>
-        <motion.span key={score} initial={{ scale: 1.35 }} animate={{ scale: 1 }} transition={{ duration: 0.25 }} style={{ display: 'inline-block' }} aria-live="polite">Score: <strong style={{ color: 'var(--color-primary)' }}>{score} / {rounds.length * SCORE_PER_CORRECT}</strong></motion.span>
+        <ScorePill score={score} total={rounds.length * SCORE_PER_CORRECT} />
         <span aria-live="polite">{'♥'.repeat(Math.max(0, lives))}{'♡'.repeat(Math.max(0, MAZE_RUN_LIVES - lives))} {lives} {lives === 1 ? 'life' : 'lives'}</span>
         <span aria-live="polite" style={{ color: timeLeft <= MAZE_RUN_WARNING_SECONDS ? 'var(--color-danger)' : undefined }}>⏱ {timeLeft}s</span>
         <span aria-live="polite">Maze {current + 1} of {rounds.length}</span>

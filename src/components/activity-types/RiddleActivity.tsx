@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { isRTL } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 import { playGameSound, readSoundOn } from '@/lib/game-sound'
 
 /**
@@ -235,7 +236,7 @@ export default function RiddleActivity({ items, locale, onComplete }: ActivityPr
         <div style={{ fontSize: '3rem' }}>🧩</div>
         <h2 style={{ fontFamily: 'var(--font-display)' }}>Riddles Complete!</h2>
         <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 700 }}>
-          Score: {Math.round(score)} / 100
+          <ScorePill score={Math.round(score)} total={100} big />
         </p>
         <p style={{ color: 'var(--color-text-muted)' }}>
           {correctCount} of {riddles.length} solved · {totalLetterHints} letter hints used · {attempts} wrong guesses
@@ -265,7 +266,7 @@ export default function RiddleActivity({ items, locale, onComplete }: ActivityPr
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '560px', margin: '0 auto', textAlign: 'center' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
         <span>Riddle {current + 1} / {riddles.length}</span>
-        <span>Score: {Math.round(score)} / 100</span>
+        <ScorePill score={Math.round(score)} total={100} />
         <span>Wrong guesses: {attempts}</span>
       </div>
 

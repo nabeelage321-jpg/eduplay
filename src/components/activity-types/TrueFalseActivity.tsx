@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, isRTL, getRandomFeedback } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 
 export default function TrueFalseActivity({ items, locale, onComplete }: ActivityProps) {
   const [currentIdx, setCurrentIdx] = useState(0)
@@ -49,7 +50,7 @@ export default function TrueFalseActivity({ items, locale, onComplete }: Activit
         style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-primary)' }}>
         <div style={{ fontSize: '3rem' }}>✅</div>
         <h2 style={{ fontFamily: 'var(--font-display)' }}>True or False Done!</h2>
-        <p style={{ color: 'var(--color-text-secondary)' }}>Score: {score}</p>
+        <p style={{ color: 'var(--color-text-secondary)' }}><ScorePill score={score} big /></p>
       </motion.div>
     )
   }
@@ -150,7 +151,7 @@ export default function TrueFalseActivity({ items, locale, onComplete }: Activit
         )}
       </AnimatePresence>
       <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-        Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong>
+        <ScorePill score={score} />
       </p>
     </div>
   )

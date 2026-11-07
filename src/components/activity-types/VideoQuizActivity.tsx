@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { isRTL, shuffleArray } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 import { playGameSound, readSoundOn } from '@/lib/game-sound'
 import type { ActivityItem } from '@/types'
 
@@ -490,7 +491,7 @@ export default function VideoQuizActivity({ items, locale, onComplete }: Activit
         <div style={{ fontSize: '3rem' }}>🎬</div>
         <h2 style={{ fontFamily: 'var(--font-display)' }}>Video Quiz Complete!</h2>
         <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 700 }}>
-          Score: {score} / 100
+          <ScorePill score={score} total={100} big />
         </p>
         <p style={{ color: 'var(--color-text-muted)' }}>
           {correctCount} of {built.questions.length} correct

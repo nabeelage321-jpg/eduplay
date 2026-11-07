@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { isRTL, shuffleArray } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 import PlayShell, { usePlayShellStatus } from './PlayShell'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
 import InteractiveSoundToggle from './InteractiveSoundToggle'
@@ -461,7 +462,7 @@ function ClaimLineGame({ items, locale, onComplete, onProgress }: ClaimLineGameP
           {title}
         </h2>
         <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.25rem' }}>
-          Score: {score}
+          <ScorePill score={score} big />
         </p>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
           {correctCount} of {attempts} correct
@@ -502,7 +503,7 @@ function ClaimLineGame({ items, locale, onComplete, onProgress }: ClaimLineGameP
     return (
       <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem', flexWrap: 'wrap', gap: '0.4rem' }}>
-          <motion.span key={score} initial={{ scale: 1.35 }} animate={{ scale: 1 }} transition={{ duration: 0.25 }} style={{ display: 'inline-block' }} aria-live="polite">Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong></motion.span>
+          <ScorePill score={score} />
           <span aria-live="polite">{'♥'.repeat(Math.max(0, lives))}{'♡'.repeat(Math.max(0, CLAIM_LINE_LIVES - lives))} {lives} {lives === 1 ? 'life' : 'lives'}</span>
           <span aria-live="polite" style={{ color: timeLeft <= CLAIM_LINE_WARNING_SECONDS ? 'var(--color-danger)' : undefined }}>⏱ {timeLeft}s</span>
           <span aria-live="polite">Square {questionSquare + 1} of 9</span>
@@ -590,7 +591,7 @@ function ClaimLineGame({ items, locale, onComplete, onProgress }: ClaimLineGameP
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem', flexWrap: 'wrap', gap: '0.4rem' }}>
-        <motion.span key={score} initial={{ scale: 1.35 }} animate={{ scale: 1 }} transition={{ duration: 0.25 }} style={{ display: 'inline-block' }} aria-live="polite">Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong></motion.span>
+        <ScorePill score={score} />
         <span aria-live="polite">{'♥'.repeat(Math.max(0, lives))}{'♡'.repeat(Math.max(0, CLAIM_LINE_LIVES - lives))} {lives} {lives === 1 ? 'life' : 'lives'}</span>
         <span aria-live="polite">⭐ You: {playerSquares} · 🤖 Computer: {computerSquares}</span>
         <button

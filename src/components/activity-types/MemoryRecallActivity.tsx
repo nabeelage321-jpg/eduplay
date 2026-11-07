@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, isRTL, shuffleArray } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 import PlayShell, { usePlayShellStatus } from './PlayShell'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
 import InteractiveSoundToggle from './InteractiveSoundToggle'
@@ -359,7 +360,7 @@ function MemoryRecallGame({ items, locale, onComplete, onProgress }: MemoryRecal
           {won ? 'Memory Recall Complete!' : 'Out of lives!'}
         </h2>
         <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.25rem' }}>
-          Score: {score} / {rounds.length * SCORE_PER_CORRECT}
+          <ScorePill score={score} total={rounds.length * SCORE_PER_CORRECT} big />
         </p>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
           {correctCount} of {rounds.length} correct
@@ -455,7 +456,7 @@ function MemoryRecallGame({ items, locale, onComplete, onProgress }: MemoryRecal
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem', flexWrap: 'wrap', gap: '0.4rem' }}>
-        <motion.span key={score} initial={{ scale: 1.35 }} animate={{ scale: 1 }} transition={{ duration: 0.25 }} style={{ display: 'inline-block' }} aria-live="polite">Score: <strong style={{ color: 'var(--color-primary)' }}>{score} / {rounds.length * SCORE_PER_CORRECT}</strong></motion.span>
+        <ScorePill score={score} total={rounds.length * SCORE_PER_CORRECT} />
         <span aria-live="polite">{'♥'.repeat(Math.max(0, lives))}{'♡'.repeat(Math.max(0, MEMORY_RECALL_LIVES - lives))} {lives} {lives === 1 ? 'life' : 'lives'}</span>
         <span aria-live="polite" style={{ color: timeLeft <= MEMORY_RECALL_WARNING_SECONDS ? 'var(--color-danger)' : undefined }}>⏱ {timeLeft}s</span>
         <span aria-live="polite">Recall {current + 1} of {rounds.length}</span>

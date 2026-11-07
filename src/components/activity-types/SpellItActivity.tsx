@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { isRTL, shuffleArray } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 import PlayShell, { usePlayShellStatus } from './PlayShell'
 import type { ActivityItem } from '@/types'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
@@ -375,7 +376,7 @@ function SpellItGame({ items, locale, onComplete, onProgress }: SpellItGameProps
           {won ? 'Spell It Complete!' : 'Out of lives!'}
         </h2>
         <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.25rem' }}>
-          Score: {score} / {maxScore}
+          <ScorePill score={score} total={maxScore} big />
         </p>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
           {wordsDone} of {rounds.length} words completed
@@ -438,7 +439,7 @@ function SpellItGame({ items, locale, onComplete, onProgress }: SpellItGameProps
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem', flexWrap: 'wrap', gap: '0.4rem' }}>
-        <motion.span key={score} initial={{ scale: 1.35 }} animate={{ scale: 1 }} transition={{ duration: 0.25 }} style={{ display: 'inline-block' }} aria-live="polite">Score: <strong style={{ color: 'var(--color-primary)' }}>{score} / {maxScore}</strong></motion.span>
+        <ScorePill score={score} total={maxScore} />
         <span aria-live="polite">{'♥'.repeat(Math.max(0, lives))}{'♡'.repeat(Math.max(0, SPELL_IT_LIVES - lives))} {lives} {lives === 1 ? 'life' : 'lives'}</span>
         <span aria-live="polite" style={{ color: timeLeft <= SPELL_IT_WARNING_SECONDS ? 'var(--color-danger)' : undefined }}>⏱ {timeLeft}s</span>
         <span aria-live="polite">Word {current + 1} of {rounds.length}</span>

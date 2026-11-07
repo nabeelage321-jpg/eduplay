@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { shuffleArray, isRTL } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 import { playGameSound, readSoundOn } from '@/lib/game-sound'
 
 /**
@@ -189,7 +190,7 @@ export default function AsterQuizActivity({ items, locale, onComplete }: Activit
         <div style={{ fontSize: '3rem', marginBottom: '1rem' }} aria-hidden="true">🚀</div>
         <h2 style={{ fontSize: '1.5rem', fontFamily: 'var(--font-display)', marginBottom: '0.5rem' }}>Asteroid Run Complete!</h2>
         <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.25rem' }}>
-          Score: {Math.round(score)} / 100
+          <ScorePill score={Math.round(score)} total={100} big />
         </p>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
           {correctCount} correct out of {questions.length} questions
@@ -219,7 +220,7 @@ export default function AsterQuizActivity({ items, locale, onComplete }: Activit
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-        <span aria-live="polite">Score: <strong style={{ color: 'var(--color-primary)' }}>{Math.round(score)} / 100</strong></span>
+        <ScorePill score={Math.round(score)} total={100} />
         <span aria-live="polite">{'❤️'.repeat(Math.max(0, livesLeft))} {livesLeft} {livesLeft === 1 ? 'life' : 'lives'}</span>
       </div>
 

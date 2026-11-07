@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { isRTL } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 import { playGameSound, readSoundOn } from '@/lib/game-sound'
 
 /**
@@ -303,7 +304,7 @@ export default function DictationActivity({ items, locale, onComplete }: Activit
         <div style={{ fontSize: '3rem' }}>🎧</div>
         <h2 style={{ fontFamily: 'var(--font-display)' }}>Dictation Complete!</h2>
         <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 700 }}>
-          Score: {finalScore} / 100
+          <ScorePill score={finalScore} total={100} big />
         </p>
         <p style={{ color: 'var(--color-text-muted)' }}>
           {wordsCorrect} of {totalWords} words correct · {passages.length} passages done

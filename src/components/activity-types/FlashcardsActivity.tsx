@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { isRTL } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 
 export default function FlashcardsActivity({ items, locale, onComplete }: ActivityProps) {
   const [currentIdx, setCurrentIdx] = useState(0)
@@ -49,7 +50,7 @@ export default function FlashcardsActivity({ items, locale, onComplete }: Activi
           ✅ Known: {known.size} / {items.length}
         </p>
         <p style={{ color: 'var(--color-text-secondary)' }}>
-          Score: {known.size * 10}
+          <ScorePill score={known.size * 10} total={items.length * 10} big />
         </p>
       </motion.div>
     )

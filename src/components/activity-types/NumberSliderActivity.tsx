@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { isRTL, shuffleArray } from './shared'
+import ScorePill from '@/components/game/ScorePill'
 import PlayShell, { usePlayShellStatus } from './PlayShell'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
 import InteractiveSoundToggle from './InteractiveSoundToggle'
@@ -399,7 +400,7 @@ function NumberSliderGame({ items, locale, onComplete, onProgress }: NumberSlide
           {title}
         </h2>
         <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.25rem' }}>
-          Score: {score} / {maxScore}
+          <ScorePill score={score} total={maxScore} big />
         </p>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
           {exactCount} exact of {rounds.length} rounds
@@ -441,7 +442,7 @@ function NumberSliderGame({ items, locale, onComplete, onProgress }: NumberSlide
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem', flexWrap: 'wrap', gap: '0.4rem' }}>
-        <motion.span key={score} initial={{ scale: 1.35 }} animate={{ scale: 1 }} transition={{ duration: 0.25 }} style={{ display: 'inline-block' }} aria-live="polite">Score: <strong style={{ color: 'var(--color-primary)' }}>{score} / {NUMBER_SLIDER_POINTS_EXACT * rounds.length}</strong></motion.span>
+        <ScorePill score={score} total={NUMBER_SLIDER_POINTS_EXACT * rounds.length} />
         <span aria-live="polite">{'♥'.repeat(Math.max(0, lives))}{'♡'.repeat(Math.max(0, NUMBER_SLIDER_LIVES - lives))} {lives} {lives === 1 ? 'life' : 'lives'}</span>
         <span aria-live="polite" style={{ color: timeLeft <= NUMBER_SLIDER_WARNING_SECONDS ? 'var(--color-danger)' : undefined }}>⏱ {timeLeft}s</span>
         <span aria-live="polite">Round {roundIndex + 1} of {rounds.length}</span>
