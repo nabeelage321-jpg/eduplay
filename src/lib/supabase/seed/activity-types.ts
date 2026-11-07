@@ -612,6 +612,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Star Shooter',
     description_en: 'Shoot the invader with the right answer',
   },
+  {
+    slug: 'jump-blocks',
+    icon: '🧱',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Jump Blocks',
+    name_ur: 'Jump Blocks',
+    name_ar: 'Jump Blocks',
+    name_hi: 'Jump Blocks',
+    name_es: 'Jump Blocks',
+    name_fr: 'Jump Blocks',
+    description_en: 'Run and jump to hit the block with the right answer',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

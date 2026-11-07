@@ -81,6 +81,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'flutter-flight',  icon: '🐦', name: 'Flutter Flight' },
   { slug: 'sweet-match',     icon: '🍬', name: 'Sweet Match' },
   { slug: 'star-shooter',    icon: '👾', name: 'Star Shooter' },
+  { slug: 'jump-blocks',     icon: '🧱', name: 'Jump Blocks' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -461,6 +462,21 @@ export function canConvertTo(
             ok: false,
             reason:
               'Star Shooter needs at least one different answer to borrow as a wrong invader in every sky — one of these questions has no other answer to borrow from.',
+          }
+
+    // Jump Blocks (type 46): the level is generated from the game's
+    // own items — one level per question, the blocks are the
+    // correct answer plus wrong answers borrowed from the other
+    // items, exactly like Star Shooter. A round needs at least
+    // one wrong block whose label differs from the correct
+    // answer, or the level has no choice in it.
+    case 'jump-blocks':
+      return items.every((_, i) => hasBorrowableWrong(items, i))
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Jump Blocks needs at least one different answer to borrow as a wrong block in every level — one of these questions has no other answer to borrow from.',
           }
 
     default:

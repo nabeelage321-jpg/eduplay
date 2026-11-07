@@ -38,6 +38,8 @@
  *     star-shooter: 10 pts, 3 lives (a wrong shot wastes the
  *     shot only — a landing costs one; invaders land after 4
  *     descent steps, one step every 3.5s).
+ *     jump-blocks: 10 pts + 1 coin per correct block, 3 lives
+ *     (a wrong block costs one life and cracks).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -383,6 +385,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Arrow keys or A/D to move, Space to shoot — or the on-screen arrows and FIRE button; tap the sky to move your ship.',
     timer: 'The invaders step down every few seconds and land after 4 steps.',
     lives: 'You have 3 lives — a wrong shot only wastes the shot; an invader landing costs one.',
+  }),
+  'jump-blocks': rules({
+    howTo: 'Run under the block carrying the correct answer and jump to hit it from below.',
+    scoring: 'Each correct block earns 10 points and one coin.',
+    objective: 'Hit the right block in every level without running out of lives.',
+    controls: 'Hold the arrow keys or A/D to run, Space, Arrow Up, or W to jump — or hold the on-screen arrows and tap JUMP.',
+    timer: 'No timer — look before you leap.',
+    lives: 'You have 3 lives — a wrong block costs one life and cracks so you cannot hit it again.',
   }),
 }
 

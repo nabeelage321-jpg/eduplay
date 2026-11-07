@@ -125,6 +125,7 @@ export const NOT_PRINTABLE_WORKSHEET_REASONS: Record<string, string> = {
   'flutter-flight': 'This game needs its sky and flying bird, so it cannot be printed as a text worksheet yet.',
   'sweet-match': 'This game needs its swapping board, so it cannot be printed as a text worksheet yet.',
   'star-shooter': 'This game needs its sky and moving invaders, so it cannot be printed as a text worksheet yet.',
+  'jump-blocks': 'This game needs its level and jumping kid, so it cannot be printed as a text worksheet yet.',
 }
 
 export function isPrintableWorksheetType(slug: string | undefined | null): boolean {

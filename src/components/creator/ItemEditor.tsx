@@ -55,6 +55,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'flutter-flight': { prompt: 'Question for this flight', answer: 'Correct answer gate' },
   'sweet-match': { prompt: 'Question for this board', answer: 'Word to spell or sum answer' },
   'star-shooter': { prompt: 'Question for this sky', answer: 'Correct answer invader' },
+  'jump-blocks': { prompt: 'Question for this level', answer: 'Correct answer block' },
 }
 
 const fieldStyle: React.CSSProperties = {

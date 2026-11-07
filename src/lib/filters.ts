@@ -92,6 +92,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'flutter-flight', label: 'Flutter Flight' },
   { value: 'sweet-match', label: 'Sweet Match' },
   { value: 'star-shooter', label: 'Star Shooter' },
+  { value: 'jump-blocks', label: 'Jump Blocks' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [
