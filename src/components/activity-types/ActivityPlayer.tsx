@@ -71,6 +71,7 @@ const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
   'beat-tap':            lazy(() => import('./BeatTapActivity')),
   'mine-logic':          lazy(() => import('./MineLogicActivity')),
   'number-merge':        lazy(() => import('./NumberMergeActivity')),
+  'bounce-up':           lazy(() => import('./BounceUpActivity')),
 }
 
 interface ActivityPlayerProps {

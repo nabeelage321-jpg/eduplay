@@ -80,6 +80,10 @@
  *     lives (a slide that moves nothing costs no life; a stuck
  *     board costs one life and the round restarts with the same
  *     target).
+ *     bounce-up: 10 pts per correct platform (6 per round, one
+ *     in every row) + 10 for the star at the top, 3 lives (a
+ *     wrong platform breaks but costs no life; falling off the
+ *     bottom of the screen costs one life and ends the round).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -521,6 +525,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Swipe the board, press the arrow keys (W A S D works too), or tap the arrow buttons under the board. A slide that moves nothing does nothing — no new tile appears and no life is lost.',
     timer: 'No timer — take your time to line up the tiles you want to merge.',
     lives: 'You have 3 lives — a slide that moves nothing costs no life, but a board that is full with no two equal neighbours is stuck, and that costs one life and restarts the round with the same target.',
+  }),
+  'bounce-up': rules({
+    howTo: 'Your little bouncer bounces all by itself — you only steer it left and right in the air. Read the question — for example, “10−3 = ?” — and steer onto the platforms that say 7. The platforms climb higher and higher, and a star platform waits at the top.',
+    scoring: 'Landing on a platform with the right answer earns 10 points — one right-answer platform in every row (6 in every climb), plus the star at the top, so 70 points a round at most and the game is scored out of 700. A right-answer platform only pays the first time you land on it.',
+    objective: 'Reach the star at the top of every climb without falling off the bottom of the screen, and keep your streak of climbs won in a row going.',
+    controls: 'Hold the left or right arrow key (A and D work too) to steer in the air, hold the ◀ ▶ buttons under the scene, or hold the left or right side of the scene itself. The bounce is automatic — you never press anything to jump.',
+    timer: 'No timer — take your time to steer onto the right platform.',
+    lives: 'You have 3 lives — landing on a wrong platform breaks it but costs no life, yet falling below the bottom of the screen costs one life and ends the climb.',
   }),
 }
 

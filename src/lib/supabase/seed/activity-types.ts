@@ -768,6 +768,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Number Merge',
     description_en: 'Slide the numbered tiles and merge equal pairs — make 8, then 16, then 32, all the way to 4096',
   },
+  {
+    slug: 'bounce-up',
+    icon: '⬆️',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Bounce Up',
+    name_ur: 'Bounce Up',
+    name_ar: 'Bounce Up',
+    name_hi: 'Bounce Up',
+    name_es: 'Bounce Up',
+    name_fr: 'Bounce Up',
+    description_en: 'Bounce up the platforms with the right answer — and don’t fall',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

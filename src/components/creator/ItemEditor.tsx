@@ -67,6 +67,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'beat-tap': { prompt: 'Question for this beat', answer: 'Correct answer note' },
   'mine-logic': { prompt: 'Question for this grid', answer: 'Correct answer square' },
   'number-merge': { prompt: 'Question for this merge board', answer: 'Correct answer tile' },
+  'bounce-up': { prompt: 'Question for this climb', answer: 'Correct answer platform' },
 }
 
 const fieldStyle: React.CSSProperties = {

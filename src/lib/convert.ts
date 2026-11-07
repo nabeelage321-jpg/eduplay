@@ -37,6 +37,7 @@ import { buildRockBlasterRound } from '@/lib/rock-blaster'
 import { buildLadderClimbRound } from '@/lib/ladder-climb'
 import { buildBeatTapRound } from '@/lib/beat-tap'
 import { buildMineLogicRound } from '@/lib/mine-logic'
+import { buildBounceUpRound } from '@/lib/bounce-up'
 
 export interface ConvertTarget {
   slug: string
@@ -102,6 +103,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'beat-tap',          icon: '🥁', name: 'Beat Tap' },
   { slug: 'mine-logic',        icon: '🧩', name: 'Mine Logic' },
   { slug: 'number-merge',      icon: '🔢', name: 'Number Merge' },
+  { slug: 'bounce-up',         icon: '⬆️', name: 'Bounce Up' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -706,6 +708,25 @@ export function canConvertTo(
     // items are kept but not needed for play.
     case 'number-merge':
       return { ok: true, reason: '' }
+
+    // Bounce Up (type 58): the climb is generated from the
+    // game's own items, one round per question, so any
+    // question list where every item has at least two
+    // different answers to borrow as wrong platforms plays.
+    case 'bounce-up':
+      return items.every((item) =>
+        buildBounceUpRound(
+          item.prompt,
+          item.answer,
+          items.map((i) => i.answer),
+        ),
+      )
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Bounce Up needs at least two different answers to borrow as wrong platforms in every round — one of these questions has no other answers to borrow from.',
+          }
 
     default:
       return {

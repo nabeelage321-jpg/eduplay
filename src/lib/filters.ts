@@ -104,6 +104,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'beat-tap', label: 'Beat Tap' },
   { value: 'mine-logic', label: 'Mine Logic' },
   { value: 'number-merge', label: 'Number Merge' },
+  { value: 'bounce-up', label: 'Bounce Up' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [
