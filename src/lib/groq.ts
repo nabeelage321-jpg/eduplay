@@ -22,6 +22,7 @@
  */
 import type { ActivityItem } from '@/types'
 import { containsAnswerWordOnce } from './prompt-to-game'
+import { clueContainsAnswer } from './crossword-clue'
 
 export const GROQ_DEFAULT_MODEL = 'openai/gpt-oss-20b'
 export const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
@@ -582,6 +583,43 @@ export function parseGroqFillBlankSentences(raw: unknown, prompt: string): Activ
 }
 
 /**
+ * Parse + validate a Groq HANGMAN draft: {"words": [{"word": "Mars", "hint": "The Red Planet"}]}.
+ * Same strictness as parseGroqQuestions — a word must be on-topic
+ * and deduplicated — but there is no incorrect list: each word
+ * carries its own hint. Rules: the word is ONE single word of
+ * letters only (3–12 letters, so the player can guess it), the hint
+ * is a real clue that never contains the word as a whole word
+ * (otherwise the kid just copies it instead of guessing), answers
+ * deduped (two rounds with the same word would be the same round
+ * twice). The caller rejects the draft if fewer than 2 survive.
+ */
+export function parseGroqHangmanWords(raw: unknown, prompt: string): ActivityItem[] {
+  if (typeof raw !== 'object' || raw === null) return []
+  const words = (raw as { words?: unknown }).words
+  if (!Array.isArray(words)) return []
+  const keywords = topicKeywords(prompt)
+  const seen = new Set<string>()
+  const seenAnswers = new Set<string>()
+  const items: ActivityItem[] = []
+  for (const w of words) {
+    const r = w as { word?: unknown; hint?: unknown }
+    const word = asNonEmptyString(r.word, 12)
+    const hint = asNonEmptyString(r.hint, 300)
+    if (!word || !hint) continue
+    if (!/^[A-Za-z]{3,12}$/.test(word)) continue
+    if (clueContainsAnswer(hint, word)) continue
+    const key = hint.toLowerCase()
+    if (seen.has(key) || seenAnswers.has(word.toLowerCase())) continue
+    if (!isOnTopic(hint, word, keywords)) continue
+    seen.add(key)
+    seenAnswers.add(word.toLowerCase())
+    items.push({ prompt: hint, answer: word })
+    if (items.length >= 10) break
+  }
+  return items
+}
+
+/**
  * One Groq call for a topic-specific draft. `fetchImpl` exists only so
  * tests can inject a mock — the route always passes the real fetch.
  * Never throws for a provider failure: it returns a distinct result
@@ -616,12 +654,18 @@ export function parseGroqFillBlankSentences(raw: unknown, prompt: string): Activ
  * parseGroqMissingWordSentences (the word must occur in its sentence
  * as a whole word exactly once), and the question-framed self-check
  * is skipped for the same reason.
+ *
+ * HANGMAN (2026-11-07): `gameType` may also be 'hangman' — same
+ * pattern again. Groq is asked for single words plus a hint for
+ * each, parsed by parseGroqHangmanWords (the word is letters only,
+ * 3–12 letters; the hint never contains the word), and the
+ * question-framed self-check is skipped for the same reason.
  */
 export async function buildGroqDraft(
   prompt: string,
   fetchImpl: typeof fetch = fetch,
   syllabusContext?: string,
-  gameType?: 'true-false' | 'fill-blank' | 'missing-word'
+  gameType?: 'true-false' | 'fill-blank' | 'missing-word' | 'hangman'
 ): Promise<GroqDraftResult> {
   const config = getGroqConfig()
   if (!config) {
@@ -630,6 +674,7 @@ export async function buildGroqDraft(
   const wantTrueFalse = gameType === 'true-false'
   const wantFillBlank = gameType === 'fill-blank'
   const wantMissingWord = gameType === 'missing-word'
+  const wantHangman = gameType === 'hangman'
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS)
   try {
@@ -638,7 +683,18 @@ export async function buildGroqDraft(
       messages: [
         {
           role: 'system',
-          content: wantMissingWord
+          content: wantHangman
+            ? 'You write single words with hints ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
+              'Return ONLY a JSON object, no markdown, no extra text: {"words": [{"word": "Mars", "hint": "The Red Planet"}]}. ' +
+              'Up to 10 words. Each word must be ONE single word of letters only, 3 to 12 letters long — never a phrase, never a number, never a word with a hyphen or an apostrophe. ' +
+              'The hint must describe the word without naming it: it must never contain the word itself, or the player would not have to guess. ' +
+              'Every word must be a word you are sure belongs to that topic — never invent facts; leave a word out instead. ' +
+              'Do not repeat the same word twice.' +
+              (syllabusContext
+                ? ` Write the words and hints in the style typical for ${syllabusContext} topics, at the level the prompt implies. ` +
+                  'This is style context only: you cannot fetch, verify, or reproduce that syllabus, and you must never claim a word is official syllabus material.'
+                : '')
+            : wantMissingWord
             ? 'You write short sentences ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
               'Return ONLY a JSON object, no markdown, no extra text: {"sentences": [{"sentence": "Jupiter is the largest planet.", "answer": "Jupiter"}]}. ' +
               'Up to 10 sentences. Each sentence must be ONE clear fact about that topic, written as a plain sentence — never a question, never a blank. ' +
@@ -727,6 +783,15 @@ export async function buildGroqDraft(
     const parsed = extractJson(content)
     if (parsed === null) {
       return { ok: false, status: 502, error: 'Groq returned a draft that could not be read. Try again — no questions were invented.' }
+    }
+    if (wantHangman) {
+      // Words path: no question-framed self-check applies, and
+      // convertDraftItems passes hangman items through, validated.
+      const parsedItems = parseGroqHangmanWords(parsed, prompt)
+      if (parsedItems.length < 2) {
+        return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic words, phrases, or hints that give the word away were kept.' }
+      }
+      return { ok: true, model: config.model, items: parsedItems }
     }
     if (wantMissingWord) {
       // Sentences path: no question-framed self-check applies, and

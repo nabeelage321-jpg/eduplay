@@ -82,7 +82,9 @@ export function DraftEditor({
             }}
           >
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.25rem' }}>
-              {draft.type === 'missing-word'
+              {draft.type === 'hangman'
+                ? `Hint / clue ${i + 1} — it must never contain the word`
+                : draft.type === 'missing-word'
                 ? `Sentence ${i + 1} — it must contain the missing word`
                 : draft.type === 'fill-blank'
                 ? `Sentence ${i + 1} — use ___ for the blank`
@@ -93,7 +95,9 @@ export function DraftEditor({
               onChange={(e) => editItem(i, 'prompt', e.target.value)}
               style={{ ...fieldStyle, marginBottom: '0.5rem' }}
               aria-label={
-                draft.type === 'missing-word'
+                draft.type === 'hangman'
+                  ? `Draft hint ${i + 1}`
+                  : draft.type === 'missing-word'
                   ? `Draft sentence ${i + 1}`
                   : draft.type === 'fill-blank'
                   ? `Draft sentence ${i + 1}`
@@ -101,7 +105,7 @@ export function DraftEditor({
               }
             />
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.25rem' }}>
-              {draft.type === 'fill-blank' || draft.type === 'missing-word' ? 'Missing word' : 'Answer'}
+              {draft.type === 'hangman' ? 'Word to guess' : draft.type === 'fill-blank' || draft.type === 'missing-word' ? 'Missing word' : 'Answer'}
             </label>
             {draft.type === 'true-false' ? (
               // TRUE/FALSE (2026-11-07): the answer is a True/False
@@ -122,7 +126,7 @@ export function DraftEditor({
                 value={item.answer}
                 onChange={(e) => editItem(i, 'answer', e.target.value)}
                 style={fieldStyle}
-                aria-label={`Draft answer ${i + 1}`}
+                aria-label={draft.type === 'hangman' ? `Draft word to guess ${i + 1}` : `Draft answer ${i + 1}`}
               />
             )}
             <button
