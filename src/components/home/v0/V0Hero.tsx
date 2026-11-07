@@ -67,7 +67,7 @@ export default function V0Hero({
               no ad code anywhere near it. English wording is used
               for every locale (no translations invented); it matches
               the hero's existing hardcoded English lines above. */}
-          <div aria-label="Ad-Free for Kids" style={{ margin: '1.5rem auto 0', maxWidth: '36rem', borderRadius: '1rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '1rem 1.25rem', textAlign: 'center' }}>
+          <div aria-label="Ad-Free for Kids" style={{ margin: '1rem auto 0', maxWidth: '26rem', borderRadius: '1rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '0.5rem 1rem', textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: '1.125rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--color-text-primary)' }}>
               🛡️ Ad-Free for Kids
             </p>

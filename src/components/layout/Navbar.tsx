@@ -76,16 +76,23 @@ export default function Navbar({ locale }: NavbarProps) {
         {/* Desktop nav — kid-friendly nav buttons (owner order
             2026-11-07, launch day): bigger text + bigger padding +
             playful pill shape, same labels, destinations, order.
-            Only the desktop row is styled here; the mobile menu,
-            the Dashboard blue pill, logo, language, palette and
-            user chip are untouched. */}
+            2026-11-07 pill fix: the 9999px radius alone was
+            INVISIBLE — btn-ghost is transparent, so the live check
+            saw plain text links. Each link now carries a VISIBLE
+            soft background (var(--color-surface-alt)) + 2px border
+            (var(--color-border)), so the pill is plainly a pill.
+            This row renders in BOTH signed-in and signed-out states
+            (the session split is only in the right actions below),
+            so one fix covers both. Only the desktop row is styled
+            here; the mobile menu, the Dashboard blue pill, logo,
+            language, palette and user chip are untouched. */}
         <div className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className="btn-ghost"
-              style={{ display: 'inline-flex', minHeight: '48px', alignItems: 'center', padding: '0.625rem 1.125rem', borderRadius: '9999px', fontSize: '1.125rem', fontWeight: 700 }}
+              style={{ display: 'inline-flex', minHeight: '48px', alignItems: 'center', padding: '0.625rem 1.125rem', borderRadius: '9999px', fontSize: '1.125rem', fontWeight: 700, background: 'var(--color-surface-alt)', border: '2px solid var(--color-border)' }}
             >
               {link.label}
             </Link>
