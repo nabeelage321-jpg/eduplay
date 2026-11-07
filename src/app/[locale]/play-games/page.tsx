@@ -92,33 +92,41 @@ export default async function PlayGamesPage({ params }: { params: { locale: stri
         style={{
           maxWidth: '1200px',
           margin: '0 auto',
-          padding: '1.5rem 1rem',
+          padding: '0.75rem 1rem',
           color: 'var(--color-text-primary)',
         }}
       >
         <Breadcrumb items={[{ label: 'Home', href: `/${params.locale}` }, { label: 'Play Games' }]} />
 
+        {/* HERO — shrunk (owner order 2026-11-07, build-list item 2):
+            the hero was too tall and the kid was "received by empty
+            space" before any game was visible. Headline text and all
+            wording UNCHANGED — only sizes/padding shrunk so the 40
+            tiles start visible at once on a normal desktop viewport.
+            Before: section 2rem/1rem, emoji 3rem, h1 up to 2.5rem,
+            intro 1.125rem. After: section 0.5rem/0.75rem, emoji
+            1.75rem, h1 up to 1.75rem, intro 1rem. */}
         <section
-          style={{ textAlign: 'center', padding: '2rem 1rem 1rem' }}
+          style={{ textAlign: 'center', padding: '0.5rem 1rem 0.75rem' }}
           aria-labelledby="hero-heading"
         >
-          <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }} aria-hidden="true">
+          <div style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }} aria-hidden="true">
             🎮
           </div>
           <h1
             id="hero-heading"
             style={{
-              fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
+              fontSize: 'clamp(1.375rem, 3vw, 1.75rem)',
               fontFamily: 'var(--font-display)',
               color: 'var(--color-text-primary)',
-              marginBottom: '0.75rem',
+              marginBottom: '0.5rem',
             }}
           >
             Play Games — Pick Your Game and Play
           </h1>
           <p
             style={{
-              fontSize: '1.125rem',
+              fontSize: '1rem',
               color: 'var(--color-text-secondary)',
               maxWidth: '640px',
               margin: '0 auto',
@@ -133,7 +141,7 @@ export default async function PlayGamesPage({ params }: { params: { locale: stri
               fontSize: '0.875rem',
               color: 'var(--color-text-muted)',
               maxWidth: '640px',
-              margin: '0.75rem auto 0',
+              margin: '0.5rem auto 0',
             }}
           >
             Games here are made by teachers or with AI. A teacher should review a game before class.
