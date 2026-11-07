@@ -68,4 +68,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'mine-logic',        icon: '🧩', name: 'Mine Logic',        desc: 'Read the numbers, flag the hidden mines, and answer a quick question to open each safe square' },
   { slug: 'number-merge',      icon: '🔢', name: 'Number Merge',      desc: 'Slide the numbered tiles and merge equal pairs — make 8, then 16, then 32, all the way to 4096' },
   { slug: 'bounce-up',         icon: '⬆️', name: 'Bounce Up',         desc: 'Bounce up the platforms with the right answer — and don’t fall' },
+  { slug: 'creature-catch',   icon: '🐾', name: 'Creature Catch',   desc: 'Throw a catch ball at the creature holding the right answer — and grow your collection' },
 ]

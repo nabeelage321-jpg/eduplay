@@ -105,6 +105,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'mine-logic', label: 'Mine Logic' },
   { value: 'number-merge', label: 'Number Merge' },
   { value: 'bounce-up', label: 'Bounce Up' },
+  { value: 'creature-catch', label: 'Creature Catch' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

@@ -84,6 +84,9 @@
  *     in every row) + 10 for the star at the top, 3 lives (a
  *     wrong platform breaks but costs no life; falling off the
  *     bottom of the screen costs one life and ends the round).
+ *     creature-catch: 10 pts per correct catch (one per round),
+ *     3 lives (a wrong creature breaks free, costs one life,
+ *     and ends the round; one throw per round).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -533,6 +536,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Hold the left or right arrow key (A and D work too) to steer in the air, hold the ◀ ▶ buttons under the scene, or hold the left or right side of the scene itself. The bounce is automatic — you never press anything to jump.',
     timer: 'No timer — take your time to steer onto the right platform.',
     lives: 'You have 3 lives — landing on a wrong platform breaks it but costs no life, yet falling below the bottom of the screen costs one life and ends the climb.',
+  }),
+  'creature-catch': rules({
+    howTo: 'Three wild creatures wait in the meadow, and each one holds an answer. Read the question — for example, “2+6 = ?” — and throw your catch ball at the creature holding 8. Tap (or click) the creature, or press 1, 2, or 3. The creatures bob and wander while you aim, but the ball always flies to the creature you tapped.',
+    scoring: 'Catching the creature with the right answer earns 10 points — one catch per round, so 10 points a round at most and the game is scored out of 100. Every creature you catch joins your collection.',
+    objective: 'Catch the right creature in every round — and find all 12 creatures for your collection! Every creature you catch stays in your collection on this device, so come back and play again to find the ones you are still missing.',
+    controls: 'Tap (or click) a creature to throw the ball at it, or press 1, 2, or 3 for the first, second, or third creature. You get one throw per round — choose carefully!',
+    timer: 'No timer — take your time to pick the creature holding the right answer.',
+    lives: 'You have 3 lives — a creature that breaks free costs 1 life and ends the round.',
   }),
 }
 

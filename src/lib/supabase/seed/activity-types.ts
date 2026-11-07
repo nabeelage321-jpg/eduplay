@@ -781,6 +781,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Bounce Up',
     description_en: 'Bounce up the platforms with the right answer — and don’t fall',
   },
+  {
+    slug: 'creature-catch',
+    icon: '🐾',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Creature Catch',
+    name_ur: 'Creature Catch',
+    name_ar: 'Creature Catch',
+    name_hi: 'Creature Catch',
+    name_es: 'Creature Catch',
+    name_fr: 'Creature Catch',
+    description_en: 'Throw a catch ball at the creature holding the right answer — and grow your collection',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)
