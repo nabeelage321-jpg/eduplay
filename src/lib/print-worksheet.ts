@@ -123,6 +123,7 @@ export const NOT_PRINTABLE_WORKSHEET_REASONS: Record<string, string> = {
   'maze-chase': 'This game needs its maze and moving ghost, so it cannot be printed as a text worksheet yet.',
   'apple-snake': 'This game needs its garden and moving snake, so it cannot be printed as a text worksheet yet.',
   'flutter-flight': 'This game needs its sky and flying bird, so it cannot be printed as a text worksheet yet.',
+  'sweet-match': 'This game needs its swapping board, so it cannot be printed as a text worksheet yet.',
 }
 
 export function isPrintableWorksheetType(slug: string | undefined | null): boolean {

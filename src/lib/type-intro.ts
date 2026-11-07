@@ -33,6 +33,8 @@
  *     (wrong apple, wall bump, tail bite, or time-up costs one).
  *     flutter-flight: 10 pts, 45s/round, 3 lives (wrong gate, gate
  *     hit, ground touch, or time-up costs one).
+ *     sweet-match: 10 pts, 60s/round, 3 lives (only a time-up
+ *     costs one — a wrong swap just swaps back; cascades +5).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -362,6 +364,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Tap the sky, click it, or press Space to flap.',
     timer: '45 seconds per round.',
     lives: 'You have 3 lives — a wrong gate, a gate hit, a ground touch, or a time-up costs one.',
+  }),
+  'sweet-match': rules({
+    howTo: 'Swap the sweets on the board to line up the word or the sum shown above it.',
+    scoring: 'Each correct match earns 10 points, and each cascade after it earns 5 bonus points.',
+    objective: 'Match the target on every board without running out of lives.',
+    controls: 'Tap a sweet, then tap a sweet next to it to swap — or drag one sweet onto its neighbour.',
+    timer: '60 seconds per round.',
+    lives: 'You have 3 lives — only a time-up costs one; a wrong swap just swaps back.',
   }),
 }
 

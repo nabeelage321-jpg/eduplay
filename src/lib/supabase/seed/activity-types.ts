@@ -586,6 +586,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Flutter Flight',
     description_en: 'Flap through the gate with the right answer',
   },
+  {
+    slug: 'sweet-match',
+    icon: '🍬',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Sweet Match',
+    name_ur: 'Sweet Match',
+    name_ar: 'Sweet Match',
+    name_hi: 'Sweet Match',
+    name_es: 'Sweet Match',
+    name_fr: 'Sweet Match',
+    description_en: 'Swap sweets to match the word or sum',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

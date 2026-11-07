@@ -53,6 +53,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'maze-chase': { prompt: 'Question for this maze', answer: 'Correct answer ball' },
   'apple-snake': { prompt: 'Question for this garden', answer: 'Correct answer apple' },
   'flutter-flight': { prompt: 'Question for this flight', answer: 'Correct answer gate' },
+  'sweet-match': { prompt: 'Question for this board', answer: 'Word to spell or sum answer' },
 }
 
 const fieldStyle: React.CSSProperties = {

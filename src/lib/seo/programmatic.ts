@@ -93,6 +93,7 @@ export const DB_TYPE_BY_SLUG: Record<string, string> = {
   'maze-chase': 'maze-chase',
   'apple-snake': 'apple-snake',
   'flutter-flight': 'flutter-flight',
+  'sweet-match': 'sweet-match',
 }
 
 export interface ProgrammaticActivity {

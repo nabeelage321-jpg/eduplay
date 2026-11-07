@@ -27,6 +27,7 @@
 
 import type { ActivityItem } from '@/types'
 import { parseNumberAnswer } from '@/lib/number-slider'
+import { canBuildSweetMatchTarget } from '@/lib/sweet-match'
 
 export interface ConvertTarget {
   slug: string
@@ -78,6 +79,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'maze-chase',      icon: '👻', name: 'Maze Chase' },
   { slug: 'apple-snake',     icon: '🍎', name: 'Apple Snake' },
   { slug: 'flutter-flight',  icon: '🐦', name: 'Flutter Flight' },
+  { slug: 'sweet-match',     icon: '🍬', name: 'Sweet Match' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -429,6 +431,20 @@ export function canConvertTo(
             ok: false,
             reason:
               'Flutter Flight needs at least one different answer to borrow as a wrong gate in every sky — one of these questions has no other answer to borrow from.',
+          }
+
+    // Sweet Match (type 44): the board is generated from the game's
+    // own items — one board per question, the target is the item's
+    // own sum (parsed out of the question, only when it really
+    // equals the answer) or the answer's first three letters. A
+    // round needs one of those, or the board has no target in it.
+    case 'sweet-match':
+      return items.every((item) => item.prompt && item.answer && canBuildSweetMatchTarget(item.prompt, item.answer))
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Sweet Match needs every question to hold a simple sum or an answer of at least 3 letters — one of these questions has neither, so it has no target to match.',
           }
 
     default:
