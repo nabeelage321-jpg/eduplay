@@ -5,8 +5,14 @@ import { motion } from 'framer-motion'
 import type { ActivityProps, ActivityCompletion } from './shared'
 import { SCORE_PER_CORRECT, shuffleArray, isRTL } from './shared'
 import PlayShell from './PlayShell'
+import KidActionsBar from '@/components/game/KidActionsBar'
+import ScorePill from '@/components/game/ScorePill'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
 import InteractiveSoundToggle from './InteractiveSoundToggle'
+
+// BATCH 1 (final list item 19): funky + bold letters — Fredoka One,
+// already loaded, no new dependency.
+const FUNKY_FONT = "'Fredoka One', 'Nunito', system-ui, sans-serif"
 
 interface MatchItem { id: string; prompt: string; answer: string }
 
@@ -80,6 +86,14 @@ function MatchUpGame({ items, locale, onComplete, onProgress }: MatchUpGameProps
   const [score, setScore] = useState(0)
   const [finished, setFinished] = useState(false)
   const finishedSoundRef = useRef(false)
+  // KID ACTIONS (batch 1, item 17): Match Up has no wrong answers
+  // to remove and no question to skip — the action that maps is
+  // HINT: one unmatched pair glows for a few seconds so the kid
+  // can spot it. Skip and see-the-answer are hidden (they do not
+  // map to matching), never faked.
+  const [hintPair, setHintPair] = useState<string | null>(null)
+  const hintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current) }, [])
   const rtl = isRTL(locale)
 
   useEffect(() => {
@@ -107,6 +121,16 @@ function MatchUpGame({ items, locale, onComplete, onProgress }: MatchUpGameProps
     setSelected((prev) => (prev === id ? null : id))
   }
 
+  function useHint() {
+    if (finished) return
+    const next = pairs.find((p) => !matched.has(p.id))
+    if (!next) return
+    playEduSound('click', readInteractiveSoundOn())
+    setHintPair(next.id)
+    if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current)
+    hintTimeoutRef.current = setTimeout(() => setHintPair(null), 2500)
+  }
+
   function selectRight(answer: string) {
     if (!selected) return
     const pair = pairs.find((p) => p.id === selected)
@@ -117,7 +141,7 @@ function MatchUpGame({ items, locale, onComplete, onProgress }: MatchUpGameProps
       setScore((s) => s + SCORE_PER_CORRECT)
       setSelected(null)
       playEduSound('correct', readInteractiveSoundOn())
-      if (newMatched.size === pairs.length) { setFinished(true); onComplete(score + SCORE_PER_CORRECT) }
+      if (newMatched.size === pairs.length) { setFinished(true); onComplete(score + SCORE_PER_CORRECT, { correctCount: pairs.length, totalCount: pairs.length }) }
     } else {
       playEduSound('wrong', readInteractiveSoundOn())
       setWrongFlash(answer)
@@ -129,38 +153,46 @@ function MatchUpGame({ items, locale, onComplete, onProgress }: MatchUpGameProps
     <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
       style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-primary)' }}>
       <div style={{ fontSize: '3rem' }}>🎯</div>
-      <h2 style={{ fontFamily: 'var(--font-display)', marginTop: '0.5rem' }}>All Matched!</h2>
-      <p style={{ color: 'var(--color-text-secondary)' }}>Score: {score}</p>
+      <h2 style={{ fontFamily: FUNKY_FONT, marginTop: '0.5rem' }}>All Matched!</h2>
+      <p style={{ marginTop: '0.5rem' }}><ScorePill score={score} total={pairs.length * SCORE_PER_CORRECT} big /></p>
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.25rem' }}>
         <InteractiveSoundToggle />
       </div>
     </motion.div>
   )
 
+  // BATCH 1 (item 23, ONE SCREEN): compact cards so all 12 pairs
+  // fit on one screen with no mouse scroll.
   return (
-    <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', justifyContent: 'flex-end', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+    <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '0.5rem', maxWidth: '600px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', justifyContent: 'flex-end', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
         Sound <InteractiveSoundToggle />
       </div>
-      <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', marginBottom: '1rem', fontSize: '0.9rem' }}>
+      <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
         Select a prompt, then select its matching answer
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      {/* KID ACTIONS (batch 1, item 17): Hint only — skip and
+          see-the-answer do not map to matching. */}
+      <KidActionsBar onHint={useHint} hintUsed={hintPair !== null} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
           {pairs.map((pair) => {
             const isMatched = matched.has(pair.id)
             const isSel = selected === pair.id
+            const isHint = hintPair === pair.id
             return (
               <motion.button key={pair.id} onClick={() => selectLeft(pair.id)}
                 whileHover={!isMatched ? { scale: 1.02 } : {}} aria-pressed={isSel}
                 aria-label={`Prompt: ${pair.prompt}`}
+                animate={isHint ? { scale: [1, 1.04, 1] } : {}}
+                transition={isHint ? { duration: 0.6, repeat: Infinity } : {}}
                 style={{
-                  padding: '0.75rem', borderRadius: 'var(--radius)',
-                  border: `2px solid ${isMatched ? 'var(--color-success)' : isSel ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                  background: isMatched ? 'var(--color-success)' : isSel ? 'var(--color-primary-light)' : 'var(--color-surface)',
+                  padding: '0.55rem 0.65rem', borderRadius: 'var(--radius)',
+                  border: `2px solid ${isMatched ? 'var(--color-success)' : isHint ? 'var(--color-warning)' : isSel ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                  background: isMatched ? 'var(--color-success)' : isHint ? 'color-mix(in srgb, var(--color-warning) 20%, var(--color-surface))' : isSel ? 'var(--color-primary-light)' : 'var(--color-surface)',
                   color: isMatched ? '#fff' : 'var(--color-text-primary)',
                   cursor: isMatched ? 'default' : 'pointer', opacity: isMatched ? 0.7 : 1,
-                  textAlign: rtl ? 'right' : 'left', fontSize: '0.9rem',
+                  textAlign: rtl ? 'right' : 'left', fontSize: '0.85rem',
                   fontFamily: 'var(--font-body)', transition: 'all 0.2s',
                 }}>
                 {pair.prompt}
@@ -168,21 +200,22 @@ function MatchUpGame({ items, locale, onComplete, onProgress }: MatchUpGameProps
             )
           })}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
           {rightItems.map((answer) => {
             const isMatched = pairs.some((p) => p.answer === answer && matched.has(p.id))
             const isWrong = wrongFlash === answer
+            const isHint = pairs.some((p) => p.answer === answer && hintPair === p.id)
             return (
               <motion.button key={answer} onClick={() => selectRight(answer)}
-                animate={isWrong ? { x: [0, -8, 8, -8, 0] } : {}} transition={{ duration: 0.3 }}
+                animate={isWrong ? { x: [0, -8, 8, -8, 0] } : isHint ? { scale: [1, 1.04, 1] } : {}} transition={{ duration: 0.3 }}
                 aria-label={`Answer: ${answer}`}
                 style={{
-                  padding: '0.75rem', borderRadius: 'var(--radius)',
-                  border: `2px solid ${isMatched ? 'var(--color-success)' : isWrong ? 'var(--color-danger)' : 'var(--color-border)'}`,
-                  background: isMatched ? 'var(--color-success)' : isWrong ? 'var(--color-danger)' : 'var(--color-surface)',
+                  padding: '0.55rem 0.65rem', borderRadius: 'var(--radius)',
+                  border: `2px solid ${isMatched ? 'var(--color-success)' : isHint ? 'var(--color-warning)' : isWrong ? 'var(--color-danger)' : 'var(--color-border)'}`,
+                  background: isMatched ? 'var(--color-success)' : isHint ? 'color-mix(in srgb, var(--color-warning) 20%, var(--color-surface))' : isWrong ? 'var(--color-danger)' : 'var(--color-surface)',
                   color: isMatched || isWrong ? '#fff' : 'var(--color-text-primary)',
                   cursor: isMatched ? 'default' : 'pointer', opacity: isMatched ? 0.7 : 1,
-                  textAlign: rtl ? 'right' : 'left', fontSize: '0.9rem',
+                  textAlign: rtl ? 'right' : 'left', fontSize: '0.85rem',
                   fontFamily: 'var(--font-body)', transition: 'background 0.2s, border-color 0.2s',
                 }}>
                 {answer}
@@ -191,14 +224,14 @@ function MatchUpGame({ items, locale, onComplete, onProgress }: MatchUpGameProps
           })}
         </div>
       </div>
-      <div style={{ marginTop: '1rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-        {matched.size} / {pairs.length} matched · Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong>
+      <div style={{ marginTop: '0.6rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+        {matched.size} / {pairs.length} matched · <ScorePill score={score} />
       </div>
     </div>
   )
 }
 
-export default function MatchUpActivity({ items, theme, locale, onComplete }: ActivityProps) {
+export default function MatchUpActivity({ items, theme, locale, onComplete, autoStart }: ActivityProps) {
   const [shellScore, setShellScore] = useState(0)
   const [shellFinished, setShellFinished] = useState(false)
   // The shell's elapsed seconds, kept in a ref so the finish-time
@@ -212,7 +245,7 @@ export default function MatchUpActivity({ items, theme, locale, onComplete }: Ac
   }, [onComplete])
   const handleProgress = useCallback((s: number, f: boolean) => { setShellScore(s); setShellFinished(f) }, [])
   return (
-    <PlayShell title="Match Up" score={shellScore} finished={shellFinished} onElapsed={handleElapsed}>
+    <PlayShell title="Match Up" score={shellScore} finished={shellFinished} onElapsed={handleElapsed} autoStart={autoStart}>
       <MatchUpGame items={items} theme={theme} locale={locale} onComplete={handleComplete} onProgress={handleProgress} />
     </PlayShell>
   )

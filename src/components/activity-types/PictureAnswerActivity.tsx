@@ -496,7 +496,7 @@ function PictureAnswerGame({ items, locale, onComplete, onProgress }: PictureAns
   )
 }
 
-export default function PictureAnswerActivity({ items, theme, locale, onComplete }: ActivityProps) {
+export default function PictureAnswerActivity({ items, theme, locale, onComplete, autoStart }: ActivityProps) {
   const [shellScore, setShellScore] = useState(0)
   const [shellFinished, setShellFinished] = useState(false)
   const elapsedRef = useRef(0)
@@ -505,7 +505,7 @@ export default function PictureAnswerActivity({ items, theme, locale, onComplete
     onComplete(score, { ...details, elapsedSeconds: elapsedRef.current })
   }, [onComplete])
   return (
-    <PlayShell title="Picture Answer" score={shellScore} finished={shellFinished} onElapsed={handleElapsed}>
+    <PlayShell title="Picture Answer" score={shellScore} finished={shellFinished} onElapsed={handleElapsed} autoStart={autoStart}>
       <PictureAnswerGame
         items={items}
         theme={theme}

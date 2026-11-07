@@ -534,7 +534,7 @@ function MazeRunGame({ items, locale, onComplete, onProgress }: MazeRunGameProps
   )
 }
 
-export default function MazeRunActivity({ items, theme, locale, onComplete }: ActivityProps) {
+export default function MazeRunActivity({ items, theme, locale, onComplete, autoStart }: ActivityProps) {
   const [shellScore, setShellScore] = useState(0)
   const [shellFinished, setShellFinished] = useState(false)
   const elapsedRef = useRef(0)
@@ -543,7 +543,7 @@ export default function MazeRunActivity({ items, theme, locale, onComplete }: Ac
     onComplete(score, { ...details, elapsedSeconds: elapsedRef.current })
   }, [onComplete])
   return (
-    <PlayShell title="Maze Run" score={shellScore} finished={shellFinished} onElapsed={handleElapsed}>
+    <PlayShell title="Maze Run" score={shellScore} finished={shellFinished} onElapsed={handleElapsed} autoStart={autoStart}>
       <MazeRunGame
         items={items}
         theme={theme}

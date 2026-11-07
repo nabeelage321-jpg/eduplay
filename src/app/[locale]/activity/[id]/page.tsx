@@ -56,6 +56,10 @@ interface ActivityData {
   // for its private-game gate. The print button uses this, never
   // the row's questions, to decide who may print.
   isPublic: boolean
+  // GAME NUMBER (batch 1, final list 11–14): the short number from
+  // activities.game_number (migration 011). Null before 011 runs —
+  // the detail line shows nothing then, never an invented number.
+  gameNumber: number | null
   // WORLDWIDE CURRICULUM v1 (2026-11-04): the mandatory not-official
   // label for a syllabus-tagged game, resolved from the seed. Null =
   // General (no syllabus claim) — no label is shown at all.
@@ -96,6 +100,7 @@ const getActivity = cache(async (id: string, locale: string): Promise<ActivityDa
       likeCount: 247,
       createdAt: '2024-09-01T00:00:00Z',
       imageUrl: undefined,
+      gameNumber: null,
       items: [
         { prompt: 'What is ½ + ¼?', answer: '¾' },
         { prompt: 'Simplify 4/8', answer: '½' },
@@ -181,6 +186,9 @@ const getActivity = cache(async (id: string, locale: string): Promise<ActivityDa
       items,
       relatedActivities: [],
       isPublic: (row as Record<string, unknown>).is_public !== false,
+      gameNumber: typeof (row as Record<string, unknown>).game_number === 'number'
+        ? (row as Record<string, unknown>).game_number as number
+        : null,
     }
   } catch {
     return null
@@ -349,7 +357,7 @@ export default async function ActivityPage({
                 Detail page keeps the e6cea592 live-row adapter untouched;
                 this only renders the page's own id under the title. */}
             <div style={{ marginBottom: '1rem' }}>
-              <ActivityIdLine id={activity.id} />
+              <ActivityIdLine id={activity.id} gameNumber={activity.gameNumber} />
             </div>
 
             <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.25rem' }}>

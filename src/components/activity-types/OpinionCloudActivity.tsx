@@ -420,7 +420,7 @@ function OpinionCloudGame({ items, locale, onComplete, onProgress }: OpinionClou
   )
 }
 
-export default function OpinionCloudActivity({ items, theme, locale, onComplete }: ActivityProps) {
+export default function OpinionCloudActivity({ items, theme, locale, onComplete, autoStart }: ActivityProps) {
   const [shellScore, setShellScore] = useState(0)
   const [shellFinished, setShellFinished] = useState(false)
   const elapsedRef = useRef(0)
@@ -429,7 +429,7 @@ export default function OpinionCloudActivity({ items, theme, locale, onComplete 
     onComplete(score, { ...details, elapsedSeconds: elapsedRef.current })
   }, [onComplete])
   return (
-    <PlayShell title="Opinion Cloud" score={shellScore} finished={shellFinished} onElapsed={handleElapsed}>
+    <PlayShell title="Opinion Cloud" score={shellScore} finished={shellFinished} onElapsed={handleElapsed} autoStart={autoStart}>
       <OpinionCloudGame
         items={items}
         theme={theme}

@@ -23,3 +23,21 @@ export function finishCelebration(percent: number | null): FinishCelebration {
   if (percent == null) return 'plain'
   return percent >= 50 ? 'fireworks' : 'encourage'
 }
+
+/**
+ * Is this a PERFECT score — every answer right AND full marks?
+ * Percent alone is not enough: a game with a hint cost (Categorize
+ * hints cost 5 marks each) can have 100% of the answers right with
+ * a score below the maximum, and calling that "PERFECT SCORE!" would
+ * be a lie. When the maximum is unknown (the player reported no
+ * counts), percent alone decides, exactly as before.
+ */
+export function isPerfectScore(
+  percent: number | null,
+  score: number | null,
+  maxScore: number | null,
+): boolean {
+  if (percent !== 100) return false
+  if (maxScore == null || score == null) return true
+  return score >= maxScore
+}

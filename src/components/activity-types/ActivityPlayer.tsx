@@ -10,6 +10,7 @@ type PlayerComponent = React.LazyExoticComponent<React.ComponentType<{
   theme: Audience
   locale: SupportedLocale
   onComplete: (score: number, details?: ActivityCompletion) => void
+  autoStart?: boolean
 }>>
 
 const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
@@ -60,6 +61,11 @@ interface ActivityPlayerProps {
   theme: Audience
   locale: SupportedLocale
   onComplete: (score: number, details?: ActivityCompletion) => void
+  // True when the host already showed an instruction/start screen
+  // (the play page's PlayIntro) — passed through to shell-wrapped
+  // players so they skip their own Start screen. Absent = the shell
+  // shows its own Start screen (e.g. the creator's draft Preview).
+  autoStart?: boolean
 }
 
 function LoadingSkeleton() {
@@ -76,7 +82,7 @@ function LoadingSkeleton() {
   )
 }
 
-export default function ActivityPlayer({ activity, theme, locale, onComplete }: ActivityPlayerProps) {
+export default function ActivityPlayer({ activity, theme, locale, onComplete, autoStart }: ActivityPlayerProps) {
   // Live DB rows carry `type` + `content`; creator rows carry
   // `type_id` + `items`. dbTypeOf prefers the DB fields, and the
   // adapter translates DB content into player items (see
@@ -114,7 +120,7 @@ export default function ActivityPlayer({ activity, theme, locale, onComplete }: 
   return (
     <div className="eduplay-player">
       <Suspense fallback={<LoadingSkeleton />}>
-        <Component items={items} theme={theme} locale={locale} onComplete={onComplete} />
+        <Component items={items} theme={theme} locale={locale} onComplete={onComplete} autoStart={autoStart} />
       </Suspense>
     </div>
   )

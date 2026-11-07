@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { resolveSessionUser } from '@/lib/auth/session-user'
 import { normalizeSubjectFilter, normalizeGradeFilter, normalizeTypeFilter } from '@/lib/filters'
 import { needsApproval } from '@/lib/approval'
+import { planImageGate, submitPendingImages } from '@/lib/image-approval'
 import { resolveCurriculumTag } from '@/lib/curricula'
 
 // Rate limiting (simple in-memory — replace with Upstash Redis in production)
@@ -116,6 +117,25 @@ export async function POST(req: NextRequest) {
       body.curriculum_tag?.countryCode,
       body.curriculum_tag?.syllabusSlug
     )
+    // IMAGE APPROVAL (batch 1, 2026-11-07): new pictures are held
+    // back from the content and filed as pending — never published
+    // directly. A game with a pending picture stays private.
+    const sanitizedItems = Array.isArray(body.items)
+      ? body.items.map((item: Record<string, unknown>) => ({
+          prompt: sanitize(item.prompt),
+          answer: sanitize(item.answer),
+          hint: sanitize(item.hint),
+          imageUrl: typeof item.imageUrl === 'string' ? item.imageUrl.slice(0, 500) : '',
+          imageCredit: typeof item.imageCredit === 'string' ? item.imageCredit.slice(0, 300) : '',
+        }))
+      : []
+    const imagePlan = await planImageGate(supabase, {
+      role: sessionUser.role,
+      type: sanitize(body.type ?? body.type_id),
+      items: sanitizedItems,
+      existingItems: [],
+      activityId: null,
+    })
     const payload = {
       title: sanitize(body.title),
       description: sanitize(body.description),
@@ -126,12 +146,7 @@ export async function POST(req: NextRequest) {
       curriculum: sanitize(body.curriculum ?? body.curriculum_id),
       teacher_id: sessionUser.userId,
       content: Array.isArray(body.items) ? {
-        questions: body.items.map((item: Record<string, unknown>) => ({
-          prompt: sanitize(item.prompt),
-          answer: sanitize(item.answer),
-          hint: sanitize(item.hint),
-          imageUrl: typeof item.imageUrl === 'string' ? item.imageUrl.slice(0, 500) : '',
-        })),
+        questions: imagePlan.items,
         // WORLDWIDE CURRICULUM v1 (2026-11-04): country + syllabus
         // tags, validated against the seed above — never trusted from
         // the client. Stored inside the existing content JSON, so no
@@ -146,7 +161,9 @@ export async function POST(req: NextRequest) {
       // is display only). Client-sent approval fields are ignored
       // outright. Teachers, parents and creators publish directly:
       // approved, and public if they asked for it.
-      is_public: needsApproval(sessionUser.role)
+      // IMAGE APPROVAL 2026-11-07: a game with a pending picture is
+      // private too, on top of the student gate.
+      is_public: (needsApproval(sessionUser.role) || imagePlan.forcePrivate)
         ? false
         : body.is_public === true,
       approval_status: needsApproval(sessionUser.role)
@@ -186,7 +203,30 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error
 
-    return NextResponse.json({ activity, ...(migrationWarning ? { migration_warning: migrationWarning } : {}) }, { status: 201 })
+    // IMAGE APPROVAL (batch 1, 2026-11-07): file the held-back
+    // pictures as pending now that the game row exists. A filing
+    // failure means the pictures were NOT filed — report them as
+    // dropped so the creator says so plainly.
+    let imageApproval = imagePlan.imageApproval
+    if (imagePlan.changedSlots.length > 0 && activity) {
+      try {
+        const filed = await submitPendingImages(supabase, {
+          activityId: activity.id,
+          submittedBy: sessionUser.userId,
+          slots: imagePlan.changedSlots,
+          wasPublic: body.is_public === true,
+        })
+        imageApproval = { ...imageApproval, submitted: filed.submitted, setupReady: filed.setupReady }
+        if (!filed.setupReady) {
+          imageApproval = { ...imageApproval, dropped: imagePlan.changedSlots.length }
+        }
+      } catch (err) {
+        console.error('[POST /api/activities] image approval filing failed', err)
+        imageApproval = { ...imageApproval, submitted: 0, dropped: imagePlan.changedSlots.length, setupReady: false }
+      }
+    }
+
+    return NextResponse.json({ activity, image_approval: imageApproval, ...(migrationWarning ? { migration_warning: migrationWarning } : {}) }, { status: 201 })
   } catch (err) {
     console.error('[POST /api/activities]', err)
     return NextResponse.json({ error: 'Failed to create activity' }, { status: 500 })

@@ -3,8 +3,10 @@
  *
  * Sounds are short oscillator tones generated in the browser:
  * - tap: one short click (reserved for future wiring; not auto-played)
- * - correct: two rising tones
- * - wrong: one low tone
+ * - correct: CLAPPING (owner, 2026-11-07 batch 1 — synthesized
+ *   applause: short bursts of filtered noise, no recording, no asset)
+ * - wrong: BLAST (owner, 2026-11-07 batch 1 — a loud low boom, so
+ *   it can never be mistaken for applause)
  * Feedback is always colour + icon + text in the game itself; sound is
  * an extra layer only, never the only signal.
  *
@@ -95,26 +97,55 @@ function swoop(freqStart: number, freqEnd: number, start: number, duration: numb
 }
 
 export function playGameSound(kind: 'correct' | 'wrong' | 'tap', soundOn: boolean) {
+  // The old muted-default system renders the same specs as the
+  // interactive system now (clapping for correct, blast for wrong),
+  // so every game sounds the same whichever toggle drives it.
   if (!soundOn) return
-  if (kind === 'correct') {
-    tone(523.25, 0, 0.15)
-    tone(783.99, 0.12, 0.2)
-  } else if (kind === 'wrong') {
-    tone(196.0, 0, 0.25, 0.1)
-  } else {
-    tone(440, 0, 0.06, 0.06)
+  playEduSound(kind === 'tap' ? 'click' : kind, true)
+}
+
+/** A burst of filtered white noise (clapping, blasts). Built from a
+ *  fresh noise buffer each time — no audio asset, no recording. */
+function noiseBurst(start: number, duration: number, volume: number, filterFreq: number) {
+  const audio = getCtx()
+  if (!audio) return
+  try {
+    const len = Math.max(1, Math.floor(audio.sampleRate * duration))
+    const buffer = audio.createBuffer(1, len, audio.sampleRate)
+    const data = buffer.getChannelData(0)
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1
+    const src = audio.createBufferSource()
+    src.buffer = buffer
+    const filter = audio.createBiquadFilter()
+    filter.type = 'bandpass'
+    filter.frequency.value = filterFreq
+    filter.Q.value = 0.8
+    const gain = audio.createGain()
+    const t0 = audio.currentTime + start
+    gain.gain.setValueAtTime(volume, t0)
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration)
+    src.connect(filter)
+    filter.connect(gain)
+    gain.connect(audio.destination)
+    src.start(t0)
+    src.stop(t0 + duration)
+  } catch {
+    /* sound is best-effort; a failure must never break the game */
   }
 }
 
 /* ---- Game-feel batch (2026-11-07, build-list item 4) ----
  * The shared shell's play feel: soft background music while a game
- * runs, a soft tick with the visible shell timer, and a wrong sound
- * that is HARD/HARSH (the owner's word) so it can never be mistaken
- * for the pleasant rising correct sound. All Web Audio, no assets.
+ * runs, a tick with the visible shell timer, and distinct
+ * correct/wrong sounds. All Web Audio, no assets.
  *
- * Specs are pure data (getEduSoundSpec) so tests can prove the
- * wrong/correct distinction, the tick's quietness, and the music's
- * gentle volumes without a browser. playEduSound only renders a spec.
+ * BATCH 1 (2026-11-07, final list item 10): correct is CLAPPING,
+ * wrong is a BLAST, the tick is audible (0.12, was 0.03), the music
+ * is louder (0.08/0.05, was 0.035/0.02), and the whole set is
+ * louder overall. Specs are pure data (getEduSoundSpec) so tests
+ * can prove the correct/wrong distinction, the tick's audibility,
+ * and the music's volumes without a browser. playEduSound only
+ * renders a spec.
  */
 
 export interface SoundToneSpec {
@@ -134,77 +165,100 @@ export interface SoundSwoopSpec {
   type?: OscillatorType
 }
 
+export interface SoundNoiseSpec {
+  start: number
+  duration: number
+  volume: number
+  /** Bandpass centre for the burst (claps ~1200Hz, blasts ~300Hz). */
+  filterFreq: number
+}
+
 export interface EduSoundSpec {
   tones: SoundToneSpec[]
   swoops: SoundSwoopSpec[]
+  noises: SoundNoiseSpec[]
+}
+
+/** Synthesized applause: short filtered-noise bursts, like hands
+ *  clapping — no recording, no asset. Louder bursts land first,
+ *  then a quick tail. */
+function clapNoises(count: number, startAt = 0, baseVolume = 0.2): SoundNoiseSpec[] {
+  const out: SoundNoiseSpec[] = []
+  for (let i = 0; i < count; i++) {
+    out.push({
+      start: startAt + i * 0.09 + (i % 3 === 0 ? 0 : 0.02),
+      duration: 0.06,
+      volume: baseVolume * (i < 3 ? 1 : 0.7),
+      filterFreq: 1200,
+    })
+  }
+  return out
 }
 
 /** Distinct synthesized pattern per kind; all Web Audio, no assets. */
 export function getEduSoundSpec(kind: EduSoundKind): EduSoundSpec {
   if (kind === 'correct') {
-    return {
-      tones: [
-        { freq: 523.25, start: 0, duration: 0.14, volume: 0.12 },
-        { freq: 659.25, start: 0.1, duration: 0.14, volume: 0.12 },
-        { freq: 783.99, start: 0.2, duration: 0.22, volume: 0.12 },
-      ],
-      swoops: [],
-    }
+    // CLAPPING (owner, 2026-11-07 batch 1): applause, not the old
+    // rising arpeggio — a kid hears cheering when they get it right.
+    return { tones: [], swoops: [], noises: clapNoises(9) }
   }
   if (kind === 'wrong') {
-    // HARD/HARSH (owner, 2026-11-07): low sawtooth buzz, descending,
-    // clearly distinct from the pleasant sine arpeggio of 'correct'.
+    // BLAST (owner, 2026-11-07 batch 1): a loud low boom — clearly
+    // distinct from applause. Louder than the old harsh buzz was.
     return {
-      tones: [
-        { freq: 110, start: 0, duration: 0.18, volume: 0.12, type: 'sawtooth' },
-        { freq: 82.5, start: 0.12, duration: 0.25, volume: 0.12, type: 'sawtooth' },
-      ],
-      swoops: [{ freqStart: 180, freqEnd: 70, start: 0, duration: 0.3, volume: 0.1, type: 'sawtooth' }],
+      tones: [{ freq: 90, start: 0, duration: 0.35, volume: 0.22, type: 'sawtooth' }],
+      swoops: [{ freqStart: 160, freqEnd: 40, start: 0, duration: 0.4, volume: 0.22, type: 'sawtooth' }],
+      noises: [{ start: 0, duration: 0.35, volume: 0.2, filterFreq: 300 }],
     }
   }
   if (kind === 'click') {
-    return { tones: [{ freq: 660, start: 0, duration: 0.05, volume: 0.07 }], swoops: [] }
+    return { tones: [{ freq: 660, start: 0, duration: 0.05, volume: 0.1 }], swoops: [], noises: [] }
   }
   if (kind === 'jump') {
     return {
-      tones: [{ freq: 1046.5, start: 0.3, duration: 0.12, volume: 0.08 }],
-      swoops: [{ freqStart: 400, freqEnd: 950, start: 0, duration: 0.35, volume: 0.12 }],
+      tones: [{ freq: 1046.5, start: 0.3, duration: 0.12, volume: 0.12 }],
+      swoops: [{ freqStart: 400, freqEnd: 950, start: 0, duration: 0.35, volume: 0.14 }],
+      noises: [],
     }
   }
   if (kind === 'win') {
     return {
       tones: [
-        { freq: 523.25, start: 0, duration: 0.15, volume: 0.12 },
-        { freq: 659.25, start: 0.13, duration: 0.15, volume: 0.12 },
-        { freq: 783.99, start: 0.26, duration: 0.15, volume: 0.12 },
-        { freq: 1046.5, start: 0.39, duration: 0.3, volume: 0.12 },
+        { freq: 523.25, start: 0, duration: 0.15, volume: 0.16 },
+        { freq: 659.25, start: 0.13, duration: 0.15, volume: 0.16 },
+        { freq: 783.99, start: 0.26, duration: 0.15, volume: 0.16 },
+        { freq: 1046.5, start: 0.39, duration: 0.3, volume: 0.16 },
       ],
       swoops: [],
+      noises: clapNoises(6, 0.45, 0.16),
     }
   }
   if (kind === 'lose') {
     return {
       tones: [
-        { freq: 392, start: 0, duration: 0.18, volume: 0.1 },
-        { freq: 329.63, start: 0.16, duration: 0.18, volume: 0.1 },
-        { freq: 261.63, start: 0.32, duration: 0.22, volume: 0.1 },
-        { freq: 196, start: 0.48, duration: 0.3, volume: 0.1 },
+        { freq: 392, start: 0, duration: 0.18, volume: 0.12 },
+        { freq: 329.63, start: 0.16, duration: 0.18, volume: 0.12 },
+        { freq: 261.63, start: 0.32, duration: 0.22, volume: 0.12 },
+        { freq: 196, start: 0.48, duration: 0.3, volume: 0.12 },
       ],
       swoops: [],
+      noises: [],
     }
   }
   if (kind === 'timerWarning') {
     return {
       tones: [
-        { freq: 880, start: 0, duration: 0.08, volume: 0.09 },
-        { freq: 880, start: 0.14, duration: 0.08, volume: 0.09 },
+        { freq: 880, start: 0, duration: 0.08, volume: 0.12 },
+        { freq: 880, start: 0.14, duration: 0.08, volume: 0.12 },
       ],
       swoops: [],
+      noises: [],
     }
   }
-  // 'tick': the shell timer's soft tick — very quiet, very short,
-  // so a whole game of ticks never gets annoying.
-  return { tones: [{ freq: 1200, start: 0, duration: 0.03, volume: 0.03 }], swoops: [] }
+  // 'tick': the shell timer's tick — LOUDER now (owner, 2026-11-07
+  // batch 1: the old 0.03 was too quiet to hear). Still short, so a
+  // whole game of ticks never gets annoying.
+  return { tones: [{ freq: 1200, start: 0, duration: 0.03, volume: 0.12 }], swoops: [], noises: [] }
 }
 
 /* ---- Interactive sound system: Letter Wheel + Jump Path only ---- */
@@ -246,6 +300,7 @@ export function playEduSound(kind: EduSoundKind, soundOn: boolean) {
   const spec = getEduSoundSpec(kind)
   for (const t of spec.tones) tone(t.freq, t.start, t.duration, t.volume, t.type ?? 'sine')
   for (const s of spec.swoops) swoop(s.freqStart, s.freqEnd, s.start, s.duration, s.volume, s.type ?? 'sine')
+  for (const n of spec.noises) noiseBurst(n.start, n.duration, n.volume, n.filterFreq)
 }
 
 /* ---- Soft background music (game-feel batch, 2026-11-07) ----
@@ -260,8 +315,10 @@ export function playEduSound(kind: EduSoundKind, soundOn: boolean) {
 
 export const MUSIC_NOTES = [523.25, 587.33, 659.25, 783.99, 880.0, 783.99, 659.25, 587.33]
 export const MUSIC_STEP_MS = 450
-export const MUSIC_NOTE_VOLUME = 0.035
-export const MUSIC_BASS_VOLUME = 0.02
+// MUSIC UP (owner, 2026-11-07 batch 1): the old 0.035/0.02 was too
+// low to hear. Audible now, still under the game sounds.
+export const MUSIC_NOTE_VOLUME = 0.08
+export const MUSIC_BASS_VOLUME = 0.05
 
 /** Pure schedule for one music step — the note and whether a soft bass joins it. */
 export function musicNoteAt(step: number): { freq: number; bass: boolean } {

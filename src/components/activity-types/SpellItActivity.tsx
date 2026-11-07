@@ -551,7 +551,7 @@ function SpellItGame({ items, locale, onComplete, onProgress }: SpellItGameProps
   )
 }
 
-export default function SpellItActivity({ items, theme, locale, onComplete }: ActivityProps) {
+export default function SpellItActivity({ items, theme, locale, onComplete, autoStart }: ActivityProps) {
   const [shellScore, setShellScore] = useState(0)
   const [shellFinished, setShellFinished] = useState(false)
   const elapsedRef = useRef(0)
@@ -560,7 +560,7 @@ export default function SpellItActivity({ items, theme, locale, onComplete }: Ac
     onComplete(score, { ...details, elapsedSeconds: elapsedRef.current })
   }, [onComplete])
   return (
-    <PlayShell title="Spell It" score={shellScore} finished={shellFinished} onElapsed={handleElapsed}>
+    <PlayShell title="Spell It" score={shellScore} finished={shellFinished} onElapsed={handleElapsed} autoStart={autoStart}>
       <SpellItGame
         items={items}
         theme={theme}

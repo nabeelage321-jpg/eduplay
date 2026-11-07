@@ -1,13 +1,18 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityItem } from '@/types'
+import ImagePicker from './ImagePicker'
 
 interface ItemEditorProps {
   items: ActivityItem[]
   onChange: (items: ActivityItem[]) => void
   activityType: string
+  /** True when the signed-in user may add pictures (teacher or owner). Kids/students NEVER. */
+  canAddImages: boolean
+  /** Pre-filled picture-search text — the game's title or subject. */
+  defaultImageQuery?: string
 }
 
 const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
@@ -61,12 +66,24 @@ const fieldStyle: React.CSSProperties = {
 }
 
 function emptyItem(): ActivityItem {
-  return { prompt: '', answer: '', hint: '', imageUrl: '' }
+  return { prompt: '', answer: '', hint: '', imageUrl: '', imageCredit: '' }
 }
 
-export default function ItemEditor({ items, onChange, activityType }: ItemEditorProps) {
+export default function ItemEditor({ items, onChange, activityType, canAddImages, defaultImageQuery = '' }: ItemEditorProps) {
   const hints = ITEM_HINTS[activityType] ?? { prompt: 'Prompt', answer: 'Answer' }
   const dragIdx = useRef<number | null>(null)
+  // Which picture search is open: 'shared' = the game's one picture
+  // (Labelled Diagram), a number = that Picture Answer question.
+  const [pickerFor, setPickerFor] = useState<'shared' | number | null>(null)
+
+  /** Set the game's one shared picture on every item (Labelled Diagram). */
+  function setSharedImage(url: string, credit: string) {
+    if (items.length === 0) {
+      onChange([{ prompt: '', answer: '', hint: '', imageUrl: url, imageCredit: credit }])
+    } else {
+      onChange(items.map((item) => ({ ...item, imageUrl: url, imageCredit: credit })))
+    }
+  }
 
   function add() {
     onChange([...items, emptyItem()])
@@ -237,6 +254,99 @@ export default function ItemEditor({ items, onChange, activityType }: ItemEditor
         </div>
       )}
 
+      {/* LABELLED DIAGRAM ONLY: the picture is REQUIRED — without it
+          the game cannot be played at all (the player shows "This
+          game needs a picture" instead of a blind dot quiz). This
+          box sits at the top of the editor on purpose: the step is
+          unmissable. The picture is the teacher's own or a
+          CC-licensed one — picked from the Openverse search below,
+          or pasted as a URL. It is stored on every item's imageUrl
+          so the player (which reads the first item's imageUrl) and
+          saved games both see it. Picking a picture does NOT publish
+          it: it goes to the owner for approval first (migration
+          012), and the game stays private until approved. */}
+      {activityType === 'labelled-diagram' && (
+        <div style={{
+          marginBottom: '0.75rem', padding: '0.75rem',
+          border: '2px solid var(--color-warning)', borderRadius: 'var(--radius-lg)',
+          background: 'color-mix(in srgb, var(--color-warning) 8%, var(--color-surface))',
+        }}>
+          <h3 style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontSize: '1rem', margin: '0 0 0.25rem' }}>
+            🖼️ Diagram picture — REQUIRED
+          </h3>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', margin: '0 0 0.5rem' }}>
+            This game cannot be played without a picture — the labels sit on the picture itself.
+            Pick a free picture below, or paste your own or a CC-licensed picture URL.
+          </p>
+          {canAddImages ? (
+            <>
+              <label style={{ display: 'block', color: 'var(--color-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-display)', marginBottom: '0.25rem' }}>
+                Picture URL — your own or CC-licensed picture only
+              </label>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'stretch' }}>
+                <input
+                  type="url"
+                  value={items[0]?.imageUrl ?? ''}
+                  onChange={(e) => setSharedImage(e.target.value, '')}
+                  placeholder="https://… (your own or CC-licensed picture)"
+                  aria-label="Diagram picture URL"
+                  style={{ ...fieldStyle, flex: 1 }}
+                  onFocus={(e) => { e.target.style.borderColor = 'var(--color-primary)' }}
+                  onBlur={(e) => { e.target.style.borderColor = 'var(--color-border)' }}
+                />
+                <button
+                  onClick={() => setPickerFor(pickerFor === 'shared' ? null : 'shared')}
+                  aria-label="Search free pictures"
+                  style={{
+                    padding: '0.5rem 0.875rem', borderRadius: 'var(--radius)',
+                    border: '2px solid var(--color-primary)', background: 'var(--color-surface)',
+                    color: 'var(--color-primary)', fontFamily: 'var(--font-display)', fontSize: '0.875rem',
+                    cursor: 'pointer', flexShrink: 0,
+                  }}
+                >
+                  🔍 Search free pictures
+                </button>
+              </div>
+              {pickerFor === 'shared' ? (
+                <ImagePicker
+                  defaultQuery={defaultImageQuery || items[0]?.prompt || ''}
+                  onPick={(url, credit) => { setSharedImage(url, credit); setPickerFor(null) }}
+                  onClose={() => setPickerFor(null)}
+                />
+              ) : null}
+              {items[0]?.imageUrl ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={items[0].imageUrl}
+                    alt="Diagram preview"
+                    style={{ display: 'block', maxWidth: '100%', maxHeight: '180px', marginTop: '0.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--color-border)' }}
+                  />
+                  {items[0]?.imageCredit ? (
+                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: '0.35rem 0 0' }}>
+                      🖼️ {items[0].imageCredit}
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                <p style={{ color: 'var(--color-warning)', fontSize: '0.875rem', margin: '0.5rem 0 0', fontWeight: 700 }}>
+                  ⚠️ No picture yet — this game cannot be played until you add one. Players will see
+                  “This game needs a picture” instead of a quiz.
+                </p>
+              )}
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: '0.5rem 0 0' }}>
+                Your picture goes to the owner for approval before the game can go public — the game stays private until it is approved.
+              </p>
+            </>
+          ) : (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', margin: 0 }}>
+              Only a teacher can add the picture. Save your labels — a teacher adds the picture later.
+              Without a picture, players see “This game needs a picture” instead of a quiz.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Column headers */}
       <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 1fr 1fr 32px', gap: '0.4rem', marginBottom: '0.35rem', padding: '0 0.25rem' }}>
         <span />
@@ -384,19 +494,56 @@ export default function ItemEditor({ items, onChange, activityType }: ItemEditor
                 <label style={{ display: 'block', color: 'var(--color-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-display)', marginBottom: '0.25rem' }}>
                   Picture for question {idx + 1}{item.prompt ? ` — ${item.prompt}` : ''}
                 </label>
-                <input
-                  type="url"
-                  value={item.imageUrl ?? ''}
-                  onChange={(e) => update(idx, 'imageUrl', e.target.value)}
-                  placeholder="https://… (your own or CC-licensed picture, or leave empty)"
-                  aria-label={`Picture URL for question ${idx + 1}`}
-                  style={fieldStyle}
-                  onFocus={(e) => { e.target.style.borderColor = 'var(--color-primary)' }}
-                  onBlur={(e) => { e.target.style.borderColor = 'var(--color-border)' }}
-                />
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'stretch' }}>
+                  <input
+                    type="url"
+                    value={item.imageUrl ?? ''}
+                    onChange={(e) => update(idx, 'imageUrl', e.target.value)}
+                    placeholder="https://… (your own or CC-licensed picture, or leave empty)"
+                    aria-label={`Picture URL for question ${idx + 1}`}
+                    style={{ ...fieldStyle, flex: 1 }}
+                    onFocus={(e) => { e.target.style.borderColor = 'var(--color-primary)' }}
+                    onBlur={(e) => { e.target.style.borderColor = 'var(--color-border)' }}
+                  />
+                  {canAddImages ? (
+                    <button
+                      onClick={() => setPickerFor(pickerFor === idx ? null : idx)}
+                      aria-label={`Search free pictures for question ${idx + 1}`}
+                      style={{
+                        padding: '0.5rem 0.875rem', borderRadius: 'var(--radius)',
+                        border: '2px solid var(--color-primary)', background: 'var(--color-surface)',
+                        color: 'var(--color-primary)', fontFamily: 'var(--font-display)', fontSize: '0.875rem',
+                        cursor: 'pointer', flexShrink: 0,
+                      }}
+                    >
+                      🔍 Search
+                    </button>
+                  ) : null}
+                </div>
+                {item.imageCredit ? (
+                  <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: '0.35rem 0 0' }}>
+                    🖼️ {item.imageCredit}
+                  </p>
+                ) : null}
               </div>
             ))}
           </div>
+          {pickerFor !== null && typeof pickerFor === 'number' ? (
+            <ImagePicker
+              defaultQuery={items[pickerFor]?.prompt || defaultImageQuery}
+              onPick={(url, credit) => {
+                const idx = pickerFor
+                onChange(items.map((item, i) => (i === idx ? { ...item, imageUrl: url, imageCredit: credit } : item)))
+                setPickerFor(null)
+              }}
+              onClose={() => setPickerFor(null)}
+            />
+          ) : null}
+          {!canAddImages ? (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', margin: '0.5rem 0 0' }}>
+              Only a teacher can search for pictures. Paste a picture URL above, or ask a teacher to add one.
+            </p>
+          ) : null}
         </div>
       )}
 

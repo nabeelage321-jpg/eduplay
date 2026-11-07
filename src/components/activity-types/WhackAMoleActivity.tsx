@@ -5,6 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, shuffleArray, isRTL, getRandomFeedback } from './shared'
 import { choiceRoundLabels } from '@/lib/convert'
+import ScorePill from '@/components/game/ScorePill'
+import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
+
+// BATCH 1 (final list item 19): funky + bold letters — Fredoka One,
+// already loaded, no new dependency.
+const FUNKY_FONT = "'Fredoka One', 'Nunito', system-ui, sans-serif"
 
 interface Mole {
   id: number
@@ -21,6 +27,11 @@ export default function WhackAMoleActivity({ items, locale, onComplete }: Activi
   const [feedback, setFeedback] = useState<{ type: 'correct' | 'wrong'; msg: string } | null>(null)
   const [finished, setFinished] = useState(false)
   const [timeLeft, setTimeLeft] = useState(20)
+  // GREEN GIVEAWAY FIX (batch-2 #3a): the colour is feedback AFTER
+  // a tap only — a whacked mole flashes green (correct) or red
+  // (wrong) in its hole for a moment, then fades. The moles
+  // themselves never carry the answer.
+  const [flash, setFlash] = useState<{ id: number; correct: boolean } | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const rtl = isRTL(locale)
   const item = items[currentIdx]
@@ -45,7 +56,10 @@ export default function WhackAMoleActivity({ items, locale, onComplete }: Activi
 
   useEffect(() => { setupMoles() }, [setupMoles])
 
-  // Pop moles up randomly
+  // Pop moles up randomly — SLOW (batch-2 #3b): a mole pops roughly
+  // every 1.4s and stays visible roughly 2.5s (was 700ms / 1200ms —
+  // too fast for a kid to read the label and aim). 9 moles, 20s
+  // timer, and scoring are unchanged.
   useEffect(() => {
     if (finished || moles.length === 0) return
     const interval = setInterval(() => {
@@ -63,8 +77,8 @@ export default function WhackAMoleActivity({ items, locale, onComplete }: Activi
           const toHide = visible[Math.floor(Math.random() * visible.length)]
           return prev.map((m) => m.id === toHide ? { ...m, visible: false } : m)
         })
-      }, 1200)
-    }, 700)
+      }, 2500)
+    }, 1400)
     return () => clearInterval(interval)
   }, [finished, moles.length])
 
@@ -85,16 +99,22 @@ export default function WhackAMoleActivity({ items, locale, onComplete }: Activi
 
   function whack(id: number, isCorrect: boolean) {
     setMoles((prev) => prev.map((m) => m.id === id ? { ...m, visible: false, hit: true } : m))
+    // Feedback flash in the hole (green = correct, red = wrong) —
+    // the only place the colour appears.
+    setFlash({ id, correct: isCorrect })
+    setTimeout(() => setFlash((f) => (f?.id === id ? null : f)), 600)
     if (isCorrect) {
       const newScore = score + SCORE_PER_CORRECT
       setScore(newScore)
       setFeedback({ type: 'correct', msg: getRandomFeedback('correct') })
+      playEduSound('correct', readInteractiveSoundOn())
       setTimeout(() => {
         setFeedback(null)
         advance(newScore)
       }, 800)
     } else {
       setFeedback({ type: 'wrong', msg: getRandomFeedback('wrong') })
+      playEduSound('wrong', readInteractiveSoundOn())
       setTimeout(() => setFeedback(null), 600)
     }
   }
@@ -114,8 +134,8 @@ export default function WhackAMoleActivity({ items, locale, onComplete }: Activi
       <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
         style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-primary)' }}>
         <div style={{ fontSize: '3rem' }}>🔨</div>
-        <h2 style={{ fontFamily: 'var(--font-display)' }}>Whack-a-Mole Done!</h2>
-        <p style={{ color: 'var(--color-text-secondary)' }}>Score: {score}</p>
+        <h2 style={{ fontFamily: FUNKY_FONT }}>Whack-a-Mole Done!</h2>
+        <p style={{ marginTop: '0.5rem' }}><ScorePill score={score} total={items.length * SCORE_PER_CORRECT} big /></p>
       </motion.div>
     )
   }
@@ -123,7 +143,7 @@ export default function WhackAMoleActivity({ items, locale, onComplete }: Activi
   const timerPct = (timeLeft / 20) * 100
 
   return (
-    <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '480px', margin: '0 auto', textAlign: 'center' }}>
+    <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '0.75rem 0.5rem', maxWidth: '480px', margin: '0 auto', textAlign: 'center' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
         <span>{currentIdx + 1} / {items.length}</span>
         <span aria-live="polite">{timeLeft}s</span>
@@ -137,7 +157,7 @@ export default function WhackAMoleActivity({ items, locale, onComplete }: Activi
       <div style={{
         background: 'var(--color-surface)', border: '1px solid var(--color-border)',
         borderRadius: 'var(--radius-lg)', padding: '0.875rem', marginBottom: '1rem',
-        color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontSize: '1rem',
+        color: 'var(--color-text-primary)', fontFamily: FUNKY_FONT, fontSize: '1rem',
         boxShadow: 'var(--shadow-card)',
       }}>
         🎯 {item?.prompt}
@@ -163,10 +183,14 @@ export default function WhackAMoleActivity({ items, locale, onComplete }: Activi
                   style={{
                     position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
                     width: '64px', height: '64px', borderRadius: '50% 50% 40% 40%',
-                    background: mole.isCorrect ? 'var(--color-success)' : 'var(--color-surface)',
-                    border: `3px solid ${mole.isCorrect ? 'var(--color-success)' : 'var(--color-border)'}`,
+                    // ALL MOLES LOOK EXACTLY THE SAME until tapped —
+                    // the correct mole used to be green before the
+                    // tap, giving the answer away. Green/red appear
+                    // only as the post-tap flash below.
+                    background: 'var(--color-surface)',
+                    border: '3px solid var(--color-border)',
                     cursor: 'pointer', fontSize: '0.65rem', fontWeight: 700,
-                    color: mole.isCorrect ? '#fff' : 'var(--color-text-primary)',
+                    color: 'var(--color-text-primary)',
                     fontFamily: 'var(--font-body)', padding: '0.25rem',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
                     boxShadow: 'var(--shadow)',
@@ -174,6 +198,30 @@ export default function WhackAMoleActivity({ items, locale, onComplete }: Activi
                 >
                   {mole.label.length > 12 ? mole.label.slice(0, 12) + '…' : mole.label}
                 </motion.button>
+              )}
+            </AnimatePresence>
+            {/* Post-tap flash: green for a correct whack, red for a
+                wrong one — the only green/red the moles ever show. */}
+            <AnimatePresence>
+              {flash?.id === mole.id && (
+                <motion.div
+                  key={`flash-${mole.id}`}
+                  initial={{ opacity: 1, scale: 0.8 }}
+                  animate={{ opacity: 0, scale: 1.4 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.6 }}
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+                    width: '64px', height: '64px', borderRadius: '50% 50% 40% 40%',
+                    background: flash.correct ? 'var(--color-success)' : 'var(--color-danger)',
+                    color: '#fff', fontSize: '1.5rem', fontWeight: 800,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {flash.correct ? '✅' : '❌'}
+                </motion.div>
               )}
             </AnimatePresence>
           </div>
@@ -187,14 +235,14 @@ export default function WhackAMoleActivity({ items, locale, onComplete }: Activi
             style={{
               padding: '0.6rem', borderRadius: 'var(--radius)',
               background: feedback.type === 'correct' ? 'var(--color-success)' : 'var(--color-danger)',
-              color: '#fff', fontSize: '0.95rem', fontFamily: 'var(--font-display)',
+              color: '#fff', fontSize: '0.95rem', fontFamily: FUNKY_FONT,
             }}>
             {feedback.msg}
           </motion.div>
         )}
       </AnimatePresence>
-      <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-        Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong>
+      <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '0.75rem' }}>
+        <ScorePill score={score} />
       </p>
     </div>
   )

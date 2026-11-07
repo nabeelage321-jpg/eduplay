@@ -4,12 +4,23 @@ import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, isRTL } from './shared'
+import KidActionsBar from '@/components/game/KidActionsBar'
+import ScorePill from '@/components/game/ScorePill'
 
 const GRID_SIZE = 12
 const DIRECTIONS = [
   [0, 1], [0, -1], [1, 0], [-1, 0],
   [1, 1], [1, -1], [-1, 1], [-1, -1],
 ]
+
+// COLOURFUL GRID (batch-1 shared build, owner order): the grid was
+// plain black/white letters with only the found word green. Now
+// every cell carries a soft pastel (cycling by position — nothing
+// to do with the letters, so no meaning is invented), and each
+// FOUND word keeps its OWN bright colour, so a kid can tell the
+// words apart at a glance.
+const CELL_PASTELS = ['#ffe3ec', '#fff3c4', '#ddf3d5', '#dbeafe', '#ede9fe', '#ffedd5']
+const WORD_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#a855f7', '#0ea5e9', '#ec4899', '#14b8a6']
 
 interface PlacedWord {
   word: string
@@ -63,9 +74,26 @@ export default function WordsearchActivity({ items, locale, onComplete }: Activi
   const [selection, setSelection] = useState<[number, number][]>([])
   const [found, setFound] = useState<Set<string>>(new Set())
   const [score, setScore] = useState(0)
+  // KID ACTIONS (batch 1, item 17): HINT briefly flashes one
+  // unfound word's cells so the kid can spot it. One hint per
+  // word; skip / see-the-answer do not map to a word hunt — they
+  // are hidden, never faked.
+  const [hintCells, setHintCells] = useState<Set<string>>(new Set())
+  const [hintedWords, setHintedWords] = useState<Set<string>>(new Set())
+  const hintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current) }, [])
   const rtl = isRTL(locale)
 
   function cellKey(r: number, c: number) { return `${r},${c}` }
+
+  function useHint() {
+    const next = placed.find((pw) => !found.has(pw.word) && !hintedWords.has(pw.word))
+    if (!next) return
+    setHintedWords((prev) => new Set(prev).add(next.word))
+    setHintCells(new Set(next.cells.map(([r, c]) => cellKey(r, c))))
+    if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current)
+    hintTimeoutRef.current = setTimeout(() => setHintCells(new Set()), 2500)
+  }
 
   function startSelect(r: number, c: number) {
     setSelecting(true)
@@ -100,7 +128,7 @@ export default function WordsearchActivity({ items, locale, onComplete }: Activi
         const newFound = new Set(found).add(pw.word)
         setFound(newFound)
         setScore((s) => s + SCORE_PER_CORRECT)
-        if (newFound.size === placed.length) onComplete(score + SCORE_PER_CORRECT)
+        if (newFound.size === placed.length) onComplete(score + SCORE_PER_CORRECT, { correctCount: newFound.size, totalCount: placed.length })
         break
       }
     }
@@ -108,25 +136,33 @@ export default function WordsearchActivity({ items, locale, onComplete }: Activi
   }
 
   const selSet = new Set(selection.map(([r, c]) => cellKey(r, c)))
-  const foundCells = new Set<string>()
-  for (const pw of placed) {
-    if (found.has(pw.word)) pw.cells.forEach(([r, c]) => foundCells.add(cellKey(r, c)))
-  }
+  // Each found word keeps its OWN colour (by its place in the word
+  // list), so the words are tellable apart — not all green.
+  const foundCells = new Map<string, string>()
+  placed.forEach((pw, i) => {
+    if (found.has(pw.word)) {
+      const color = WORD_COLORS[i % WORD_COLORS.length]
+      pw.cells.forEach(([r, c]) => foundCells.set(cellKey(r, c), color))
+    }
+  })
+  const hintableLeft = placed.some((pw) => !found.has(pw.word) && !hintedWords.has(pw.word))
 
   return (
-    <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '560px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+    <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '0.75rem 0.5rem', maxWidth: '560px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
         <span>Found: {found.size} / {placed.length}</span>
-        <span>Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong></span>
+        <ScorePill score={score} />
       </div>
+      {/* KID ACTIONS (batch 1, item 17): Hint only. */}
+      <KidActionsBar onHint={hintableLeft ? useHint : undefined} hintUsed={!hintableLeft} />
 
       {/* Word list */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.75rem' }}>
         {placed.map((pw, i) => (
           <span key={pw.word} style={{
             padding: '0.2rem 0.5rem',
             borderRadius: 'var(--radius-sm)',
-            background: found.has(pw.word) ? 'var(--color-success)' : 'var(--color-surface)',
+            background: found.has(pw.word) ? WORD_COLORS[i % WORD_COLORS.length] : 'var(--color-surface)',
             color: found.has(pw.word) ? '#fff' : 'var(--color-text-secondary)',
             border: '1px solid var(--color-border)',
             fontSize: '0.8rem',
@@ -154,7 +190,9 @@ export default function WordsearchActivity({ items, locale, onComplete }: Activi
           row.map((letter, c) => {
             const key = cellKey(r, c)
             const isSelected = selSet.has(key)
-            const isFound = foundCells.has(key)
+            const foundColor = foundCells.get(key)
+            const isFound = foundColor !== undefined
+            const isHinted = hintCells.has(key)
             return (
               <div
                 key={key}
@@ -178,13 +216,14 @@ export default function WordsearchActivity({ items, locale, onComplete }: Activi
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderRadius: '0.2rem',
-                  background: isFound ? 'var(--color-success)' : isSelected ? 'var(--color-primary)' : 'var(--color-surface)',
-                  color: (isFound || isSelected) ? '#fff' : 'var(--color-text-primary)',
+                  background: isFound ? foundColor : isSelected ? 'var(--color-primary)' : isHinted ? '#ffc93c' : CELL_PASTELS[(r + c) % CELL_PASTELS.length],
+                  color: (isFound || isSelected) ? '#fff' : '#26264a',
                   fontSize: '0.85rem',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   cursor: 'pointer',
                   transition: 'background 0.1s',
                   fontFamily: 'monospace',
+                  outline: isHinted && !isFound && !isSelected ? '3px solid #f59e0b' : 'none',
                 }}
               >
                 {letter}

@@ -540,7 +540,7 @@ function MemoryRecallGame({ items, locale, onComplete, onProgress }: MemoryRecal
   )
 }
 
-export default function MemoryRecallActivity({ items, theme, locale, onComplete }: ActivityProps) {
+export default function MemoryRecallActivity({ items, theme, locale, onComplete, autoStart }: ActivityProps) {
   const [shellScore, setShellScore] = useState(0)
   const [shellFinished, setShellFinished] = useState(false)
   const elapsedRef = useRef(0)
@@ -549,7 +549,7 @@ export default function MemoryRecallActivity({ items, theme, locale, onComplete 
     onComplete(score, { ...details, elapsedSeconds: elapsedRef.current })
   }, [onComplete])
   return (
-    <PlayShell title="Memory Recall" score={shellScore} finished={shellFinished} onElapsed={handleElapsed}>
+    <PlayShell title="Memory Recall" score={shellScore} finished={shellFinished} onElapsed={handleElapsed} autoStart={autoStart}>
       <MemoryRecallGame
         items={items}
         theme={theme}

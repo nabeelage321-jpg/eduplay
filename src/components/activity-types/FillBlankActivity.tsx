@@ -4,12 +4,19 @@ import { useState, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, shuffleArray, isRTL, getRandomFeedback } from './shared'
+import ScorePill from '@/components/game/ScorePill'
+import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
+
+// BATCH 1 (final list item 19): funky + bold letters — Fredoka One,
+// already loaded, no new dependency.
+const FUNKY_FONT = "'Fredoka One', 'Nunito', system-ui, sans-serif"
 
 export default function FillBlankActivity({ items, locale, onComplete }: ActivityProps) {
   const [currentIdx, setCurrentIdx] = useState(0)
   const [typed, setTyped] = useState('')
   const [feedback, setFeedback] = useState<{ type: 'correct' | 'wrong'; msg: string } | null>(null)
   const [score, setScore] = useState(0)
+  const [correctCount, setCorrectCount] = useState(0)
   const [finished, setFinished] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const rtl = isRTL(locale)
@@ -44,17 +51,36 @@ export default function FillBlankActivity({ items, locale, onComplete }: Activit
     const isCorrect = val.toLowerCase() === item?.answer.toLowerCase()
     if (isCorrect) {
       const newScore = score + SCORE_PER_CORRECT
+      const newCorrect = correctCount + 1
       setScore(newScore)
+      setCorrectCount(newCorrect)
       setFeedback({ type: 'correct', msg: getRandomFeedback('correct') })
+      playEduSound('correct', readInteractiveSoundOn())
       setTimeout(() => {
         setFeedback(null)
         setTyped('')
-        if (currentIdx + 1 >= items.length) { setFinished(true); onComplete(newScore) }
-        else { setCurrentIdx((i) => i + 1); inputRef.current?.focus() }
+        if (currentIdx + 1 >= items.length) {
+          setFinished(true)
+          onComplete(newScore, { correctCount: newCorrect, totalCount: items.length })
+        } else { setCurrentIdx((i) => i + 1); inputRef.current?.focus() }
       }, 1000)
     } else {
+      // WRONG-ANSWER ADVANCE (batch-2 #6, owner 13:13 PKT): a wrong
+      // answer used to show feedback, clear the typed text, and stay
+      // on the same question — retry forever, no marks ever lost.
+      // Now it moves to the NEXT question: 0 points for this one,
+      // no retry on the same question. The correct-answer flow
+      // (+10, advance after feedback) is unchanged.
       setFeedback({ type: 'wrong', msg: getRandomFeedback('wrong') })
-      setTimeout(() => { setFeedback(null); setTyped('') }, 900)
+      playEduSound('wrong', readInteractiveSoundOn())
+      setTimeout(() => {
+        setFeedback(null)
+        setTyped('')
+        if (currentIdx + 1 >= items.length) {
+          setFinished(true)
+          onComplete(score, { correctCount, totalCount: items.length })
+        } else { setCurrentIdx((i) => i + 1); inputRef.current?.focus() }
+      }, 1000)
     }
   }
 
@@ -63,14 +89,16 @@ export default function FillBlankActivity({ items, locale, onComplete }: Activit
       <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
         style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-primary)' }}>
         <div style={{ fontSize: '3rem' }}>📝</div>
-        <h2 style={{ fontFamily: 'var(--font-display)' }}>Fill in the Blank Done!</h2>
-        <p style={{ color: 'var(--color-text-secondary)' }}>Score: {score}</p>
+        <h2 style={{ fontFamily: FUNKY_FONT }}>Fill in the Blank Done!</h2>
+        <p style={{ marginTop: '0.5rem' }}>
+          <ScorePill score={score} total={items.length * SCORE_PER_CORRECT} big />
+        </p>
       </motion.div>
     )
   }
 
   return (
-    <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '500px', margin: '0 auto', textAlign: 'center' }}>
+    <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '0.75rem 0.5rem', maxWidth: '500px', margin: '0 auto', textAlign: 'center' }}>
       <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
         {currentIdx + 1} / {items.length}
       </p>
@@ -87,7 +115,7 @@ export default function FillBlankActivity({ items, locale, onComplete }: Activit
             padding: '1.25rem 1rem',
             marginBottom: '1.25rem',
             color: 'var(--color-text-primary)',
-            fontFamily: 'var(--font-display)',
+            fontFamily: FUNKY_FONT,
             fontSize: '1.1rem',
             lineHeight: 1.8,
             boxShadow: 'var(--shadow-card)',
@@ -109,7 +137,7 @@ export default function FillBlankActivity({ items, locale, onComplete }: Activit
               background: 'transparent',
               color: 'var(--color-primary)',
               fontSize: '1.1rem',
-              fontFamily: 'var(--font-display)',
+              fontFamily: FUNKY_FONT,
               textAlign: 'center',
               outline: 'none',
               margin: '0 0.25rem',
@@ -129,7 +157,7 @@ export default function FillBlankActivity({ items, locale, onComplete }: Activit
         style={{
           padding: '0.6rem 1.5rem', borderRadius: 'var(--radius)',
           border: 'none', background: typed.trim() ? 'var(--gradient-btn)' : 'var(--color-border)',
-          color: '#fff', fontFamily: 'var(--font-display)', fontSize: '0.95rem',
+          color: '#fff', fontFamily: FUNKY_FONT, fontSize: '0.95rem',
           cursor: typed.trim() ? 'pointer' : 'not-allowed',
           boxShadow: typed.trim() ? 'var(--shadow)' : 'none',
           marginBottom: '1rem',
@@ -166,14 +194,14 @@ export default function FillBlankActivity({ items, locale, onComplete }: Activit
             style={{
               marginTop: '0.75rem', padding: '0.6rem', borderRadius: 'var(--radius)',
               background: feedback.type === 'correct' ? 'var(--color-success)' : 'var(--color-danger)',
-              color: '#fff', fontFamily: 'var(--font-display)', fontSize: '0.95rem',
+              color: '#fff', fontFamily: FUNKY_FONT, fontSize: '0.95rem',
             }}>
             {feedback.msg}
           </motion.div>
         )}
       </AnimatePresence>
-      <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-        Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong>
+      <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '0.75rem' }}>
+        <ScorePill score={score} total={items.length * SCORE_PER_CORRECT} />
       </p>
     </div>
   )

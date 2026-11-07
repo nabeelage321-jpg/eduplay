@@ -110,6 +110,10 @@ export function adaptActivityItems(activity: DbActivityLike): ActivityItem[] {
           answer: str(r.answer),
           hint: str(r.hint),
           imageUrl: str(r.imageUrl),
+          // IMAGE CREDIT (batch 1, 2026-11-07): the picked picture's
+          // credit line travels with the item, so the player can show
+          // it under the picture. Never invented — empty when unset.
+          imageCredit: str(r.imageCredit),
         }
       })
       .filter((i) => i.prompt && i.answer)

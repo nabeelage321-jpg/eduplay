@@ -4,6 +4,14 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, isRTL } from './shared'
+import { hangmanClues } from '@/lib/hangman-clues'
+import ScorePill from '@/components/game/ScorePill'
+import KidActionsBar from '@/components/game/KidActionsBar'
+import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
+
+// BATCH 1 (final list item 19): funky + bold letters — Fredoka One,
+// already loaded, no new dependency.
+const FUNKY_FONT = "'Fredoka One', 'Nunito', system-ui, sans-serif"
 
 const HANGMAN_PARTS = [
   // Gallows
@@ -21,6 +29,21 @@ const HANGMAN_PARTS = [
 ]
 
 const MAX_WRONG = HANGMAN_PARTS.length - 4 // head + body + arms + legs = 6
+const MAX_PER_WORD = SCORE_PER_CORRECT * MAX_WRONG // 60 — a word won with no wrong guess
+
+// HANGMAN — REAL CLUES (item 35, owner 2026-11-07 13:44 PKT):
+// the game used to show only the generic hint "History word", so the
+// kid guessed letters blind with no idea what the word was. Now,
+// BEFORE the kid guesses a word, the game shows 3 clue questions
+// whose answers point to the word — all taken from the game's own
+// item, so no fact is ever invented (see src/lib/hangman-clues.ts):
+//   1. What kind of word is it? — the item's own hint.
+//   2. How many letters? — the count of letters in the answer.
+//   3. What letter does it start with? — the answer's first letter.
+// The kid reads the clues, taps "Start guessing", and the clues stay
+// visible in a compact line while guessing. Rules unchanged: 6 wrong
+// guesses, letter keyboard, 10 points per wrong guess NOT used
+// (up to 60 per word).
 
 export default function HangmanActivity({ items, locale, onComplete }: ActivityProps) {
   const [currentIdx, setCurrentIdx] = useState(0)
@@ -29,15 +52,21 @@ export default function HangmanActivity({ items, locale, onComplete }: ActivityP
   const [score, setScore] = useState(0)
   const [status, setStatus] = useState<'playing' | 'won' | 'lost'>('playing')
   const [finished, setFinished] = useState(false)
+  const [cluesSeen, setCluesSeen] = useState(false)
+  const [hintUsed, setHintUsed] = useState(false)
+  const [showAnswer, setShowAnswer] = useState(false)
   const rtl = isRTL(locale)
   const item = items[currentIdx]
   const word = (item?.answer || '').toUpperCase()
-  const hint = item?.prompt || ''
+  const clues = item ? hangmanClues(item.prompt, word) : null
 
   useEffect(() => {
     setGuessed(new Set())
     setWrongCount(0)
     setStatus('playing')
+    setCluesSeen(false)
+    setHintUsed(false)
+    setShowAnswer(false)
   }, [currentIdx])
 
   const lettersToShow = word.split('').filter((c) => /[A-Z]/.test(c))
@@ -48,22 +77,46 @@ export default function HangmanActivity({ items, locale, onComplete }: ActivityP
       setStatus('won')
       const newScore = score + SCORE_PER_CORRECT * Math.max(1, MAX_WRONG - wrongCount)
       setScore(newScore)
+      playEduSound('win', readInteractiveSoundOn())
       setTimeout(() => advance(newScore), 1500)
     }
   }, [allGuessed, status, word])
 
   function guessLetter(letter: string) {
-    if (guessed.has(letter) || status !== 'playing') return
+    if (guessed.has(letter) || status !== 'playing' || !cluesSeen || showAnswer) return
     const newGuessed = new Set(guessed).add(letter)
     setGuessed(newGuessed)
     if (!word.includes(letter)) {
       const newWrong = wrongCount + 1
       setWrongCount(newWrong)
+      playEduSound('wrong', readInteractiveSoundOn())
       if (newWrong >= MAX_WRONG) {
         setStatus('lost')
         setTimeout(() => advance(score), 1500)
       }
+    } else {
+      playEduSound('correct', readInteractiveSoundOn())
     }
+  }
+
+  // Kid action — hint: reveal ONE letter in its correct slot
+  // (the Anagram pattern). Once per word.
+  function useHint() {
+    if (hintUsed || status !== 'playing' || !cluesSeen || showAnswer) return
+    const unguessed = lettersToShow.find((l) => !guessed.has(l))
+    if (!unguessed) return
+    setGuessed((prev) => new Set(prev).add(unguessed))
+    setHintUsed(true)
+  }
+
+  function skipWord() {
+    if (status !== 'playing' || showAnswer) return
+    advance(score)
+  }
+
+  function revealAnswer() {
+    if (status !== 'playing' || showAnswer) return
+    setShowAnswer(true)
   }
 
   function advance(finalScore: number) {
@@ -76,8 +129,10 @@ export default function HangmanActivity({ items, locale, onComplete }: ActivityP
       <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
         style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-primary)' }}>
         <div style={{ fontSize: '3rem' }}>🎯</div>
-        <h2 style={{ fontFamily: 'var(--font-display)' }}>Hangman Done!</h2>
-        <p style={{ color: 'var(--color-text-secondary)' }}>Score: {score}</p>
+        <h2 style={{ fontFamily: FUNKY_FONT }}>Hangman Done!</h2>
+        <p style={{ marginTop: '0.5rem' }}>
+          <ScorePill score={score} total={items.length * MAX_PER_WORD} big />
+        </p>
       </motion.div>
     )
   }
@@ -86,9 +141,10 @@ export default function HangmanActivity({ items, locale, onComplete }: ActivityP
   const partsToShow = 4 + wrongCount // show gallows always + body parts per wrong guess
 
   return (
-    <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '480px', margin: '0 auto', textAlign: 'center' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+    <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '0.75rem 0.5rem', maxWidth: '480px', margin: '0 auto', textAlign: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
         <span>{currentIdx + 1} / {items.length}</span>
+        <ScorePill score={score} total={items.length * MAX_PER_WORD} />
         <span>Wrong: {wrongCount}/{MAX_WRONG}</span>
       </div>
 
@@ -97,9 +153,39 @@ export default function HangmanActivity({ items, locale, onComplete }: ActivityP
         {HANGMAN_PARTS.slice(0, partsToShow)}
       </svg>
 
-      {/* Hint */}
-      {hint && (
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginBottom: '0.5rem' }}>💡 {hint}</p>
+      {/* The 3 clue questions — shown FIRST, before any guessing. */}
+      {clues && !cluesSeen && (
+        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          style={{
+            textAlign: 'left', padding: '0.9rem 1rem', borderRadius: 'var(--radius-lg)',
+            background: 'linear-gradient(135deg, #fef9c3 0%, #fde68a 50%, #fcd34d 100%)',
+            border: '2px solid var(--color-warning)', marginBottom: '0.75rem',
+            color: '#78350f',
+          }}>
+          <p style={{ fontFamily: FUNKY_FONT, fontSize: '1.05rem', margin: '0 0 0.5rem' }}>🔍 3 Clues — read them, then guess!</p>
+          <p style={{ margin: '0.25rem 0', lineHeight: 1.5 }}>❓ What kind of word is it? <strong>{clues.kind}</strong></p>
+          <p style={{ margin: '0.25rem 0', lineHeight: 1.5 }}>❓ How many letters? <strong>{clues.letters}</strong></p>
+          <p style={{ margin: '0.25rem 0', lineHeight: 1.5 }}>❓ What letter does it start with? <strong>{clues.first}</strong></p>
+          <motion.button
+            onClick={() => setCluesSeen(true)}
+            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+            style={{
+              marginTop: '0.6rem', padding: '0.6rem 1.5rem',
+              borderRadius: 'var(--radius)', border: 'none',
+              background: 'var(--gradient-btn)', color: '#fff',
+              fontFamily: FUNKY_FONT, fontSize: '1rem', cursor: 'pointer',
+            }}
+          >
+            🔤 Start guessing →
+          </motion.button>
+        </motion.div>
+      )}
+
+      {/* Compact clue line — stays visible while guessing. */}
+      {clues && cluesSeen && (
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+          💡 {clues.kind} · 🔤 {clues.letters} letters · 🔠 Starts with {clues.first}
+        </p>
       )}
 
       {/* Word display */}
@@ -114,7 +200,7 @@ export default function HangmanActivity({ items, locale, onComplete }: ActivityP
             color: status === 'lost' && !guessed.has(char) ? 'var(--color-danger)' : 'var(--color-text-primary)',
             fontFamily: 'monospace', fontWeight: 700, fontSize: '1.25rem',
           }}>
-            {char === ' ' ? '' : (guessed.has(char) || status === 'lost') ? char : ''}
+            {char === ' ' ? '' : (guessed.has(char) || status === 'lost' || showAnswer) ? char : ''}
           </div>
         ))}
       </div>
@@ -127,15 +213,52 @@ export default function HangmanActivity({ items, locale, onComplete }: ActivityP
             style={{
               padding: '0.75rem', borderRadius: 'var(--radius)', marginBottom: '0.75rem',
               background: status === 'won' ? 'var(--color-success)' : 'var(--color-danger)',
-              color: '#fff', fontFamily: 'var(--font-display)', fontSize: '1rem',
+              color: '#fff', fontFamily: FUNKY_FONT, fontSize: '1rem',
             }}>
             {status === 'won' ? `🎉 Correct! The word was ${word}` : `❌ The word was: ${word}`}
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Show-the-answer state — 0 points, the kid moves on. */}
+      {showAnswer && status === 'playing' && (
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          role="alert"
+          style={{
+            padding: '0.75rem', borderRadius: 'var(--radius)', marginBottom: '0.75rem',
+            background: 'var(--color-warning)', color: '#78350f',
+            fontFamily: FUNKY_FONT, fontSize: '1rem',
+          }}>
+          👁️ The word is <strong>{word}</strong> — 0 points for this word.
+          <motion.button
+            onClick={() => advance(score)}
+            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+            style={{
+              display: 'block', margin: '0.6rem auto 0', padding: '0.6rem 1.5rem',
+              borderRadius: 'var(--radius)', border: 'none',
+              background: 'var(--gradient-btn)', color: '#fff',
+              fontFamily: FUNKY_FONT, fontSize: '0.95rem', cursor: 'pointer',
+            }}
+          >
+            Got it — next word →
+          </motion.button>
+        </motion.div>
+      )}
+
+      {/* Kid actions — hint / skip / see the answer. */}
+      {cluesSeen && status === 'playing' && !showAnswer && (
+        <div style={{ marginBottom: '0.75rem' }}>
+          <KidActionsBar
+            onHint={hintUsed ? undefined : useHint}
+            onSkip={skipWord}
+            onShowAnswer={revealAnswer}
+            hintUsed={hintUsed}
+          />
+        </div>
+      )}
+
       {/* Keyboard */}
-      {status === 'playing' && (
+      {cluesSeen && status === 'playing' && !showAnswer && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', justifyContent: 'center' }}>
           {ALPHABET.map((letter) => {
             const isGuessed = guessed.has(letter)
@@ -167,10 +290,6 @@ export default function HangmanActivity({ items, locale, onComplete }: ActivityP
           })}
         </div>
       )}
-
-      <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-        Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong>
-      </p>
     </div>
   )
 }

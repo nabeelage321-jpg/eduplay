@@ -2,13 +2,17 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useSession } from 'next-auth/react'
 import type { ActivityCompletion, ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, TIMER_DEFAULT, shuffleArray, isRTL, getRandomFeedback } from './shared'
 import PlayShell, { usePlayShellStatus } from './PlayShell'
+import KidActionsBar from '@/components/game/KidActionsBar'
+import ScorePill from '@/components/game/ScorePill'
 import type { ActivityItem } from '@/types'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
-import { cleanPlayerName, loadPlayerName, resolvePlayerName, savePlayerName } from '@/lib/player-name'
+
+// BATCH 1 (final list item 19): funky + bold letters — Fredoka One,
+// already loaded, no new dependency.
+const FUNKY_FONT = "'Fredoka One', 'Nunito', system-ui, sans-serif"
 
 interface QuizQuestion {
   item: ActivityItem
@@ -21,6 +25,13 @@ interface QuizQuestion {
 // its own per-question countdown and feedback advance freeze while
 // paused; the thin wrapper underneath lifts the real score and the
 // finished flag up to the shell header. Every other type is untouched.
+//
+// INTRO (batch 1, final list item 4): the How-to-Play + name screen
+// used to live HERE, Quiz-only. It is now the SHARED PlayIntro on
+// the play page (all 40 types) — this file keeps no intro of its
+// own, so a kid never sees two instruction screens. The name the
+// intro collects is owned by the play page, which attaches it to
+// the finish screen; this player only reports score + counts.
 interface QuizGameProps extends ActivityProps {
   onProgress: (score: number, finished: boolean) => void
 }
@@ -33,6 +44,12 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
   const [timeLeft, setTimeLeft] = useState(TIMER_DEFAULT)
   const [feedback, setFeedback] = useState<{ type: 'correct' | 'wrong'; msg: string } | null>(null)
   const [finished, setFinished] = useState(false)
+  // KID ACTIONS (batch 1, final list item 17): one hint per question
+  // (removes ONE wrong answer), skip (0 points, move on), and see
+  // the answer + why (reveals the correct answer; the "why" is the
+  // question's own hint when it has one — never invented).
+  const [hiddenIdx, setHiddenIdx] = useState<number | null>(null)
+  const [answerRevealed, setAnswerRevealed] = useState(false)
   const rtl = isRTL(locale)
   const shellStatus = usePlayShellStatus()
   const onProgressRef = useRef(onProgress)
@@ -42,8 +59,8 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
   // GAME FEEL (2026-11-07, build-list item 4): Quiz now uses the
   // interactive sound system (default ON, same as Match Up) instead
   // of the old muted-by-default one, so correct/wrong are heard:
-  // the pleasant rising sound for right, the hard/harsh buzz for
-  // wrong. Sound is an extra layer only (colour + icon + text
+  // BATCH 1 (final list item 10): correct is CLAPPING, wrong is a
+  // BLAST. Sound is an extra layer only (colour + icon + text
   // already signal correct/wrong). The play-page header toggle for
   // Quiz is the interactive toggle, so one tap mutes all of it.
   useEffect(() => {
@@ -81,6 +98,8 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
     setTimeLeft(TIMER_DEFAULT)
     setFeedback(null)
     setFinished(false)
+    setHiddenIdx(null)
+    setAnswerRevealed(false)
   }, [itemsFingerprint, items])
 
   // Refs mirror the latest state so `advance` can be stable: the old
@@ -110,6 +129,8 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
     setSelected(null)
     setFeedback(null)
     setTimeLeft(TIMER_DEFAULT)
+    setHiddenIdx(null)
+    setAnswerRevealed(false)
     timeUpRef.current = false
     const qs = questionsRef.current
     if (qs.length === 0) return
@@ -180,6 +201,42 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
     pendingAdvanceRef.current = true
   }
 
+  // KID ACTIONS (batch 1, item 17) — hint, skip, see the answer.
+  // All three keep the game's own rules: a hint removes ONE wrong
+  // answer, a skip scores 0, and seeing the answer scores 0 too.
+  function useHint() {
+    if (selected !== null || hiddenIdx !== null || finished || shellStatus !== 'playing') return
+    const q = questions[current]
+    if (!q) return
+    const wrongIdx = q.options.findIndex((_, i) => i !== q.correctIndex)
+    if (wrongIdx === -1) return
+    playEduSound('click', readInteractiveSoundOn())
+    setHiddenIdx(wrongIdx)
+  }
+  function skipQuestion() {
+    if (selected !== null || finished || shellStatus !== 'playing') return
+    playEduSound('click', readInteractiveSoundOn())
+    // -2 matches no option: nothing highlights, the timer freezes
+    // (selected !== null), and the advance below moves on with 0.
+    setSelected(-2)
+    setFeedback({ type: 'wrong', msg: 'Skipped — 0 points' })
+    advanceTimeoutRef.current = setTimeout(advance, 1200)
+    pendingAdvanceRef.current = true
+  }
+  function revealAnswer() {
+    if (selected !== null || finished || shellStatus !== 'playing') return
+    const q = questions[current]
+    if (!q) return
+    playEduSound('click', readInteractiveSoundOn())
+    // Selecting the correct index highlights it green (the render
+    // below) but scores NOTHING — the score only changes in
+    // handleSelect, which never runs for a reveal. The kid reads
+    // the why, then taps "Got it" to move on.
+    setSelected(q.correctIndex)
+    setAnswerRevealed(true)
+    setFeedback({ type: 'correct', msg: `The correct answer is "${q.item.answer}".` })
+  }
+
   if (questions.length === 0) return (
     <div style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '2rem' }}>Loading…</div>
   )
@@ -189,9 +246,9 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
       <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
         style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-primary)' }}>
         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
-        <h2 style={{ fontSize: '1.5rem', fontFamily: 'var(--font-display)', marginBottom: '0.5rem' }}>Quiz Complete!</h2>
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.25rem' }}>
-          Score: {score} / {questions.length * SCORE_PER_CORRECT}
+        <h2 style={{ fontSize: '1.5rem', fontFamily: FUNKY_FONT, marginBottom: '0.5rem' }}>Quiz Complete!</h2>
+        <p style={{ marginTop: '0.5rem' }}>
+          <ScorePill score={score} total={questions.length * SCORE_PER_CORRECT} big />
         </p>
       </motion.div>
     )
@@ -200,36 +257,46 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
   const q = questions[current]
   const progress = (current / questions.length) * 100
   const timerPct = (timeLeft / TIMER_DEFAULT) * 100
+  const canAct = selected === null && !finished && shellStatus === 'playing'
 
   return (
-    <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+    <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '0.75rem 0.5rem', maxWidth: '600px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
         <span>{current + 1} / {questions.length}</span>
         <span aria-live="polite" aria-label={`${timeLeft} seconds remaining`}>{timeLeft}s</span>
       </div>
-      <div style={{ height: '4px', background: 'var(--color-border)', borderRadius: 'var(--radius)', marginBottom: '0.5rem' }}>
+      <div style={{ height: '4px', background: 'var(--color-border)', borderRadius: 'var(--radius)', marginBottom: '0.4rem' }}>
         <motion.div style={{ height: '100%', background: 'var(--color-primary)', borderRadius: 'var(--radius)' }}
           animate={{ width: `${progress}%` }} transition={{ duration: 0.3 }} />
       </div>
-      <div style={{ height: '4px', background: 'var(--color-border)', borderRadius: 'var(--radius)', marginBottom: '1.5rem' }}>
+      <div style={{ height: '4px', background: 'var(--color-border)', borderRadius: 'var(--radius)', marginBottom: '0.75rem' }}>
         <motion.div style={{
           height: '100%', borderRadius: 'var(--radius)',
           background: timerPct > 50 ? 'var(--color-success)' : timerPct > 20 ? 'var(--color-warning)' : 'var(--color-danger)',
         }} animate={{ width: `${timerPct}%` }} transition={{ duration: 1, ease: 'linear' }} />
       </div>
+      {/* KID ACTIONS (batch 1, item 17): hint, skip, see the answer. */}
+      <KidActionsBar
+        onHint={canAct && hiddenIdx === null ? useHint : undefined}
+        onSkip={canAct ? skipQuestion : undefined}
+        onShowAnswer={canAct ? revealAnswer : undefined}
+        hintUsed={hiddenIdx !== null}
+        answerShown={answerRevealed}
+      />
       <AnimatePresence mode="wait">
         <motion.div key={current} initial={{ x: rtl ? -40 : 40, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }} exit={{ x: rtl ? 40 : -40, opacity: 0 }} transition={{ duration: 0.25 }}>
           <div style={{
             background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-lg)', padding: '1.5rem', marginBottom: '1.25rem',
-            color: 'var(--color-text-primary)', fontSize: '1.125rem',
-            fontFamily: 'var(--font-display)', boxShadow: 'var(--shadow-card)',
+            borderRadius: 'var(--radius-lg)', padding: '1rem', marginBottom: '0.75rem',
+            color: 'var(--color-text-primary)', fontSize: '1.15rem',
+            fontFamily: FUNKY_FONT, boxShadow: 'var(--shadow-card)',
           }}>
             {q.item.prompt}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
             {q.options.map((opt, idx) => {
+              if (idx === hiddenIdx) return <div key={idx} aria-hidden="true" />
               let bg = 'var(--color-surface)'
               let border = 'var(--color-border)'
               let color = 'var(--color-text-primary)'
@@ -244,7 +311,7 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
                   aria-pressed={selected === idx} aria-label={`Option ${idx + 1}: ${opt}`}
                   style={{
                     background: bg, border: `2px solid ${border}`, borderRadius: 'var(--radius)',
-                    padding: '0.875rem 1rem', color, fontSize: '0.95rem',
+                    padding: '0.7rem 0.85rem', color, fontSize: '0.95rem',
                     cursor: selected !== null ? 'default' : 'pointer',
                     textAlign: rtl ? 'right' : 'left',
                     transition: 'background 0.2s, border-color 0.2s, color 0.2s',
@@ -264,14 +331,38 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
             role="alert"
             className={feedback.type === 'correct' ? 'eduplay-feedback-correct' : 'eduplay-feedback-wrong'}
             style={{
-              marginTop: '1rem', padding: '0.75rem 1.25rem', borderRadius: 'var(--radius)',
+              marginTop: '0.75rem', padding: '0.7rem 1rem', borderRadius: 'var(--radius)',
               background: feedback.type === 'correct' ? 'var(--color-success)' : 'var(--color-danger)',
-              color: '#fff', textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: '1rem',
+              color: '#fff', textAlign: 'center', fontFamily: FUNKY_FONT, fontSize: '1rem',
             }}>
             {feedback.type === 'correct' ? '✅ ' : '❌ '}{feedback.msg}
           </motion.div>
         )}
       </AnimatePresence>
+      {/* The WHY (batch 1, item 17): when the answer was revealed,
+          the question's own hint explains it — never invented. */}
+      {answerRevealed && q.item.hint ? (
+        <p style={{
+          marginTop: '0.75rem', padding: '0.7rem 1rem', borderRadius: 'var(--radius)',
+          background: 'color-mix(in srgb, var(--color-warning) 16%, var(--color-surface))',
+          border: '2px solid var(--color-warning)',
+          color: 'var(--color-text-primary)', fontSize: '0.95rem', textAlign: 'center',
+        }}>
+          💡 Why: {q.item.hint}
+        </p>
+      ) : null}
+      {answerRevealed ? (
+        <button
+          onClick={() => advance()}
+          style={{
+            marginTop: '0.75rem', width: '100%', padding: '0.85rem', borderRadius: 'var(--radius-lg)', border: 'none',
+            background: 'var(--color-primary)', color: '#fff', fontFamily: FUNKY_FONT,
+            fontSize: '1.05rem', cursor: 'pointer',
+          }}
+        >
+          Got it — next question →
+        </button>
+      ) : null}
       {/* TIMER FIX 2026-11-03: no second Score line here anymore.
           The shell header above already shows this same real score;
           two score displays on one screen confused players. The
@@ -281,7 +372,7 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
   )
 }
 
-export default function QuizActivity({ items, theme, locale, onComplete }: ActivityProps) {
+export default function QuizActivity({ items, theme, locale, onComplete, autoStart }: ActivityProps) {
   const [shellScore, setShellScore] = useState(0)
   const [shellFinished, setShellFinished] = useState(false)
   // TIMER FIX 2026-11-03: the shell's elapsed seconds, kept in a ref
@@ -292,116 +383,17 @@ export default function QuizActivity({ items, theme, locale, onComplete }: Activ
   const elapsedRef = useRef(0)
   const handleElapsed = useCallback((seconds: number) => { elapsedRef.current = seconds }, [])
 
-  // QUIZ INTRO (2026-11-07, build-list item 5): How to Play + name
-  // FIRST, before the shell's Start screen. The old legacy player
-  // had a HowToPlay screen; the new play page lost it, and Quiz
-  // opened straight to Start with no instructions and no name
-  // prompt. The intro shows once per page load — Play Again never
-  // re-asks — and the shell's own Start screen follows it.
-  const { data: session, status } = useSession()
-  const sessionName = session?.user?.name ? cleanPlayerName(session.user.name) : ''
-  const [showIntro, setShowIntro] = useState(true)
-  // The stored device name is read once, on first render, so the
-  // field starts with it for a returning signed-out player.
-  const [storedName] = useState<string | null>(() => loadPlayerName())
-  const [playerName, setPlayerName] = useState<string>(() =>
-    resolvePlayerName(null, loadPlayerName()).name,
-  )
-  const nameEditedRef = useRef(false)
-  const playerNameRef = useRef(playerName)
-  // A signed-in account name takes precedence on every visit — but
-  // never overwrites a name the player has already typed on this
-  // screen.
-  useEffect(() => {
-    if (status === 'authenticated' && sessionName && !nameEditedRef.current) {
-      setPlayerName(sessionName)
-    }
-  }, [status, sessionName])
-  useEffect(() => { playerNameRef.current = playerName }, [playerName])
-  const nameSource = resolvePlayerName(sessionName, storedName).source
-  const introNameHint =
-    nameSource === 'account'
-      ? `Signed in as ${sessionName} — we'll show this name on the finish screen. Change it if you like.`
-      : nameSource === 'remembered'
-        ? 'We remembered your name from last time — change it if you like.'
-        : "Type your name once — we'll remember it on this device for next time."
-  function dismissIntro() {
-    const cleaned = cleanPlayerName(playerName)
-    if (cleaned) savePlayerName(cleaned)
-    setShowIntro(false)
-  }
-
+  // The name now comes from the SHARED intro on the play page (batch
+  // 1, item 4) — this player reports score + counts + elapsed only.
   const handleComplete = useCallback((score: number, details?: ActivityCompletion) => {
-    // QUIZ INTRO: the finish screen shows the player's name (the
-    // only place the name is used — never scoring or rules).
-    const name = cleanPlayerName(playerNameRef.current)
     onComplete(score, {
       ...details,
       elapsedSeconds: elapsedRef.current,
-      playerName: name.length > 0 ? name : undefined,
     })
   }, [onComplete])
 
-  if (showIntro) {
-    const rtl = isRTL(locale)
-    const questionCount = items.length
-    return (
-      <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto', color: 'var(--color-text-primary)' }}>
-        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-          <div style={{ fontSize: '2.5rem', lineHeight: 1 }} aria-hidden="true">❓</div>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', margin: '0.5rem 0 0.25rem' }}>How to play Quiz</h2>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-            Answer the questions, beat your score.
-          </p>
-        </div>
-        <div style={{ display: 'grid', gap: '0.75rem', fontSize: '0.95rem', lineHeight: 1.5 }}>
-          <p><strong>How to play:</strong> each screen asks one question with four answers. Tap the answer you think is right.</p>
-          <p><strong>How scores are given:</strong> each correct answer earns {SCORE_PER_CORRECT} points. The game is scored out of {questionCount * SCORE_PER_CORRECT} ({questionCount} {questionCount === 1 ? 'question' : 'questions'}). Wrong answers and time-ups earn no points.</p>
-          <p><strong>Objective:</strong> answer every question — get as many right as you can.</p>
-          <p><strong>Controls:</strong> tap an answer on the screen. No keyboard needed.</p>
-          <p><strong>Timer:</strong> {TIMER_DEFAULT} seconds per question. The time at the top shows how long you have played.</p>
-          <p><strong>Rounds:</strong> one question at a time, in shuffled order.</p>
-          <p><strong>How you win and finish:</strong> finish all {questionCount} {questionCount === 1 ? 'question' : 'questions'}. The end screen shows your score and your time.</p>
-        </div>
-        <div style={{ marginTop: '1.25rem' }}>
-          <label htmlFor="quiz-player-name" style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: '1rem', marginBottom: '0.4rem' }}>
-            Your name
-          </label>
-          <input
-            id="quiz-player-name"
-            type="text"
-            value={playerName}
-            maxLength={20}
-            autoComplete="nickname"
-            onChange={(e) => { nameEditedRef.current = true; setPlayerName(e.target.value) }}
-            placeholder="Type your name"
-            style={{
-              width: '100%', padding: '0.75rem 1rem', borderRadius: 'var(--radius)',
-              border: '2px solid var(--color-border)', background: 'var(--color-surface)',
-              color: 'var(--color-text-primary)', fontSize: '1rem', fontFamily: 'var(--font-body)',
-              boxSizing: 'border-box',
-            }}
-          />
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '0.4rem' }}>
-            {introNameHint}
-          </p>
-        </div>
-        <button
-          onClick={dismissIntro}
-          style={{
-            marginTop: '1rem', width: '100%', padding: '0.9rem', borderRadius: 'var(--radius-lg)', border: 'none',
-            background: 'var(--color-primary)', color: '#fff', fontFamily: 'var(--font-display)',
-            fontSize: '1.05rem', cursor: 'pointer',
-          }}
-        >
-          Skip instructions — start playing
-        </button>
-      </div>
-    )
-  }
-
   return (
-    <PlayShell title="Quiz" score={shellScore} finished={shellFinished} onElapsed={handleElapsed}>
+    <PlayShell title="Quiz" score={shellScore} finished={shellFinished} onElapsed={handleElapsed} autoStart={autoStart}>
       <QuizGame
         items={items}
         theme={theme}

@@ -58,6 +58,24 @@ interface ActivityCreatorProps {
    * an invalid value means no preselection, never a crash.
    */
   initialSubject?: string | null
+  /**
+   * GAME NUMBER (batch 1, final list 11–14, 2026-11-07): raw ?edit=
+   * value from the create page — the id of the game the MAKER wants
+   * to edit. Ownership is verified against /api/my-activities
+   * (the maker's own games, same 50-cap list as the Dashboard) and
+   * the wizard pre-fills from the game, jumping to Preview. A
+   * non-maker gets a plain refusal and no pre-fill — the server PUT
+   * enforces ownership again at save time, so a hand-typed URL can
+   * never edit someone else's game. Absent = normal create.
+   */
+  initialEditId?: string | null
+  /**
+   * IMAGE APPROVAL (batch 1, 2026-11-07): true when the signed-in
+   * user may add pictures (teacher or owner). Server-resolved on
+   * the create page — the client never decides this itself.
+   * Kids/students NEVER add pictures, not even via the picker.
+   */
+  canAddImages: boolean
 }
 
 /**
@@ -71,11 +89,20 @@ export function resolveApprovedType(existingType: string | null, draftType: stri
   return existingType ?? draftType
 }
 
-export default function ActivityCreator({ locale, initialType, initialCountry, initialSubject }: ActivityCreatorProps) {
+export default function ActivityCreator({ locale, initialType, initialCountry, initialSubject, initialEditId, canAddImages }: ActivityCreatorProps) {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [creatorRole, setCreatorRole] = useState<CreatorRole>('teacher')
   const [roleHydrated, setRoleHydrated] = useState(false)
+  // EDIT MODE (game number, batch 1): the id from ?edit=, fixed at
+  // open time. editState tracks the ownership-checked load: loading
+  // -> ready (pre-filled, jump to Preview) | refused (not the
+  // maker's game — plain refusal, no pre-fill) | error (load failed).
+  const [editId] = useState<string | null>(() => initialEditId ?? null)
+  const [editState, setEditState] = useState<'idle' | 'loading' | 'ready' | 'refused' | 'error'>(
+    initialEditId ? 'loading' : 'idle',
+  )
+  const [editTitle, setEditTitle] = useState<string | null>(null)
   // SINGLE-GAME MAKER ENTRY: preselectedType is fixed at open time so
   // the "Making:" banner stays honest about where the maker came from;
   // typeSlug is the live Step 1 pick and starts at the same value.
@@ -86,13 +113,18 @@ export default function ActivityCreator({ locale, initialType, initialCountry, i
     locale: locale || 'en', curriculum: '', tags: '',
   })
   const [items, setItems] = useState<ActivityItem[]>([
-    { prompt: '', answer: '', hint: '', imageUrl: '' },
-    { prompt: '', answer: '', hint: '', imageUrl: '' },
-    { prompt: '', answer: '', hint: '', imageUrl: '' },
+    { prompt: '', answer: '', hint: '', imageUrl: '', imageCredit: '' },
+    { prompt: '', answer: '', hint: '', imageUrl: '', imageCredit: '' },
+    { prompt: '', answer: '', hint: '', imageUrl: '', imageCredit: '' },
   ])
   const [saveOptions, setSaveOptions] = useState<SaveOptions>({ isPublic: true, tags: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // IMAGE APPROVAL (batch 1, 2026-11-07): after a save that filed or
+  // dropped a picture, the creator says so plainly instead of
+  // redirecting silently — the maker must know the game stays
+  // private until the owner approves the picture.
+  const [imageNote, setImageNote] = useState<{ text: string; activityId: string } | null>(null)
   // APPROVE-DRAFT FIX 2026-11-01: the old code set step 4 but never moved
   // the viewport. The wizard sits BELOW the PromptToGame and ChapterScan
   // boxes, so on a phone the Preview was far below the fold and the click
@@ -107,6 +139,77 @@ export default function ActivityCreator({ locale, initialType, initialCountry, i
   // chapter approval (which carries no pick) resets it to null, so a
   // chapter game can never inherit a prompt draft's syllabus tag.
   const [curriculumTag, setCurriculumTag] = useState<CurriculumTag | null>(null)
+
+  // EDIT-MODE LOAD (game number, batch 1): verify the game is the
+  // maker's own via /api/my-activities, then load it and pre-fill
+  // the wizard. Runs once on mount, only when ?edit= is present.
+  // A game that is not in the maker's own list is refused with a
+  // plain message and no pre-fill; the PUT at save time enforces
+  // ownership again, so this client check is UX, not security.
+  useEffect(() => {
+    if (!initialEditId) return
+    let cancelled = false
+    async function loadForEdit() {
+      try {
+        const mineRes = await fetch('/api/my-activities')
+        if (!mineRes.ok) throw new Error('Could not check your saved games.')
+        const mine = await mineRes.json()
+        const mineIds = new Set<string>((mine.activities ?? []).map((a: { id: string }) => a.id))
+        if (!mineIds.has(initialEditId as string)) {
+          if (!cancelled) setEditState('refused')
+          return
+        }
+        const res = await fetch(`/api/activities/${initialEditId}`)
+        if (!res.ok) throw new Error('Could not load this game.')
+        const data = await res.json()
+        const activity = data.activity as {
+          title?: string; description?: string; type?: string; subject?: string
+          grade?: string; language?: string; curriculum?: string; is_public?: boolean
+          content?: { questions?: { prompt?: string; answer?: string; hint?: string; imageUrl?: string; imageCredit?: string }[]; curriculum?: { countryCode?: unknown; syllabusSlug?: unknown } }
+        }
+        if (!activity || typeof activity.title !== 'string') throw new Error('Could not load this game.')
+        if (cancelled) return
+        setTypeSlug(resolveInitialType(activity.type ?? null) ?? activity.type ?? null)
+        setMeta((m) => ({
+          ...m,
+          title: activity.title ?? '',
+          description: activity.description ?? '',
+          subject: activity.subject ?? '',
+          grade: activity.grade ?? '',
+          locale: (activity.language as SupportedLocale) || locale,
+          curriculum: activity.curriculum ?? '',
+          tags: '',
+        }))
+        const questions = (activity.content?.questions ?? []).filter((q) => q.prompt && q.answer)
+        if (questions.length > 0) {
+          setItems(questions.map((q) => ({
+            prompt: q.prompt ?? '',
+            answer: q.answer ?? '',
+            hint: q.hint ?? '',
+            imageUrl: q.imageUrl ?? '',
+            imageCredit: q.imageCredit ?? '',
+          })))
+        }
+        setSaveOptions({ isPublic: activity.is_public === true, tags: '' })
+        setCurriculumTag(resolveCurriculumTag(
+          activity.content?.curriculum?.countryCode,
+          activity.content?.curriculum?.syllabusSlug,
+        ))
+        setEditTitle(activity.title ?? '')
+        setEditState('ready')
+        setStep(4)
+        window.setTimeout(() => {
+          wizardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          wizardRef.current?.focus({ preventScroll: true })
+        }, 100)
+      } catch {
+        if (!cancelled) setEditState('error')
+      }
+    }
+    void loadForEdit()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => { setCreatorRole(readStoredRole()); setRoleHydrated(true) }, [])
 
@@ -124,6 +227,9 @@ export default function ActivityCreator({ locale, initialType, initialCountry, i
   // approved draft would have nowhere to go — so this small read is
   // the handoff itself, not a redesign of this page.
   useEffect(() => {
+    // EDIT MODE wins over a pending draft: an ?edit= load fills the
+    // wizard from the maker's own game, never from a stray draft.
+    if (initialEditId) return
     let raw: string | null = null
     try {
       raw = window.sessionStorage.getItem(PENDING_PROMPT_DRAFT_KEY)
@@ -192,6 +298,7 @@ export default function ActivityCreator({ locale, initialType, initialCountry, i
       answer: i.answer,
       hint: i.hint ?? '',
       imageUrl: i.imageUrl ?? '',
+      imageCredit: i.imageCredit ?? '',
     })))
     setSaveOptions((o) => ({ ...o, isPublic: false }))
     setCurriculumTag(resolveCurriculumTag(draft.countryCode, draft.syllabusSlug))
@@ -228,11 +335,17 @@ export default function ActivityCreator({ locale, initialType, initialCountry, i
         // no new table). Absent = General, no syllabus claim.
         ...(curriculumTag ? { curriculum_tag: curriculumTag } : {}),
       }
-      const res = await fetch('/api/activities', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      const res = await fetch(
+        // EDIT MODE (game number, batch 1): saving an edit PUTs the
+        // same payload to the original game — the server PUT verifies
+        // ownership again, so a non-maker can never save here.
+        editId && editState === 'ready' ? `/api/activities/${editId}` : '/api/activities',
+        {
+          method: editId && editState === 'ready' ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      )
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         // APPROVE-DRAFT FIX: the API returns bare "Unauthorized" for a
@@ -241,9 +354,31 @@ export default function ActivityCreator({ locale, initialType, initialCountry, i
         if (res.status === 401) {
           throw new Error('Sign-in is needed to save. Use Sign in at the top of the page, then come back and click Save Activity again.')
         }
+        if (res.status === 403) {
+          throw new Error(data.error || 'This game is not yours, so it cannot be edited here.')
+        }
         throw new Error(data.error || 'Failed to save activity')
       }
-      const { activity } = await res.json()
+      const data = await res.json()
+      const activity = data.activity as {
+        id: string
+        title?: string
+      }
+      // IMAGE APPROVAL (batch 1, 2026-11-07): when the save filed or
+      // dropped a picture, say so plainly and hold the redirect —
+      // the maker must know the game stays private until the owner
+      // approves the picture, or that the picture was not saved.
+      const ia = (data as { image_approval?: { setupReady?: boolean; allowed?: boolean; submitted?: number; pending?: boolean; dropped?: number } }).image_approval
+      if (ia && ((ia.submitted ?? 0) > 0 || (ia.dropped ?? 0) > 0)) {
+        const text = (ia.submitted ?? 0) > 0
+          ? '🖼️ Your picture is waiting for the owner’s approval — the game stays private until it is approved. You can play it yourself now; other players will see the picture once it is approved.'
+          : !ia.setupReady
+            ? '⚠️ Image approval isn’t set up yet — your picture was NOT saved. Ask the owner to run migration 012, then add the picture again. The game itself was saved.'
+            : '⚠️ Only a teacher can add pictures — your picture was NOT saved. The game itself was saved.'
+        setImageNote({ text, activityId: activity.id })
+        setSaving(false)
+        return
+      }
       router.push(`/${locale}/activity/${activity.id}/play`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
@@ -275,6 +410,64 @@ export default function ActivityCreator({ locale, initialType, initialCountry, i
           </p>
         </div>
       )}
+      {/* EDIT MODE banners (game number, batch 1): the maker sees
+          what they are editing; a non-maker gets a plain refusal
+          with the play/remix paths instead of a pre-filled form. */}
+      {editState === 'loading' ? (
+        <div role="status" style={{
+          background: 'var(--color-surface)', border: '2px solid var(--color-border)',
+          borderRadius: 'var(--radius)', padding: '1rem', marginBottom: '1.25rem',
+        }}>
+          <p style={{ color: 'var(--color-text-secondary)', margin: 0 }}>Loading your game to edit…</p>
+        </div>
+      ) : null}
+      {editState === 'ready' && editTitle ? (
+        <div role="status" style={{
+          background: 'color-mix(in srgb, var(--color-primary) 12%, var(--color-surface))',
+          border: '2px solid var(--color-primary)', borderRadius: 'var(--radius)',
+          padding: '1rem', marginBottom: '1.25rem',
+        }}>
+          <p style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontWeight: 700, margin: '0 0 0.25rem' }}>
+            ✏️ Editing: {editTitle}
+          </p>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: 0 }}>
+            Saving updates the original game. Change anything below, then save.
+          </p>
+        </div>
+      ) : null}
+      {editState === 'refused' ? (
+        <div role="alert" style={{
+          background: 'color-mix(in srgb, var(--color-warning) 15%, var(--color-surface))',
+          border: '2px solid var(--color-warning)', borderRadius: 'var(--radius)',
+          padding: '1rem', marginBottom: '1.25rem',
+        }}>
+          <p style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontWeight: 700, margin: '0 0 0.25rem' }}>
+            This game isn&apos;t yours, so it can&apos;t be edited here.
+          </p>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: '0 0 0.75rem' }}>
+            You can play it, or make your own game from it — the original is never changed.
+          </p>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <a href={`/${locale}/activity/${editId}`} style={{ color: 'var(--color-primary)', fontWeight: 700 }}>
+              Open the game →
+            </a>
+            <a href={`/${locale}/game-number`} style={{ color: 'var(--color-primary)', fontWeight: 700 }}>
+              Find a game by number →
+            </a>
+          </div>
+        </div>
+      ) : null}
+      {editState === 'error' ? (
+        <div role="alert" style={{
+          background: 'color-mix(in srgb, var(--color-danger) 15%, var(--color-surface))',
+          border: '1px solid var(--color-danger)', borderRadius: 'var(--radius)',
+          padding: '1rem', marginBottom: '1.25rem',
+        }}>
+          <p style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontWeight: 700, margin: 0 }}>
+            Could not load this game to edit. Try again, or make a new game below.
+          </p>
+        </div>
+      ) : null}
       {/* Prompt-to-game + chapter-scan, prominent at the top of /create.
           Both are lazy-loaded; approval only fills the wizard below. */}
       <PromptToGame onApprove={approveDraft} initialCountry={initialCountry} initialSubject={initialSubject} />
@@ -414,7 +607,7 @@ export default function ActivityCreator({ locale, initialType, initialCountry, i
               <MetaForm meta={meta} onChange={setMeta} />
             )}
             {step === 3 && typeSlug && (
-              <ItemEditor items={items} onChange={setItems} activityType={typeSlug} />
+              <ItemEditor items={items} onChange={setItems} activityType={typeSlug} canAddImages={canAddImages} defaultImageQuery={meta.title || meta.subject || ''} />
             )}
             {step === 4 && typeSlug && (
               <ActivityPreview typeSlug={typeSlug} meta={meta} items={items} />
@@ -422,7 +615,7 @@ export default function ActivityCreator({ locale, initialType, initialCountry, i
             {step === 5 && (
               <div>
                 <h2 style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', marginBottom: '0.25rem', fontSize: '1.25rem' }}>
-                  Save Activity
+                  {editId && editState === 'ready' ? 'Save changes' : 'Save Activity'}
                 </h2>
                 <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
                   Choose visibility and finalize. Saving needs a signed-in account —
@@ -487,6 +680,47 @@ export default function ActivityCreator({ locale, initialType, initialCountry, i
                   </div>
                 )}
 
+                {/* IMAGE APPROVAL (batch 1, 2026-11-07): the save filed
+                    or dropped a picture — say so plainly, with a way
+                    to play the game now. The game stays private until
+                    the owner approves the picture. */}
+                {imageNote && (
+                  <div style={{
+                    padding: '0.75rem', borderRadius: 'var(--radius)',
+                    background: 'color-mix(in srgb, var(--color-warning) 12%, var(--color-surface))',
+                    border: '2px solid var(--color-warning)',
+                    color: 'var(--color-text-primary)', fontSize: '0.875rem',
+                    fontFamily: 'var(--font-body)', marginBottom: '1rem',
+                  }}
+                    role="status"
+                  >
+                    <p style={{ margin: '0 0 0.5rem' }}>{imageNote.text}</p>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <a
+                        href={`/${locale}/activity/${imageNote.activityId}/play`}
+                        style={{
+                          padding: '0.5rem 1rem', borderRadius: 'var(--radius)',
+                          background: 'var(--gradient-btn)', color: '#fff',
+                          fontFamily: 'var(--font-display)', fontSize: '0.875rem', textDecoration: 'none',
+                        }}
+                      >
+                        ▶ Play the game
+                      </a>
+                      <button
+                        onClick={() => setImageNote(null)}
+                        style={{
+                          padding: '0.5rem 1rem', borderRadius: 'var(--radius)',
+                          border: '2px solid var(--color-border)', background: 'var(--color-surface)',
+                          color: 'var(--color-text-primary)', fontFamily: 'var(--font-body)',
+                          fontSize: '0.875rem', cursor: 'pointer',
+                        }}
+                      >
+                        Keep editing
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <motion.button
                   whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                   onClick={save}
@@ -500,7 +734,7 @@ export default function ActivityCreator({ locale, initialType, initialCountry, i
                     cursor: saving ? 'not-allowed' : 'pointer', boxShadow: 'var(--shadow)',
                   }}
                 >
-                  {saving ? '⏳ Saving…' : '💾 Save Activity'}
+                  {saving ? '⏳ Saving…' : editId && editState === 'ready' ? '💾 Save changes' : '💾 Save Activity'}
                 </motion.button>
               </div>
             )}

@@ -39,6 +39,8 @@ export interface ActivityItem {
   answer: string
   answers?: string[]
   imageUrl?: string
+  /** Credit line for the picture ("Title by Creator (CC BY 4.0)") — shown with the picture, never invented. */
+  imageCredit?: string
   hint?: string
 }
 
@@ -63,6 +65,8 @@ export interface Activity {
   approval_status?: 'pending' | 'approved' | 'rejected'
   approved_by?: string | null
   approved_at?: string | null
+  /** Game number (migration 011). Undefined on rows read before 011 ran. */
+  game_number?: number | null
   tags?: string[]
   play_count?: number
   like_count?: number

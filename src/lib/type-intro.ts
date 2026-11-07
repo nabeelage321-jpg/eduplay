@@ -1,0 +1,377 @@
+/**
+ * TYPE INTRO RULES (batch-1 shared build, final list item 4).
+ *
+ * Every game type gets a "How to play" screen BEFORE Start — Quiz is
+ * the benchmark — with that type's REAL numbers and rules. The lines
+ * below are the single source for the shared PlayIntro screen.
+ *
+ * HONESTY RULE for this file: a number (points, seconds, lives) is
+ * stated ONLY where the player code proves it. Types whose scoring
+ * or timer I did not verify get the generic scoring line ("correct
+ * answers earn points — the end screen shows your total") and no
+ * timer/lives line at all. Nothing here invents a rule, a timer, or
+ * a life count: a missing line means "not verified", never "zero".
+ *
+ * Verified numbers (player code, 2026-11-07):
+ *   quiz: 10 pts/correct, 30s/question (TIMER_DEFAULT).
+ *   match-up: 10 pts per correct match, no timer, wrong costs nothing.
+ *   anagram: 10 pts per word, no timer, no lives, wrong word = retry.
+ *   crossword: 10 pts per solved word, no timer.
+ *   wordsearch: 10 pts per found word, no timer.
+ *   spin-wheel: 3 spins; each landing asks its question; 10 pts per
+ *     correct answer (item 24 — the wheel picks the question, the
+ *     answer earns the points).
+ *   maze-run: 10 pts, 60s/round, 5 lives. speed-judge: 10 pts,
+ *     10s/round, 3 lives. spell-it: +5 per word, 60s/word, 3 lives
+ *     (lost only by time-up or Skip). picture-answer: 10 pts,
+ *     30s/round, 3 lives. memory-recall: 10 pts, 30s/round, 3 lives.
+ *   claim-line: 10 pts, 30s/question, 3 lives. opinion-cloud: NO
+ *     lives, NO timer, NO wrong answers. number-slider: exact +10,
+ *     near +5, far 0 and -1 life, 30s/round, 3 lives. aster-quiz:
+ *     5 lives. hangman: 10 pts per word, more points the fewer
+ *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
+ *     10 pts per card you know. random-wheel / open-box: 10 pts
+ *     per item when the round completes. All other choice types
+ *     use the shared SCORE_PER_CORRECT (+10).
+ */
+
+import { ACTIVITY_TYPE_META } from './activity-type-meta'
+
+export interface TypeIntroRules {
+  /** What the kid DOES on one round/screen. */
+  howTo: string
+  /** How points are given — verified numbers only, else generic. */
+  scoring: string
+  /** What the kid is trying to do overall. */
+  objective: string
+  /** How the kid controls the game. */
+  controls: string
+  /** Timer rule, only when verified; null = no timer line shown. */
+  timer: string | null
+  /** Lives rule, only when verified; null = no lives line shown. */
+  lives: string | null
+  /** How the game ends. */
+  finish: string
+}
+
+const GENERIC_SCORING =
+  'Correct answers earn points — the end screen shows your total.'
+
+function rules(r: Partial<TypeIntroRules> & Pick<TypeIntroRules, 'howTo' | 'objective' | 'controls'>): TypeIntroRules {
+  return {
+    scoring: GENERIC_SCORING,
+    timer: null,
+    lives: null,
+    finish: 'Finish every round — the end screen shows your score and your time.',
+    ...r,
+  }
+}
+
+const RULES: Record<string, TypeIntroRules> = {
+  'quiz': rules({
+    howTo: 'Each screen asks one question with four answers. Tap the answer you think is right.',
+    scoring: 'Each correct answer earns 10 points. Wrong answers and time-ups earn no points.',
+    objective: 'Answer every question — get as many right as you can.',
+    controls: 'Tap an answer on the screen. No keyboard needed.',
+    timer: '30 seconds per question. The time at the top shows how long you have played.',
+  }),
+  'match-up': rules({
+    howTo: 'Tap a question on the left, then tap its matching answer on the right.',
+    scoring: 'Each correct match earns 10 points.',
+    objective: 'Match every pair.',
+    controls: 'Tap a left card, then tap the right card that goes with it.',
+    finish: 'Match every pair — the end screen shows your score and your time.',
+  }),
+  'anagram': rules({
+    howTo: 'The letters of a word are mixed up. Tap the letter tiles in the right order to spell the word.',
+    scoring: 'Each word you spell earns 10 points. A wrong word costs no points — the letters shuffle and you try again.',
+    objective: 'Unscramble every word.',
+    controls: 'Tap letter tiles to place them. Tap a placed letter to take it back.',
+    finish: 'Spell every word — the end screen shows your score.',
+  }),
+  'crossword': rules({
+    howTo: 'Read the clue, then type the word into the grid — across or down. Letters that cross help you.',
+    scoring: 'Each word you finish earns 10 points.',
+    objective: 'Fill in every word in the grid.',
+    controls: 'Tap a square and type the letter. Tap a clue to jump to that word.',
+    finish: 'Solve every word — the end screen shows your score.',
+  }),
+  'wordsearch': rules({
+    howTo: 'Find the hidden words in the letter grid. Drag across the letters of a word to select it.',
+    scoring: 'Each word you find earns 10 points.',
+    objective: 'Find every hidden word.',
+    controls: 'Drag across letters (or tap the first and last letter). Words can go any way — across, down, or diagonal.',
+    finish: 'Find every word — the end screen shows your score.',
+  }),
+  'spin-wheel': rules({
+    howTo: 'Spin the wheel! It lands on a topic — then answer the question about that topic.',
+    scoring: 'Each correct answer earns 10 points. The wheel only picks the question — the answer earns the points.',
+    objective: 'Answer the question after each of your 3 spins.',
+    controls: 'Tap Spin, wait for the wheel to stop, then tap your answer.',
+    finish: 'Answer after all 3 spins — the end screen shows your score.',
+  }),
+  'balloon-pop': rules({
+    howTo: 'Balloons float up with answers on them. Pop the balloon that shows the correct answer.',
+    scoring: 'Each correct pop earns 10 points.',
+    objective: 'Pop the right balloon every round.',
+    controls: 'Tap the balloon with the correct answer.',
+  }),
+  'whack-a-mole': rules({
+    howTo: 'Moles pop up with answers on them. Hit the mole that shows the correct answer.',
+    scoring: 'Each correct hit earns 10 points.',
+    objective: 'Hit the right mole every round.',
+    controls: 'Tap the mole with the correct answer.',
+  }),
+  'true-false': rules({
+    howTo: 'Read each statement and judge it: true or false?',
+    scoring: 'Each correct judgement earns 10 points.',
+    objective: 'Judge every statement correctly.',
+    controls: 'Tap True or False.',
+  }),
+  'categorize': rules({
+    howTo: 'Sort each item into the right group.',
+    scoring: 'Each correctly sorted item earns 10 points. A hint costs 5 marks (2 hints per game).',
+    objective: 'Sort every item into its group.',
+    controls: 'Tap an item, then tap its group — or drag it in.',
+  }),
+  'order': rules({
+    howTo: 'Put the items in order — the game tells you the rule on the screen (A to Z, oldest to newest, or smallest to largest). Look for the clue on each item.',
+    scoring: 'Each item in the right place earns 10 points. A hint costs 5 marks (2 hints per game).',
+    objective: 'Put every item in its right place.',
+    controls: 'Drag the items into order, then tap Check Order.',
+  }),
+  'fill-blank': rules({
+    howTo: 'Read the sentence with a missing word, then type it or tap the word that completes it. A wrong answer moves on to the next sentence with no points — so think before you answer!',
+    scoring: 'Each correct blank earns 10 points.',
+    objective: 'Complete every sentence.',
+    controls: 'Type the missing word and tap Submit — or tap a choice below.',
+  }),
+  'labelled-diagram': rules({
+    howTo: 'Look at the picture, then label each part with the right name.',
+    scoring: 'Each correct label earns 10 points.',
+    objective: 'Label every part of the picture.',
+    controls: 'Tap a label spot, then pick the right name.',
+  }),
+  'flashcards': rules({
+    howTo: 'Flip each card to see the answer, then say if you knew it.',
+    scoring: 'Each card you know earns 10 points.',
+    objective: 'Learn every card — then test yourself.',
+    controls: 'Tap a card to flip it.',
+  }),
+  'missing-word': rules({
+    howTo: 'A word is missing from the sentence. Pick the word that belongs there.',
+    scoring: 'Each correct word earns 10 points.',
+    objective: 'Find the missing word every round.',
+    controls: 'Tap the word that fits.',
+  }),
+  'unjumble': rules({
+    howTo: 'The words of a sentence are jumbled. Put them back in the right order.',
+    scoring: 'Each correctly ordered sentence earns 10 points.',
+    objective: 'Unjumble every sentence.',
+    controls: 'Tap or drag the words into order.',
+  }),
+  'gameshow-quiz': rules({
+    howTo: 'Answer quiz questions on the big stage — with lifelines to help you.',
+    scoring: 'Each correct answer earns 10 points.',
+    objective: 'Answer every question and win the show.',
+    controls: 'Tap your answer. Use a lifeline when you are stuck.',
+  }),
+  'hangman': rules({
+    howTo: 'Read the 3 clues first, then guess the hidden word, one letter at a time. Wrong guesses draw the hangman.',
+    scoring: 'Each word earns up to 60 points — 10 for every wrong guess you did NOT use.',
+    objective: 'Guess every word before the drawing is finished.',
+    controls: 'Tap a letter to guess it.',
+    lives: 'Wrong guesses add to the drawing — too many and the word is lost.',
+  }),
+  'random-wheel': rules({
+    howTo: 'Spin the wheel — it lands on a question. Read it and pick the right answer.',
+    scoring: 'Each correct answer earns 10 points. Spinning alone earns nothing.',
+    objective: 'Answer every question the wheel picks for you.',
+    controls: 'Tap Spin, then tap your answer.',
+  }),
+  'open-box': rules({
+    howTo: 'One question at a time — read it, then tap the box hiding the correct answer.',
+    scoring: 'Each correct box earns 10 points. A wrong tap moves on with no points.',
+    objective: 'Answer every question by opening the right box.',
+    controls: 'Tap a box to open it.',
+  }),
+  'memory-match': rules({
+    howTo: 'Flip two tiles. If they match, they stay open — if not, they flip back.',
+    scoring: 'Each matched pair earns 10 points.',
+    objective: 'Match every pair.',
+    controls: 'Tap tiles to flip them.',
+  }),
+  'typing-race': rules({
+    howTo: 'Type the word you see as fast as you can — before the race ends.',
+    scoring: 'Correct words earn points — faster typing earns bonus points.',
+    objective: 'Type every word correctly.',
+    controls: 'Type on your keyboard.',
+  }),
+  'bingo': rules({
+    howTo: 'Mark the answers on your card as they are called.',
+    scoring: 'Correct marks earn points — completing a line scores big.',
+    objective: 'Complete a line on your card.',
+    controls: 'Tap the right square to mark it.',
+  }),
+  'jump-path': rules({
+    howTo: 'Answer questions to jump along the path — a right answer jumps you forward.',
+    scoring: 'Correct answers earn points and move you along the path.',
+    objective: 'Reach the end of the path.',
+    controls: 'Tap your answer to jump.',
+    timer: 'Answer before the time runs out to keep jumping.',
+  }),
+  'riddle': rules({
+    howTo: 'Read the riddle and type the answer it is asking for.',
+    scoring: 'Each riddle you solve earns points.',
+    objective: 'Solve every riddle.',
+    controls: 'Type your answer.',
+  }),
+  'aster-quiz': rules({
+    howTo: 'Answer questions to fly your ship through the asteroids.',
+    scoring: 'Correct answers earn points and keep you flying.',
+    objective: 'Answer your way through the asteroids.',
+    controls: 'Tap your answer.',
+    lives: 'You have 5 lives — a wrong answer costs one.',
+  }),
+  'dictation': rules({
+    howTo: 'Listen carefully, then type exactly what you hear.',
+    scoring: 'Words you type correctly earn points.',
+    objective: 'Write down everything you hear.',
+    controls: 'Tap to listen again, then type.',
+  }),
+  'dialogue': rules({
+    howTo: 'Follow the conversation, line by line, and answer when it is your turn.',
+    scoring: 'Finish the conversation to see your score.',
+    objective: 'Finish the whole conversation.',
+    controls: 'Tap to continue, then answer your lines.',
+    finish: 'Read every line to finish — the end screen shows your score.',
+  }),
+  'map-quiz': rules({
+    howTo: 'Read the question, then tap the right place on the map.',
+    scoring: 'Each place you find earns points.',
+    objective: 'Find every place on the map.',
+    controls: 'Tap the map where you think the answer is.',
+  }),
+  'jigsaw-puzzle': rules({
+    howTo: 'Put the jigsaw pieces together to rebuild the picture, then answer about it.',
+    scoring: 'Pieces you place earn points.',
+    objective: 'Rebuild the whole picture.',
+    controls: 'Drag pieces into place.',
+  }),
+  'video-quiz': rules({
+    howTo: 'Watch the video — questions pop up as it plays. Answer before it moves on.',
+    scoring: 'Each correct answer earns points.',
+    objective: 'Answer every question the video asks.',
+    controls: 'Tap your answer when a question appears.',
+  }),
+  'letter-wheel': rules({
+    howTo: 'Spin the letter wheel — answer the definition for the letter it lands on.',
+    scoring: 'Each correct letter answer earns points.',
+    objective: 'Answer a definition for every letter.',
+    controls: 'Tap to spin, then type your answer.',
+  }),
+  'maze-run': rules({
+    howTo: 'Run through the maze — answer each question to move to the correct tile.',
+    scoring: 'Each correct answer earns 10 points.',
+    objective: 'Reach the end of the maze.',
+    controls: 'Tap the tile with the correct answer.',
+    timer: '60 seconds per round.',
+    lives: 'You have 5 lives.',
+  }),
+  'speed-judge': rules({
+    howTo: 'A claim appears — judge it fast: true or false?',
+    scoring: 'Each correct judgement earns 10 points.',
+    objective: 'Judge every claim before time runs out.',
+    controls: 'Tap ✅ or ❌.',
+    timer: '10 seconds per round.',
+    lives: 'You have 3 lives.',
+  }),
+  'spell-it': rules({
+    howTo: 'Spell the word, letter by letter.',
+    scoring: 'Each word you spell earns a 5-point bonus.',
+    objective: 'Spell every word.',
+    controls: 'Tap the letters in order.',
+    timer: '60 seconds per word.',
+    lives: 'You have 3 lives — lost only when time runs out or you skip a word.',
+  }),
+  'picture-answer': rules({
+    howTo: 'Look at the picture, then answer the question about it.',
+    scoring: 'Each correct answer earns 10 points.',
+    objective: 'Answer every picture question.',
+    controls: 'Tap your answer.',
+    timer: '30 seconds per round.',
+    lives: 'You have 3 lives.',
+  }),
+  'memory-recall': rules({
+    howTo: 'First STUDY all the pairs — then RECALL them from memory, with only the question to help you.',
+    scoring: 'Each correct recall earns 10 points.',
+    objective: 'Remember every pair.',
+    controls: 'Study, then tap your answer from memory.',
+    timer: '30 seconds per round.',
+    lives: 'You have 3 lives.',
+  }),
+  'claim-line': rules({
+    howTo: 'Answer questions to claim squares on the board — get 3 in a line to win. The computer claims a square after every one of your answers.',
+    scoring: 'Each square you claim earns 10 points.',
+    objective: 'Claim a line of 3 squares before the computer does.',
+    controls: 'Tap your answer to claim a square.',
+    timer: '30 seconds per question.',
+    lives: 'You have 3 lives.',
+  }),
+  'opinion-cloud': rules({
+    howTo: 'There is no right or wrong here — share what YOU think about each card.',
+    scoring: 'Your score is the opinions you share.',
+    objective: 'Share your opinion on every card.',
+    controls: 'Tap 👍, 👎, or 🤔.',
+    finish: 'Share your opinion on every card — the end screen shows your cloud.',
+  }),
+  'number-slider': rules({
+    howTo: 'Slide to the number on the line — land exactly on it for full points.',
+    scoring: 'Exactly right earns 10 points, close earns 5, far earns 0.',
+    objective: 'Hit the number every round.',
+    controls: 'Drag the slider, then lock it in.',
+    timer: '30 seconds per round.',
+    lives: 'You have 3 lives — a far miss costs one.',
+  }),
+}
+
+export interface TypeIntro {
+  slug: string
+  name: string
+  icon: string
+  desc: string
+  rules: TypeIntroRules
+}
+
+/** The intro for a type: name + icon + desc from the shared meta,
+ *  rules from the table above. An unknown slug falls back to the
+ *  generic lines — never a crash, never an invented rule. */
+export function typeIntro(slug: string, itemCount: number): TypeIntro {
+  const meta = ACTIVITY_TYPE_META.find((t) => t.slug === slug) ?? {
+    slug,
+    icon: '🎮',
+    name: 'Game',
+    desc: 'Play and learn',
+  }
+  const found = RULES[slug]
+  const base = found ?? rules({
+    howTo: meta.desc,
+    objective: 'Play every round and do your best.',
+    controls: 'Follow what the screen shows — tap, drag, or type.',
+  })
+  const count = Math.max(1, itemCount)
+  // Quiz is the only type whose scoring line names the total: the
+  // game is scored out of 10 points per question, so the total is
+  // 10 x the real question count — never a guessed number.
+  const scoring =
+    slug === 'quiz'
+      ? `Each correct answer earns 10 points. The game is scored out of ${count * 10} (${count} ${count === 1 ? 'question' : 'questions'}). Wrong answers and time-ups earn no points.`
+      : base.scoring
+  return {
+    slug,
+    name: meta.name,
+    icon: meta.icon,
+    desc: meta.desc,
+    rules: { ...base, scoring },
+  }
+}

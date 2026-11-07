@@ -103,6 +103,10 @@ export function PlayGamesClient({ locale }: { locale: string }) {
   const [selectedSubject, setSelectedSubject] = useState(() =>
     browseNormalizeSubjectParam(searchParams.get('subject')),
   )
+  // GAME NUMBER (batch 1, final list 11–14): the search box in the
+  // selection panel — a kid types the number a teacher or parent
+  // gave them and lands on the game-number page for that game.
+  const [gameNumber, setGameNumber] = useState('')
 
   const pickersActive =
     selectedGrade !== BROWSE_GRADE_ALL || selectedSubject !== BROWSE_SUBJECT_ALL
@@ -337,6 +341,47 @@ export function PlayGamesClient({ locale }: { locale: string }) {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* GAME NUMBER search (batch 1, final list 11–14): a number
+              opens the game directly — no browsing needed. */}
+          <div>
+            <label htmlFor="play-games-number" className={labelClass}>
+              🔢 Game number
+            </label>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                const digits = gameNumber.replace(/\D/g, '').slice(0, 6)
+                if (digits) router.push(`/${locale}/game-number?number=${digits}`)
+              }}
+              style={{ display: 'flex', gap: '0.5rem' }}
+            >
+              <input
+                id="play-games-number"
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="e.g. 100123"
+                value={gameNumber}
+                onChange={(e) => setGameNumber(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className={pickerClass}
+                style={{ flex: 1, minWidth: 0 }}
+              />
+              <button
+                type="submit"
+                aria-label="Find game by number"
+                style={{
+                  minHeight: '48px', padding: '0.5rem 1rem', border: 'none',
+                  borderRadius: '0.75rem', background: 'var(--gradient-btn)',
+                  color: '#fff', fontWeight: 700, cursor: 'pointer', flexShrink: 0,
+                }}
+              >
+                Find
+              </button>
+            </form>
+            <p className="text-sm text-gray-500 mt-2">
+              Have a game number from your teacher? Type it to open that game.
+            </p>
           </div>
         </div>
 

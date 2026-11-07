@@ -8,6 +8,7 @@ import { hasCreatorBadgeDisplay } from '@/lib/social-approval'
 import RoleSetup from '@/components/dashboard/RoleSetup'
 import ParentInviteCard from '@/components/dashboard/ParentInviteCard'
 import ParentKidGames from '@/components/dashboard/ParentKidGames'
+import SavedGamesSection from '@/components/dashboard/SavedGamesSection'
 import type { SupportedLocale } from '@/types'
 
 interface Props {
@@ -142,6 +143,14 @@ export default async function DashboardPage({ params }: Props) {
               Social editor
             </Link>
           ) : null}
+          {/* IMAGE REVIEW QUEUE (2026-11-07, batch 1): the owner
+              personally approves or rejects every picture — the link
+              shows only for role 'admin'. */}
+          {sessionUser.role === 'admin' ? (
+            <Link href={`/${locale}/admin/image-reviews`} className="btn-ghost" style={{ padding: '0.6rem 1.2rem' }}>
+              🖼️ Review images
+            </Link>
+          ) : null}
         </div>
 
         {/* KIDS SOCIAL APPROVAL v1 (2026-11-04): kid creators invite a
@@ -149,6 +158,13 @@ export default async function DashboardPage({ params }: Props) {
             render their own empty/setup states. */}
         {sessionUser.role === 'student' ? <ParentInviteCard locale={locale} /> : null}
         {sessionUser.role === 'parent' ? <ParentKidGames locale={locale} /> : null}
+
+        <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
+          My saved games
+        </h2>
+        <div style={{ marginBottom: '2rem' }}>
+          <SavedGamesSection locale={locale} />
+        </div>
 
         <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
           My activities{myCount !== null ? ` (${myCount})` : ''}

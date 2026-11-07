@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { resolveSessionUser } from '@/lib/auth/session-user'
 import { needsApproval } from '@/lib/approval'
+import { planImageGate, submitPendingImages, type ImageGatePlan } from '@/lib/image-approval'
 import { canServeGeneralActivity } from '@/lib/activity-audience'
 
 function sanitize(str: unknown): string {
@@ -88,11 +89,13 @@ export async function PUT(
     // editable by anyone — returning 403 for it protects the programme.
     // APPROVAL BATCH 2026-10-30: also read approval_status, falling back
     // to 'approved' if migration 008 has not been run yet.
-    let existing: { teacher_id: string | null; approval_status?: string | null } | null = null
+    // IMAGE APPROVAL 2026-11-07: content + type + is_public are read
+    // too, so a picture change can be compared with the stored one.
+    let existing: { teacher_id: string | null; approval_status?: string | null; content?: unknown; type?: string | null; is_public?: boolean | null } | null = null
     {
       const withStatus = await supabase
         .from('activities')
-        .select('teacher_id, approval_status')
+        .select('teacher_id, approval_status, content, type, is_public')
         .eq('id', params.id)
         .single()
       if (!withStatus.error && withStatus.data) {
@@ -100,7 +103,7 @@ export async function PUT(
       } else {
         const legacy = await supabase
           .from('activities')
-          .select('teacher_id')
+          .select('teacher_id, content, type, is_public')
           .eq('id', params.id)
           .single()
         existing = legacy.data ? { ...legacy.data, approval_status: 'approved' } : null
@@ -141,13 +144,36 @@ export async function PUT(
     if (body.language !== undefined || body.locale !== undefined) updates.language = sanitize(body.language ?? body.locale)
     if (body.curriculum !== undefined || body.curriculum_id !== undefined) updates.curriculum = sanitize(body.curriculum ?? body.curriculum_id)
     if (body.is_public !== undefined) updates.is_public = body.is_public === true
+    // IMAGE APPROVAL (batch 1, 2026-11-07): a changed picture is held
+    // back from the content and filed as pending — never published
+    // directly. A game with a pending picture stays private.
+    let imagePlanResult: ImageGatePlan | null = null
     if (Array.isArray(body.items)) {
-      updates.content = { questions: body.items.map((item: Record<string, unknown>) => ({
+      const sanitizedItems = body.items.map((item: Record<string, unknown>) => ({
         prompt: sanitize(item.prompt),
         answer: sanitize(item.answer),
         hint: sanitize(item.hint),
         imageUrl: typeof item.imageUrl === 'string' ? item.imageUrl.slice(0, 500) : '',
-      })) }
+        imageCredit: typeof item.imageCredit === 'string' ? item.imageCredit.slice(0, 300) : '',
+      }))
+      const storedQuestions = (
+        (existing.content as { questions?: Array<Record<string, unknown>> } | null)?.questions ?? []
+      ).map((q) => ({
+        prompt: typeof q.prompt === 'string' ? q.prompt : '',
+        answer: typeof q.answer === 'string' ? q.answer : '',
+        hint: typeof q.hint === 'string' ? q.hint : '',
+        imageUrl: typeof q.imageUrl === 'string' ? q.imageUrl : '',
+        imageCredit: typeof q.imageCredit === 'string' ? q.imageCredit : '',
+      }))
+      imagePlanResult = await planImageGate(supabase, {
+        role: sessionUser.role,
+        type: sanitize(body.type ?? body.type_id ?? existing.type ?? ''),
+        items: sanitizedItems,
+        existingItems: storedQuestions,
+        activityId: params.id,
+      })
+      updates.content = { questions: imagePlanResult.items }
+      if (imagePlanResult.forcePrivate) updates.is_public = false
     } else if (body.content !== undefined && typeof body.content === 'object' && body.content !== null) {
       updates.content = body.content
     }
@@ -209,13 +235,36 @@ export async function PUT(
         return NextResponse.json({
           activity,
           migration_warning: 'Approval is not set up yet (migration 007 has not been run).',
+          ...(imagePlanResult?.imageApproval ? { image_approval: imagePlanResult.imageApproval } : {}),
         })
       }
     }
 
     if (error) throw error
 
-    return NextResponse.json({ activity })
+    // IMAGE APPROVAL (batch 1, 2026-11-07): file the held-back
+    // pictures as pending now that the update landed.
+    let imageApproval: ImageGatePlan['imageApproval'] | null = imagePlanResult?.imageApproval ?? null
+    if (imagePlanResult && imagePlanResult.changedSlots.length > 0 && activity) {
+      const base: ImageGatePlan['imageApproval'] = imageApproval ?? { setupReady: true, allowed: true, submitted: 0, pending: false, dropped: 0 }
+      try {
+        const filed = await submitPendingImages(supabase, {
+          activityId: params.id,
+          submittedBy: sessionUser.userId,
+          slots: imagePlanResult.changedSlots,
+          wasPublic: body.is_public !== undefined ? body.is_public === true : existing.is_public === true,
+        })
+        imageApproval = { ...base, submitted: filed.submitted, setupReady: filed.setupReady }
+        if (!filed.setupReady) {
+          imageApproval = { ...imageApproval, dropped: imagePlanResult.changedSlots.length }
+        }
+      } catch (err) {
+        console.error('[PUT /api/activities/[id]] image approval filing failed', err)
+        imageApproval = { ...base, submitted: 0, dropped: imagePlanResult.changedSlots.length, setupReady: false }
+      }
+    }
+
+    return NextResponse.json({ activity, ...(imageApproval ? { image_approval: imageApproval } : {}) })
   } catch (err) {
     console.error('[PUT /api/activities/[id]]', err)
     return NextResponse.json({ error: 'Failed to update activity' }, { status: 500 })

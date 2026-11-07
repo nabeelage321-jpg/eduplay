@@ -4,6 +4,13 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, isRTL } from './shared'
+import { crosswordClue } from '@/lib/crossword-clue'
+import KidActionsBar from '@/components/game/KidActionsBar'
+import ScorePill from '@/components/game/ScorePill'
+
+// BATCH 1 (final list item 19): funky + bold letters — Fredoka One,
+// already loaded, no new dependency.
+const FUNKY_FONT = "'Fredoka One', 'Nunito', system-ui, sans-serif"
 
 interface CWCell {
   letter: string
@@ -23,7 +30,17 @@ interface CWWord {
   number: number
 }
 
-// Simple crossword builder: place words in a grid
+// CROSSWORD BUILDER — BATCH 1 (final list item 22): two fixes.
+//   1. REAL CLUES: a clue must never BE the answer. Programme
+//      prompts like "History word: History" name the answer, so the
+//      clue becomes "A History word with 7 letters" (length from
+//      the answer itself — nothing invented). A teacher's real
+//      question/definition is kept verbatim.
+//   2. INTERSECTING GRID: every word after the first must CROSS an
+//      existing word (across AND down are both tried, at every
+//      shared letter), so the grid is a real crossword instead of
+//      stacked columns. Words that cannot cross anything are left
+//      out — never placed floating, never invented.
 function buildCrossword(items: { prompt: string; answer: string }[]): { grid: (CWCell | null)[][]; words: CWWord[]; size: number } {
   const SIZE = 13
   const grid: (CWCell | null)[][] = Array.from({ length: SIZE }, () => new Array(SIZE).fill(null))
@@ -38,49 +55,88 @@ function buildCrossword(items: { prompt: string; answer: string }[]): { grid: (C
   first.split('').forEach((letter, i) => {
     grid[startRow][startCol + i] = { letter, row: startRow, col: startCol + i, number: i === 0 ? wordNum : undefined, across: wordNum }
   })
-  words.push({ word: first, clue: items[0]?.prompt || '', row: startRow, col: startCol, direction: 'across', number: wordNum })
+  words.push({ word: first, clue: crosswordClue(items[0]?.prompt || '', items[0]?.answer || ''), row: startRow, col: startCol, direction: 'across', number: wordNum })
   wordNum++
 
-  // Place remaining words by finding intersections
-  for (let wi = 1; wi < Math.min(items.length, 6); wi++) {
+  function canPlaceDown(ans: string, r0: number, c: number): boolean {
+    if (r0 < 0 || r0 + ans.length > SIZE) return false
+    for (let i = 0; i < ans.length; i++) {
+      const existing = grid[r0 + i][c]
+      if (existing && existing.letter !== ans[i]) return false
+      if (!existing) {
+        if (grid[r0 + i][c - 1] || grid[r0 + i][c + 1]) return false
+      }
+    }
+    if (grid[r0 - 1]?.[c] || grid[r0 + ans.length]?.[c]) return false
+    return true
+  }
+
+  function canPlaceAcross(ans: string, r: number, c0: number): boolean {
+    if (c0 < 0 || c0 + ans.length > SIZE) return false
+    for (let i = 0; i < ans.length; i++) {
+      const existing = grid[r][c0 + i]
+      if (existing && existing.letter !== ans[i]) return false
+      if (!existing) {
+        if (grid[r - 1]?.[c0 + i] || grid[r + 1]?.[c0 + i]) return false
+      }
+    }
+    if (grid[r]?.[c0 - 1] || grid[r]?.[c0 + ans.length]) return false
+    return true
+  }
+
+  function placeDown(ans: string, r0: number, c: number) {
+    ans.split('').forEach((letter, i) => {
+      if (!grid[r0 + i][c]) {
+        grid[r0 + i][c] = { letter, row: r0 + i, col: c, down: wordNum }
+      } else {
+        grid[r0 + i][c]!.down = wordNum
+      }
+    })
+    if (!grid[r0][c]!.number) grid[r0][c]!.number = wordNum
+  }
+
+  function placeAcross(ans: string, r: number, c0: number) {
+    ans.split('').forEach((letter, i) => {
+      if (!grid[r][c0 + i]) {
+        grid[r][c0 + i] = { letter, row: r, col: c0 + i, across: wordNum }
+      } else {
+        grid[r][c0 + i]!.across = wordNum
+      }
+    })
+    if (!grid[r][c0]!.number) grid[r][c0]!.number = wordNum
+  }
+
+  // Place remaining words by finding intersections — across AND
+  // down, at every shared letter, so each new word CROSSES the grid.
+  for (let wi = 1; wi < Math.min(items.length, 10); wi++) {
     const ans = items[wi]?.answer.toUpperCase().replace(/\s/g, '') || ''
     if (!ans) continue
 
     let placed = false
-    // Try to intersect with existing letters
     for (let r = 1; r < SIZE - 1 && !placed; r++) {
       for (let c = 1; c < SIZE - 1 && !placed; c++) {
         const cell = grid[r][c]
         if (!cell) continue
-        const idx = ans.indexOf(cell.letter)
-        if (idx === -1) continue
-
-        // Try placing down
-        const dr = r - idx
-        const dc = c
-        if (dr >= 0 && dr + ans.length < SIZE) {
-          let canPlace = true
-          for (let i = 0; i < ans.length; i++) {
-            const existing = grid[dr + i][dc]
-            if (existing && existing.letter !== ans[i]) { canPlace = false; break }
-            // Check adjacent (left/right must be empty unless same word)
-            if (!existing) {
-              if (grid[dr + i][dc - 1] || grid[dr + i][dc + 1]) { canPlace = false; break }
-            }
+        // Every position where this crossing letter occurs in the
+        // word — not just the first — is a candidate crossing.
+        const indices: number[] = []
+        for (let k = 0; k < ans.length; k++) if (ans[k] === cell.letter) indices.push(k)
+        for (const idx of indices) {
+          if (placed) break
+          // Try placing down through this crossing letter.
+          const dr = r - idx
+          if (canPlaceDown(ans, dr, c)) {
+            placeDown(ans, dr, c)
+            words.push({ word: ans, clue: crosswordClue(items[wi].prompt, items[wi].answer), row: dr, col: c, direction: 'down', number: wordNum })
+            wordNum++
+            placed = true
+            break
           }
-          // Check top/bottom clear
-          if (canPlace && (grid[dr - 1]?.[dc] || grid[dr + ans.length]?.[dc])) canPlace = false
-
-          if (canPlace) {
-            ans.split('').forEach((letter, i) => {
-              if (!grid[dr + i][dc]) {
-                grid[dr + i][dc] = { letter, row: dr + i, col: dc, down: wordNum }
-              } else {
-                grid[dr + i][dc]!.down = wordNum
-              }
-            })
-            if (!grid[dr][dc]!.number) grid[dr][dc]!.number = wordNum
-            words.push({ word: ans, clue: items[wi].prompt, row: dr, col: dc, direction: 'down', number: wordNum })
+          // Try placing across through this crossing letter.
+          const dc = c - idx
+          if (canPlaceAcross(ans, r, dc)) {
+            placeAcross(ans, r, dc)
+            words.push({ word: ans, clue: crosswordClue(items[wi].prompt, items[wi].answer), row: r, col: dc, direction: 'across', number: wordNum })
             wordNum++
             placed = true
           }
@@ -98,6 +154,10 @@ export default function CrosswordActivity({ items, locale, onComplete }: Activit
   const [solved, setSolved] = useState<Set<number>>(new Set())
   const [score, setScore] = useState(0)
   const [activeWord, setActiveWord] = useState<number | null>(words[0]?.number ?? null)
+  // KID ACTIONS (batch 1, item 17): HINT reveals ONE letter of the
+  // active word, once per word. Skip and see-the-answer do not map
+  // to a grid — they are hidden, never faked.
+  const [hintWords, setHintWords] = useState<Set<number>>(new Set())
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const rtl = isRTL(locale)
 
@@ -127,17 +187,37 @@ export default function CrosswordActivity({ items, locale, onComplete }: Activit
     setSolved(newSolved)
     setScore(newScore)
     if (newSolved.size === words.length) {
-      onComplete(newScore)
+      onComplete(newScore, { correctCount: newSolved.size, totalCount: words.length })
     }
   }
 
   const activeWordData = words.find((w) => w.number === activeWord)
 
+  function useHint() {
+    if (!activeWordData || solved.has(activeWordData.number) || hintWords.has(activeWordData.number)) return
+    for (let i = 0; i < activeWordData.word.length; i++) {
+      const r = activeWordData.direction === 'down' ? activeWordData.row + i : activeWordData.row
+      const c = activeWordData.direction === 'across' ? activeWordData.col + i : activeWordData.col
+      if (!userInput[cellKey(r, c)]) {
+        const next = { ...userInput, [cellKey(r, c)]: activeWordData.word[i] }
+        setUserInput(next)
+        setHintWords((prev) => new Set(prev).add(activeWordData.number))
+        checkWords(next)
+        return
+      }
+    }
+  }
+
   return (
-    <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
+    <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '0.75rem 0.5rem', maxWidth: '600px', margin: '0 auto' }}>
       <p style={{ color: 'var(--color-text-muted)', marginBottom: '0.5rem', fontSize: '0.85rem', textAlign: 'center' }}>
-        Solved: {solved.size} / {words.length} · Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong>
+        Solved: {solved.size} / {words.length} · <ScorePill score={score} />
       </p>
+      {/* KID ACTIONS (batch 1, item 17): Hint only. */}
+      <KidActionsBar
+        onHint={activeWordData && !solved.has(activeWordData.number) ? useHint : undefined}
+        hintUsed={activeWordData ? hintWords.has(activeWordData.number) : false}
+      />
 
       {/* Active clue */}
       {activeWordData && (
@@ -147,8 +227,8 @@ export default function CrosswordActivity({ items, locale, onComplete }: Activit
           borderRadius: 'var(--radius)',
           padding: '0.5rem 0.75rem',
           marginBottom: '0.75rem',
-          fontSize: '0.9rem',
-          fontFamily: 'var(--font-display)',
+          fontSize: '0.95rem',
+          fontFamily: FUNKY_FONT,
         }}>
           {activeWordData.number}{activeWordData.direction === 'across' ? 'A' : 'D'}: {activeWordData.clue}
         </div>
@@ -158,7 +238,7 @@ export default function CrosswordActivity({ items, locale, onComplete }: Activit
       <div style={{ overflowX: 'auto', marginBottom: '1rem' }}>
         <div style={{
           display: 'inline-grid',
-          gridTemplateColumns: `repeat(${13}, 1.8rem)`,
+          gridTemplateColumns: `repeat(${13}, 1.6rem)`,
           gap: '1px',
           background: 'var(--color-border)',
           border: '1px solid var(--color-border)',
@@ -169,12 +249,12 @@ export default function CrosswordActivity({ items, locale, onComplete }: Activit
             Array.from({ length: 13 }, (_, c) => {
               const cell = grid[r][c]
               if (!cell) return (
-                <div key={cellKey(r, c)} style={{ width: '1.8rem', height: '1.8rem', background: 'var(--color-text-primary)' }} />
+                <div key={cellKey(r, c)} style={{ width: '1.6rem', height: '1.6rem', background: 'var(--color-text-primary)' }} />
               )
               const val = userInput[cellKey(r, c)] || ''
               const isSolved = (cell.across && solved.has(cell.across)) || (cell.down && solved.has(cell.down))
               return (
-                <div key={cellKey(r, c)} style={{ position: 'relative', width: '1.8rem', height: '1.8rem', background: 'var(--color-surface)' }}>
+                <div key={cellKey(r, c)} style={{ position: 'relative', width: '1.6rem', height: '1.6rem', background: 'var(--color-surface)' }}>
                   {cell.number && (
                     <span style={{ position: 'absolute', top: '1px', insetInlineStart: '2px', fontSize: '0.45rem', color: 'var(--color-text-muted)', lineHeight: 1 }}>
                       {cell.number}

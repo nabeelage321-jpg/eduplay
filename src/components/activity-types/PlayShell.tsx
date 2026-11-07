@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { motion } from 'framer-motion'
 import {
   INTERACTIVE_SOUND_EVENT,
   playEduSound,
@@ -8,6 +9,11 @@ import {
   startGameMusic,
   stopGameMusic,
 } from '@/lib/game-sound'
+import ScorePill from '@/components/game/ScorePill'
+
+// BATCH 1 (final list item 19): funky + bold letters on the play
+// screen — Fredoka One, already loaded, no new dependency.
+const FUNKY_FONT = "'Fredoka One', 'Nunito', system-ui, sans-serif"
 
 /**
  * PLAY SHELL (2026-11-03, first launch work after the one-click host).
@@ -72,6 +78,11 @@ interface PlayShellProps {
   // The shell's elapsed starts at 0 when play begins (after the
   // countdown) — countdown seconds are deliberately NOT counted.
   onElapsed?: (seconds: number) => void
+  // Optional: the host already showed an instruction/start screen
+  // (the play page's PlayIntro) — skip this shell's own Start
+  // screen and go straight to the countdown, so the kid never taps
+  // START twice in a row. Absent = show the Start screen.
+  autoStart?: boolean
   children: ReactNode
 }
 
@@ -80,8 +91,12 @@ type Phase = 'start' | 'countdown' | 'playing' | 'paused'
 const COUNTDOWN_SECONDS = 3
 const COUNTDOWN_STEP_MS = 1000
 
-export default function PlayShell({ title, score, finished, onElapsed, children }: PlayShellProps) {
-  const [phase, setPhase] = useState<Phase>('start')
+export default function PlayShell({ title, score, finished, onElapsed, autoStart, children }: PlayShellProps) {
+  // DOUBLE-START FIX (batch 1, owner bar 2026-11-07 13:37 PKT): when
+  // the host already showed the instruction scene, the shell starts
+  // at the countdown — its own Start screen would make the kid tap
+  // START twice in a row, which looks unfinished.
+  const [phase, setPhase] = useState<Phase>(autoStart ? 'countdown' : 'start')
   const [count, setCount] = useState(COUNTDOWN_SECONDS)
   const [elapsed, setElapsed] = useState(0)
   // GAME FEEL: the interactive sound setting (default ON) drives the
@@ -152,7 +167,7 @@ export default function PlayShell({ title, score, finished, onElapsed, children 
   if (phase === 'start') {
     return (
       <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--color-text-primary)' }}>
-        <h2 style={{ fontSize: '1.5rem', fontFamily: 'var(--font-display)', marginBottom: '1.5rem' }}>
+        <h2 style={{ fontSize: '1.5rem', fontFamily: FUNKY_FONT, marginBottom: '1.5rem' }}>
           {title}
         </h2>
         <button
@@ -160,7 +175,7 @@ export default function PlayShell({ title, score, finished, onElapsed, children 
           style={{
             background: 'var(--color-primary)', color: '#fff', border: 'none',
             borderRadius: 'var(--radius)', padding: '0.875rem 2.5rem',
-            fontSize: '1.125rem', fontFamily: 'var(--font-display)', cursor: 'pointer',
+            fontSize: '1.125rem', fontFamily: FUNKY_FONT, cursor: 'pointer',
           }}
         >
           Start
@@ -189,7 +204,19 @@ export default function PlayShell({ title, score, finished, onElapsed, children 
           padding: '0.5rem 1rem', color: 'var(--color-text-muted)', fontSize: '0.9rem',
         }}>
           <span aria-label={`Elapsed time ${formatElapsed(elapsed)}`}>⏱ {formatElapsed(elapsed)}</span>
-          <span>Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong></span>
+          {/* BATCH 1 (item 8, lively screen): the score POPS every
+              time it changes, so a correct answer feels alive.
+              BOLD + COLOURFUL (owner 12:55 PKT) — a gradient pill,
+              not small plain text. */}
+          <motion.span
+            key={score}
+            initial={{ scale: 1.5 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.3 }}
+            style={{ fontFamily: FUNKY_FONT }}
+          >
+            <ScorePill score={score} />
+          </motion.span>
           {!finished && phase === 'playing' && (
             <button
               onClick={() => { playEduSound('click', soundOn); setPhase('paused') }}

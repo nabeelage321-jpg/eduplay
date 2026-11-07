@@ -477,7 +477,7 @@ function SpeedJudgeGame({ items, locale, onComplete, onProgress }: SpeedJudgeGam
   )
 }
 
-export default function SpeedJudgeActivity({ items, theme, locale, onComplete }: ActivityProps) {
+export default function SpeedJudgeActivity({ items, theme, locale, onComplete, autoStart }: ActivityProps) {
   const [shellScore, setShellScore] = useState(0)
   const [shellFinished, setShellFinished] = useState(false)
   const elapsedRef = useRef(0)
@@ -486,7 +486,7 @@ export default function SpeedJudgeActivity({ items, theme, locale, onComplete }:
     onComplete(score, { ...details, elapsedSeconds: elapsedRef.current })
   }, [onComplete])
   return (
-    <PlayShell title="Speed Judge" score={shellScore} finished={shellFinished} onElapsed={handleElapsed}>
+    <PlayShell title="Speed Judge" score={shellScore} finished={shellFinished} onElapsed={handleElapsed} autoStart={autoStart}>
       <SpeedJudgeGame
         items={items}
         theme={theme}

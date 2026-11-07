@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, shuffleArray, isRTL } from './shared'
+import { bingoPromptOrder } from '@/lib/bingo'
 
 /**
  * Batch 1 — Bingo (preview/activity component).
@@ -36,7 +37,12 @@ export default function BingoActivity({ items, locale, onComplete }: ActivityPro
       }
     }
     setCard(cells)
-    setPromptOrder(shuffleArray(items.map((_, i) => i)))
+    // ITEM 32 (owner 2026-11-07 13:34 PKT): call ONLY prompts whose
+    // answers are on the card — the old code shuffled EVERY item
+    // index, so a called prompt could have no matching cell at all.
+    // Shuffled here so the call order stays random instead of
+    // following the card layout.
+    setPromptOrder(shuffleArray(bingoPromptOrder(items, answers)))
     setCallIndex(0)
     const centre = Math.floor(size / 2) * size + Math.floor(size / 2)
     setMarked(size % 2 === 1 ? new Set([centre]) : new Set())

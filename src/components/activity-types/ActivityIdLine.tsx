@@ -8,7 +8,11 @@ import { useRef, useState } from 'react'
 // button. It renders no other field — never an email, teacher id, or any
 // private value. Clipboard failure falls back to selecting the id text so
 // the teacher can copy it manually.
-export default function ActivityIdLine({ id }: { id: string }) {
+//
+// GAME NUMBER (batch 1, final list 11–14): when the game has a number
+// (migration 011), it shows beside the id — "🔢 Game No. 123456". Before
+// 011 runs, gameNumber is null and nothing is shown — never invented.
+export default function ActivityIdLine({ id, gameNumber }: { id: string; gameNumber?: number | null }) {
   const [state, setState] = useState<'idle' | 'copied' | 'selected'>('idle')
   const idRef = useRef<HTMLSpanElement>(null)
 
@@ -50,6 +54,11 @@ export default function ActivityIdLine({ id }: { id: string }) {
           {id}
         </span>
       </span>
+      {gameNumber != null ? (
+        <span style={{ fontWeight: 800, color: 'var(--color-text-primary)' }}>
+          🔢 Game No. {gameNumber}
+        </span>
+      ) : null}
       <button
         type="button"
         onClick={copyId}

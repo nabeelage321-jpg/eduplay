@@ -41,6 +41,14 @@ export interface ActivityProps {
   theme: Audience
   locale: SupportedLocale
   onComplete: (score: number, details?: ActivityCompletion) => void
+  /**
+   * True when the host already showed an instruction/start screen
+   * (the play page's PlayIntro) — a shell-wrapped player then skips
+   * its own Start screen and goes straight to the countdown, so the
+   * kid never taps START twice in a row. Absent = the shell shows
+   * its own Start screen (e.g. the creator's draft Preview).
+   */
+  autoStart?: boolean
 }
 
 export interface FeedbackState {
