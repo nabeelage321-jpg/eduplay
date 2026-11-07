@@ -42,6 +42,9 @@
  *     (a wrong block costs one life and cracks).
  *     fruit-slice: 10 pts, 3 lives (a wrong fruit or a bomb
  *     costs one life; a correct fruit escaping costs none).
+ *     river-hop: 10 pts per crossing, 3 lives (a wrong pad, a
+ *     splash, or a car hit costs one life and restarts the
+ *     sequence from the start bank).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -403,6 +406,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Swipe across a fruit with your finger or mouse, or tap a fruit to slice it.',
     timer: 'No timer — watch the arcs and slice at the right moment.',
     lives: 'You have 3 lives — a wrong fruit or a bomb costs one life; a correct fruit flying away costs none.',
+  }),
+  'river-hop': rules({
+    howTo: 'Hop across the road, then across the river on the pads with the next number in the counting order — and reach the far bank.',
+    scoring: 'Each completed crossing earns 10 points; hops earn none.',
+    objective: 'Cross to the far bank in every round without running out of lives.',
+    controls: 'Arrow keys or W/A/S/D to hop — or the on-screen hop buttons.',
+    timer: 'No timer — but the pads and cars keep moving, so time your hops.',
+    lives: 'You have 3 lives — a wrong pad, a splash, or a car hit costs one life and sends you back to the start bank.',
   }),
 }
 

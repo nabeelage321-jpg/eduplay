@@ -28,6 +28,7 @@
 import type { ActivityItem } from '@/types'
 import { parseNumberAnswer } from '@/lib/number-slider'
 import { canBuildSweetMatchTarget } from '@/lib/sweet-match'
+import { sequenceTerms, borrowNumericWrongAnswers, RIVER_HOP_MIN_NUMERIC_WRONGS } from '@/lib/river-hop'
 
 export interface ConvertTarget {
   slug: string
@@ -83,6 +84,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'star-shooter',    icon: '👾', name: 'Star Shooter' },
   { slug: 'jump-blocks',     icon: '🧱', name: 'Jump Blocks' },
   { slug: 'fruit-slice',      icon: '🍉', name: 'Fruit Slice' },
+  { slug: 'river-hop',       icon: '🌊', name: 'River Hop' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -493,6 +495,30 @@ export function canConvertTo(
             ok: false,
             reason:
               'Fruit Slice needs at least one different answer to borrow as a wrong fruit in every round — one of these questions has no other answer to borrow from.',
+          }
+
+    // River Hop (type 48): the round is generated from the game's
+    // own items — one round per question, the pads are the three
+    // counting numbers before the item's own answer (at the
+    // question's counting step) plus wrong numbers borrowed from
+    // the other items. A round needs a whole-number answer of 4
+    // or more and at least two different number answers to borrow.
+    case 'river-hop':
+      return items.every((item) => {
+        const seq = sequenceTerms(item.prompt, item.answer)
+        if (!seq) return false
+        const wrongs = borrowNumericWrongAnswers(
+          items.map((i) => i.answer),
+          item.answer,
+          seq.terms,
+        )
+        return wrongs.length >= RIVER_HOP_MIN_NUMERIC_WRONGS
+      })
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'River Hop needs every question to have a whole-number answer of 4 or more, with at least two different number answers to borrow as wrong pads — one of these questions does not.',
           }
 
     default:

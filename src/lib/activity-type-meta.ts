@@ -57,4 +57,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'star-shooter',    icon: '👾', name: 'Star Shooter',    desc: 'Shoot the invader with the right answer' },
   { slug: 'jump-blocks',     icon: '🧱', name: 'Jump Blocks',     desc: 'Run and jump to hit the block with the right answer' },
   { slug: 'fruit-slice',      icon: '🍉', name: 'Fruit Slice',      desc: 'Slice the fruit with the right answer' },
+  { slug: 'river-hop',       icon: '🌊', name: 'River Hop',       desc: 'Hop the pads in counting order to cross the river' },
 ]

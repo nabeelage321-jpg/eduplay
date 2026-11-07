@@ -638,6 +638,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Fruit Slice',
     description_en: 'Slice the fruit with the right answer',
   },
+  {
+    slug: 'river-hop',
+    icon: '🌊',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'River Hop',
+    name_ur: 'River Hop',
+    name_ar: 'River Hop',
+    name_hi: 'River Hop',
+    name_es: 'River Hop',
+    name_fr: 'River Hop',
+    description_en: 'Hop the pads in counting order to cross the river',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

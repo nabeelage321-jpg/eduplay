@@ -57,6 +57,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'star-shooter': { prompt: 'Question for this sky', answer: 'Correct answer invader' },
   'jump-blocks': { prompt: 'Question for this level', answer: 'Correct answer block' },
   'fruit-slice': { prompt: 'Question for this round', answer: 'Correct answer fruit' },
+  'river-hop': { prompt: 'Counting question for this crossing', answer: 'Last number of the counting sequence' },
 }
 
 const fieldStyle: React.CSSProperties = {

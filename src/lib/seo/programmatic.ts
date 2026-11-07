@@ -97,6 +97,7 @@ export const DB_TYPE_BY_SLUG: Record<string, string> = {
   'star-shooter': 'star-shooter',
   'jump-blocks': 'jump-blocks',
   'fruit-slice': 'fruit-slice',
+  'river-hop': 'river-hop',
 }
 
 export interface ProgrammaticActivity {
