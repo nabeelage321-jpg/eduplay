@@ -69,13 +69,10 @@ import {
  *   Play mid-game also freezes the timer.
  *
  * Player-visible beats:
- * - How to Play FIRST, before any play, explaining how to
- *   play, how scores are given, the objective, the
- *   controls, the lives, the timer, the rounds, and how you
- *   win/finish — with a Skip button ("Skip instructions —
- *   start playing"). The same page is re-readable mid-game
- *   from the "How to play" button, and returning from it
- *   resumes the game; it never resets progress.
+ * - How to Play on demand only — the shared PlayIntro on the play page shows the instructions first, so this page is never shown automatically at start; it explains how to play,
+ *   how scores are given, the objective, the controls, the lives, the timer, the rounds, and how you win/finish — with
+ *   a "Back to game" button. The same page is re-readable mid-game from the "How to play" button, and returning from
+ *   it resumes the game; it never resets progress.
  * - Convert: COMPATIBLE — any prompt/answer game plays as
  *   Picture Answer (picture shown when present, honest
  *   no-picture state otherwise; see convert.ts). Print:
@@ -103,8 +100,8 @@ interface PictureAnswerGameProps extends ActivityProps {
 
 function PictureAnswerGame({ items, locale, onComplete, onProgress }: PictureAnswerGameProps) {
   const [rounds, setRounds] = useState<PictureAnswerRound[]>([])
-  const [showHowto, setShowHowto] = useState(true)
-  const [started, setStarted] = useState(false)
+  const [showHowto, setShowHowto] = useState(false)
+  const [started, setStarted] = useState(true)
   const [current, setCurrent] = useState(0)
   const [lives, setLives] = useState(PICTURE_ANSWER_LIVES)
   const [score, setScore] = useState(0)
@@ -131,8 +128,8 @@ function PictureAnswerGame({ items, locale, onComplete, onProgress }: PictureAns
     builtForRef.current = itemsFingerprint
     const built = buildPictureAnswerRounds(items, { shuffle: shuffleArray })
     setRounds(built)
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setCurrent(0)
     setLives(PICTURE_ANSWER_LIVES)
     setScore(0)
@@ -269,8 +266,8 @@ function PictureAnswerGame({ items, locale, onComplete, onProgress }: PictureAns
 
   function playAgain() {
     playEduSound('click', readInteractiveSoundOn())
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setCurrent(0)
     setLives(PICTURE_ANSWER_LIVES)
     setScore(0)

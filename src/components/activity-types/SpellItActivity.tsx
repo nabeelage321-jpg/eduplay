@@ -60,13 +60,10 @@ import {
  *   also freezes the timer.
  *
  * Player-visible beats:
- * - How to Play FIRST, before any play, explaining how to play,
- *   how scores are given, the objective, the controls, the
- *   lives, the timer, the rounds, and how you win/finish — with
- *   a Skip button ("Skip instructions — start playing"). The
- *   same page is re-readable mid-game from the "How to play"
- *   button, and returning from it resumes the game; it never
- *   resets progress.
+ * - How to Play on demand only — the shared PlayIntro on the play page shows the instructions first, so this page is never shown automatically at start; it explains how to play,
+ *   how scores are given, the objective, the controls, the lives, the timer, the rounds, and how you win/finish — with
+ *   a "Back to game" button. The same page is re-readable mid-game from the "How to play" button, and returning from
+ *   it resumes the game; it never resets progress.
  * - The on-screen keyboard is A–Z (Latin letters). Answers in
  *   other scripts are typed on the device keyboard — the letter
  *   handler accepts any typed letter, not just A–Z.
@@ -98,8 +95,8 @@ const KEYBOARD_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM']
 function SpellItGame({ items, locale, onComplete, onProgress }: SpellItGameProps) {
   const [rounds, setRounds] = useState<SpellItRound[]>([])
   const [maxScore, setMaxScore] = useState(0)
-  const [showHowto, setShowHowto] = useState(true)
-  const [started, setStarted] = useState(false)
+  const [showHowto, setShowHowto] = useState(false)
+  const [started, setStarted] = useState(true)
   const [current, setCurrent] = useState(0)
   const [lives, setLives] = useState(SPELL_IT_LIVES)
   const [score, setScore] = useState(0)
@@ -125,8 +122,8 @@ function SpellItGame({ items, locale, onComplete, onProgress }: SpellItGameProps
     const built = buildSpellItRounds(items, { shuffle: shuffleArray })
     setRounds(built)
     setMaxScore(built.reduce((sum, r) => sum + r.maxPoints, 0))
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setCurrent(0)
     setLives(SPELL_IT_LIVES)
     setScore(0)
@@ -300,8 +297,8 @@ function SpellItGame({ items, locale, onComplete, onProgress }: SpellItGameProps
 
   function playAgain() {
     playEduSound('click', readInteractiveSoundOn())
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setCurrent(0)
     setLives(SPELL_IT_LIVES)
     setScore(0)

@@ -80,14 +80,10 @@ import {
  *   to Play mid-game also freezes the timer.
  *
  * Player-visible beats:
- * - How to Play FIRST, before any play, explaining how to
- *   play, how scores are given, the objective, the
- *   controls, the lives, the timer, the rounds, and how
- *   you win/finish — with a Skip button ("Skip
- *   instructions — start playing"). The same page is
- *   re-readable mid-game from the "How to play" button,
- *   and returning from it resumes the game; it never
- *   resets progress.
+ * - How to Play on demand only — the shared PlayIntro on the play page shows the instructions first, so this page is never shown automatically at start; it explains how to play,
+ *   how scores are given, the objective, the controls, the lives, the timer, the rounds, and how you win/finish — with
+ *   a "Back to game" button. The same page is re-readable mid-game from the "How to play" button, and returning from
+ *   it resumes the game; it never resets progress.
  * - Convert: COMPATIBLE only when EVERY answer is a
  *   number (a word answer can never be slid to, so a
  *   mixed game is refused up front instead of dropping
@@ -129,8 +125,8 @@ function NumberSliderGame({ items, locale, onComplete, onProgress }: NumberSlide
   const [line, setLine] = useState<NumberSliderLine | null>(null)
   const [roundIndex, setRoundIndex] = useState(0)
   const [sliderValue, setSliderValue] = useState(0)
-  const [showHowto, setShowHowto] = useState(true)
-  const [started, setStarted] = useState(false)
+  const [showHowto, setShowHowto] = useState(false)
+  const [started, setStarted] = useState(true)
   const [lives, setLives] = useState(NUMBER_SLIDER_LIVES)
   const [score, setScore] = useState(0)
   const [exactCount, setExactCount] = useState(0)
@@ -158,8 +154,8 @@ function NumberSliderGame({ items, locale, onComplete, onProgress }: NumberSlide
     setRounds(built)
     setLine(built.length > 0 ? buildNumberSliderLine(built.map((r) => r.answer)) : null)
     setRoundIndex(0)
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setLives(NUMBER_SLIDER_LIVES)
     setScore(0)
     setExactCount(0)
@@ -319,8 +315,8 @@ function NumberSliderGame({ items, locale, onComplete, onProgress }: NumberSlide
     setRounds(built)
     setLine(built.length > 0 ? buildNumberSliderLine(built.map((r) => r.answer)) : null)
     setRoundIndex(0)
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setLives(NUMBER_SLIDER_LIVES)
     livesRef.current = NUMBER_SLIDER_LIVES
     setScore(0)

@@ -87,14 +87,10 @@ import {
  *   Reading How to Play mid-game also freezes the timer.
  *
  * Player-visible beats:
- * - How to Play FIRST, before any play, explaining how to
- *   play, how scores are given, the objective, the
- *   controls, the lives, the timer, the rounds, and how
- *   you win/finish — with a Skip button ("Skip
- *   instructions — start playing"). The same page is
- *   re-readable mid-game from the "How to play" button,
- *   and returning from it resumes the game; it never
- *   resets progress.
+ * - How to Play on demand only — the shared PlayIntro on the play page shows the instructions first, so this page is never shown automatically at start; it explains how to play,
+ *   how scores are given, the objective, the controls, the lives, the timer, the rounds, and how you win/finish — with
+ *   a "Back to game" button. The same page is re-readable mid-game from the "How to play" button, and returning from
+ *   it resumes the game; it never resets progress.
  * - Convert: COMPATIBLE — any prompt/answer game plays
  *   as Claim Line (questions from its items, board needs
  *   no special shape; see convert.ts). Print: printable
@@ -131,8 +127,8 @@ function ClaimLineGame({ items, locale, onComplete, onProgress }: ClaimLineGameP
   const [board, setBoard] = useState<ClaimLineBoard>([...EMPTY_BOARD])
   const [question, setQuestion] = useState<ClaimLineQuestion | null>(null)
   const [questionSquare, setQuestionSquare] = useState<number | null>(null)
-  const [showHowto, setShowHowto] = useState(true)
-  const [started, setStarted] = useState(false)
+  const [showHowto, setShowHowto] = useState(false)
+  const [started, setStarted] = useState(true)
   const [lives, setLives] = useState(CLAIM_LINE_LIVES)
   const [score, setScore] = useState(0)
   const [correctCount, setCorrectCount] = useState(0)
@@ -162,8 +158,8 @@ function ClaimLineGame({ items, locale, onComplete, onProgress }: ClaimLineGameP
     setBoard([...EMPTY_BOARD])
     setQuestion(null)
     setQuestionSquare(null)
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setLives(CLAIM_LINE_LIVES)
     setScore(0)
     setCorrectCount(0)
@@ -377,8 +373,8 @@ function ClaimLineGame({ items, locale, onComplete, onProgress }: ClaimLineGameP
     boardRef.current = [...EMPTY_BOARD]
     setQuestion(null)
     setQuestionSquare(null)
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setLives(CLAIM_LINE_LIVES)
     livesRef.current = CLAIM_LINE_LIVES
     setScore(0)

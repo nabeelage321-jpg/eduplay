@@ -72,13 +72,10 @@ import {
  *   Play mid-game also freezes the timer.
  *
  * Player-visible beats:
- * - How to Play FIRST, before any play, explaining how to
- *   play, how scores are given, the objective, the
- *   controls, the lives, the timer, the rounds, and how you
- *   win/finish — with a Skip button ("Skip instructions —
- *   start playing"). The same page is re-readable mid-game
- *   from the "How to play" button, and returning from it
- *   resumes the game; it never resets progress.
+ * - How to Play on demand only — the shared PlayIntro on the play page shows the instructions first, so this page is never shown automatically at start; it explains how to play,
+ *   how scores are given, the objective, the controls, the lives, the timer, the rounds, and how you win/finish — with
+ *   a "Back to game" button. The same page is re-readable mid-game from the "How to play" button, and returning from
+ *   it resumes the game; it never resets progress.
  * - Convert: COMPATIBLE — any prompt/answer game plays as
  *   Memory Recall (study its pairs, recall them; see
  *   convert.ts). Print: printable as a recall worksheet
@@ -109,8 +106,8 @@ interface MemoryRecallGameProps extends ActivityProps {
 function MemoryRecallGame({ items, locale, onComplete, onProgress }: MemoryRecallGameProps) {
   const [pairs, setPairs] = useState<MemoryRecallPair[]>([])
   const [rounds, setRounds] = useState<MemoryRecallRound[]>([])
-  const [showHowto, setShowHowto] = useState(true)
-  const [started, setStarted] = useState(false)
+  const [showHowto, setShowHowto] = useState(false)
+  const [started, setStarted] = useState(true)
   const [phase, setPhase] = useState<RecallPhase>('study')
   const [current, setCurrent] = useState(0)
   const [lives, setLives] = useState(MEMORY_RECALL_LIVES)
@@ -137,8 +134,8 @@ function MemoryRecallGame({ items, locale, onComplete, onProgress }: MemoryRecal
     builtForRef.current = itemsFingerprint
     setPairs(buildMemoryRecallPairs(items))
     setRounds(buildMemoryRecallRounds(items, { shuffle: shuffleArray }))
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setPhase('study')
     setCurrent(0)
     setLives(MEMORY_RECALL_LIVES)
@@ -284,8 +281,8 @@ function MemoryRecallGame({ items, locale, onComplete, onProgress }: MemoryRecal
 
   function playAgain() {
     playEduSound('click', readInteractiveSoundOn())
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setPhase('study')
     setCurrent(0)
     setLives(MEMORY_RECALL_LIVES)

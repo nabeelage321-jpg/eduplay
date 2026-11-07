@@ -58,13 +58,10 @@ import {
  *   freezes the timer.
  *
  * Player-visible beats:
- * - How to Play FIRST, before any play, explaining how to play,
- *   how scores are given, the objective, the controls, the
- *   lives, the timer, the rounds, and how you win/finish — with
- *   a Skip button ("Skip instructions — start playing"). The
- *   same page is re-readable mid-game from the "How to play"
- *   button, and returning from it resumes the game; it never
- *   resets progress.
+ * - How to Play on demand only — the shared PlayIntro on the play page shows the instructions first, so this page is never shown automatically at start; it explains how to play,
+ *   how scores are given, the objective, the controls, the lives, the timer, the rounds, and how you win/finish — with
+ *   a "Back to game" button. The same page is re-readable mid-game from the "How to play" button, and returning from
+ *   it resumes the game; it never resets progress.
  * - Convert: COMPATIBLE (any prompt/answer game plays as
  *   judgements — see convert.ts). Print: printable as a
  *   judgement worksheet (claim + Correct/Wrong boxes, key of
@@ -92,8 +89,8 @@ interface SpeedJudgeGameProps extends ActivityProps {
 
 function SpeedJudgeGame({ items, locale, onComplete, onProgress }: SpeedJudgeGameProps) {
   const [rounds, setRounds] = useState<SpeedJudgeRound[]>([])
-  const [showHowto, setShowHowto] = useState(true)
-  const [started, setStarted] = useState(false)
+  const [showHowto, setShowHowto] = useState(false)
+  const [started, setStarted] = useState(true)
   const [current, setCurrent] = useState(0)
   const [lives, setLives] = useState(SPEED_JUDGE_LIVES)
   const [score, setScore] = useState(0)
@@ -121,8 +118,8 @@ function SpeedJudgeGame({ items, locale, onComplete, onProgress }: SpeedJudgeGam
     builtForRef.current = itemsFingerprint
     const built = buildSpeedJudgeRounds(items, { shuffle: shuffleArray })
     setRounds(built)
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setCurrent(0)
     setLives(SPEED_JUDGE_LIVES)
     setScore(0)
@@ -268,8 +265,8 @@ function SpeedJudgeGame({ items, locale, onComplete, onProgress }: SpeedJudgeGam
 
   function playAgain() {
     playEduSound('click', readInteractiveSoundOn())
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setCurrent(0)
     setLives(SPEED_JUDGE_LIVES)
     setScore(0)

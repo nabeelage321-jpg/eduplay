@@ -59,13 +59,10 @@ import {
  *   Reading How to Play mid-game also freezes the timer.
  *
  * Player-visible beats:
- * - How to Play FIRST, before any play, explaining how to play,
- *   how scores are given, the objective, the controls, the
- *   lives, the timer, the rounds, and how you win/finish — with
- *   a Skip button ("Skip instructions — start playing"). The
- *   same page is re-readable mid-game from the "How to play"
- *   button, and returning from it resumes the game; it never
- *   resets progress.
+ * - How to Play on demand only — the shared PlayIntro on the play page shows the instructions first, so this page is never shown automatically at start; it explains how to play,
+ *   how scores are given, the objective, the controls, the lives, the timer, the rounds, and how you win/finish — with
+ *   a "Back to game" button. The same page is re-readable mid-game from the "How to play" button, and returning from
+ *   it resumes the game; it never resets progress.
  * - Convert: COMPATIBLE (2026-11-07 universal pass) — the maze is
  *   generated from the game's own items, one maze per question,
  *   tiles are the correct answer plus wrong answers borrowed from
@@ -87,8 +84,8 @@ interface MazeRunGameProps extends ActivityProps {
 
 function MazeRunGame({ items, locale, onComplete, onProgress }: MazeRunGameProps) {
   const [rounds, setRounds] = useState<MazeRound[]>([])
-  const [showHowto, setShowHowto] = useState(true)
-  const [started, setStarted] = useState(false)
+  const [showHowto, setShowHowto] = useState(false)
+  const [started, setStarted] = useState(true)
   const [current, setCurrent] = useState(0)
   const [pos, setPos] = useState<MazePos>({ row: 0, col: 0 })
   const [lives, setLives] = useState(MAZE_RUN_LIVES)
@@ -128,8 +125,8 @@ function MazeRunGame({ items, locale, onComplete, onProgress }: MazeRunGameProps
       if (round) built.push(round)
     }
     setRounds(built)
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setCurrent(0)
     setPos(built[0]?.start ?? { row: 0, col: 0 })
     setLives(MAZE_RUN_LIVES)
@@ -295,8 +292,8 @@ function MazeRunGame({ items, locale, onComplete, onProgress }: MazeRunGameProps
   function playAgain() {
     playEduSound('click', readInteractiveSoundOn())
     const first = rounds[0]
-    setShowHowto(true)
-    setStarted(false)
+    setShowHowto(false)
+    setStarted(true)
     setCurrent(0)
     setPos(first?.start ?? { row: 0, col: 0 })
     setLives(MAZE_RUN_LIVES)
