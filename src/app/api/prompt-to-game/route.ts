@@ -11,7 +11,20 @@ import { buildGroqChapterDraft, buildGroqDraft, getGroqConfig } from '@/lib/groq
 import { getSyllabus, resolveCurriculumTag } from '@/lib/curricula'
 import type { ActivityItem } from '@/types'
 
-const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble']
+const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble', 'true-false']
+
+/** A true/false draft needs at least 2 statements with at least one
+ *  true and one false — otherwise the game has no choice in it.
+ *  Conversion drops unclean questions, so the check runs AFTER
+ *  conversion, on every path (chapter, Groq, OpenTDB). */
+function trueFalseUsable(items: ActivityItem[]): boolean {
+  if (items.length < 2) return false
+  const answers = new Set(items.map((i) => i.answer.trim().toLowerCase()))
+  return answers.has('true') && answers.has('false')
+}
+
+const TRUE_FALSE_TOO_FEW =
+  'Could not turn enough of these questions into clear true-or-false statements. Try a simpler topic, or make the game manually — no half-finished draft was kept.'
 
 interface OpenTdbQuestion {
   question?: string
@@ -21,7 +34,7 @@ interface OpenTdbQuestion {
 
 /**
  * POST /api/prompt-to-game — draft only, never a published game.
- * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble', chapterText? }
+ * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble' | 'true-false', chapterText? }
  * - With chapterText: the draft is PARAPHRASED from the chapter via Groq —
  *   the same facts in new words, never the book's exact sentences.
  *   No verbatim fallback exists: if paraphrasing fails, or no Groq key
@@ -75,10 +88,14 @@ export async function POST(req: NextRequest) {
       if (!chapter.ok) {
         return NextResponse.json({ error: chapter.error }, { status: chapter.status })
       }
+      const chapterItems = convertDraftItems(chapter.items, type)
+      if (type === 'true-false' && !trueFalseUsable(chapterItems)) {
+        return NextResponse.json({ error: TRUE_FALSE_TOO_FEW }, { status: 502 })
+      }
       const draft: PromptDraft = {
         title: prompt,
         type,
-        items: convertDraftItems(chapter.items, type),
+        items: chapterItems,
         sourceNote:
           'Made from your chapter in NEW words — the same facts, reworded into new questions, never the book\'s exact sentences. This is not official book material: check and edit each question before you approve it, and keep the game private until a teacher or parent has checked it.',
       }
@@ -101,12 +118,16 @@ export async function POST(req: NextRequest) {
     // it does NOT silently fall back to random trivia, or the
     // creator would see off-topic questions and think Groq worked.
     if (getGroqConfig()) {
-      const groq = await buildGroqDraft(prompt, fetch, syllabusContext)
+      const groq = await buildGroqDraft(prompt, fetch, syllabusContext, type === 'true-false' ? 'true-false' : undefined)
       if (groq.ok) {
+        const groqItems = convertDraftItems(groq.items, type)
+        if (type === 'true-false' && !trueFalseUsable(groqItems)) {
+          return NextResponse.json({ error: TRUE_FALSE_TOO_FEW }, { status: 502 })
+        }
         const draft: PromptDraft = {
           title: prompt,
           type,
-          items: convertDraftItems(groq.items, type),
+          items: groqItems,
           sourceNote: `Draft made by Groq (${groq.model}) from your exact prompt — every question was checked against your topic. It is still only a draft: check and edit each question before you approve it.`,
         }
         return NextResponse.json({ draft })
@@ -160,10 +181,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const converted = convertDraftItems(items, type)
+    if (type === 'true-false' && !trueFalseUsable(converted)) {
+      return NextResponse.json({ error: TRUE_FALSE_TOO_FEW }, { status: 502 })
+    }
+
     const draft: PromptDraft = {
       title: prompt,
       type,
-      items: convertDraftItems(items, type),
+      items: converted,
       sourceNote:
         'Draft questions come from the free Open Trivia Database (CC BY-SA 4.0) — they are general-knowledge questions, not questions about your exact prompt. Edit the title and every question before you approve it.',
       sourceUrl: 'https://opentdb.com',

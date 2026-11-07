@@ -470,6 +470,37 @@ export async function verifyGroqAnswers(
 }
 
 /**
+ * Parse + validate a Groq TRUE/FALSE draft: {"statements": [{"statement": "...", "correct": true|false}]}.
+ * Same strictness as parseGroqQuestions — a statement must be a plain
+ * sentence (never a question or a blank), on-topic, and deduplicated —
+ * but there is no incorrect list: each statement carries its own
+ * true/false verdict. The caller rejects the draft if fewer than 2
+ * survive, or if all of them are true or all false.
+ */
+export function parseGroqTrueFalseStatements(raw: unknown, prompt: string): ActivityItem[] {
+  if (typeof raw !== 'object' || raw === null) return []
+  const statements = (raw as { statements?: unknown }).statements
+  if (!Array.isArray(statements)) return []
+  const keywords = topicKeywords(prompt)
+  const seen = new Set<string>()
+  const items: ActivityItem[] = []
+  for (const s of statements) {
+    const r = s as { statement?: unknown; correct?: unknown }
+    const statement = asNonEmptyString(r.statement, 300)
+    if (!statement) continue
+    if (typeof r.correct !== 'boolean') continue
+    if (statement.endsWith('?') || statement.includes('___')) continue
+    const key = statement.toLowerCase()
+    if (seen.has(key)) continue
+    if (!isOnTopic(statement, '', keywords)) continue
+    seen.add(key)
+    items.push({ prompt: statement, answer: r.correct ? 'True' : 'False' })
+    if (items.length >= 10) break
+  }
+  return items
+}
+
+/**
  * One Groq call for a topic-specific draft. `fetchImpl` exists only so
  * tests can inject a mock — the route always passes the real fetch.
  * Never throws for a provider failure: it returns a distinct result
@@ -482,16 +513,26 @@ export async function verifyGroqAnswers(
  * alignment, or reproduce official material, and the system prompt
  * says so. The game still carries the mandatory "Not official …
  * material" label, and the teacher still checks every question.
+ *
+ * TRUE/FALSE (2026-11-07): `gameType` is an optional 'true-false'
+ * flag, defaulting to the quiz path — every other caller is
+ * untouched. With it, Groq is asked for plain true/false statements
+ * instead of Q&A, so statements are written as statements (no
+ * lossy question-to-statement conversion), and the question-framed
+ * answer-consistency self-check is skipped: it judges whether an
+ * answer answers a question, which does not apply to statements.
  */
 export async function buildGroqDraft(
   prompt: string,
   fetchImpl: typeof fetch = fetch,
-  syllabusContext?: string
+  syllabusContext?: string,
+  gameType?: 'true-false'
 ): Promise<GroqDraftResult> {
   const config = getGroqConfig()
   if (!config) {
     return { ok: false, status: 503, error: 'GROQ_NOT_CONFIGURED' }
   }
+  const wantTrueFalse = gameType === 'true-false'
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS)
   try {
@@ -500,8 +541,19 @@ export async function buildGroqDraft(
       messages: [
         {
           role: 'system',
-          content:
-            'You write short school quiz questions ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
+          content: wantTrueFalse
+            ? 'You write short true-or-false statements ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
+              'Return ONLY a JSON object, no markdown, no extra text: {"statements": [{"statement": "...", "correct": true}]}. ' +
+              'Up to 10 statements. Mix true and false statements — about half of each. ' +
+              'Each statement must be ONE clear fact about that topic, written as a plain sentence a young child can judge true or false — never a question, never a fill-in-the-blank. ' +
+              'Every TRUE statement must be a fact you are sure of; every FALSE statement must be clearly wrong but believable, changing only one fact (a number, a name, or a place) from a true fact about the same topic. ' +
+              'Never invent dates, statistics, names, or facts you are unsure of — leave such a statement out instead. ' +
+              'Do not repeat the same fact twice.' +
+              (syllabusContext
+                ? ` Write the statements in the style typical for ${syllabusContext} topics, at the level the prompt implies. ` +
+                  'This is style context only: you cannot fetch, verify, or reproduce that syllabus, and you must never claim a statement is official syllabus material.'
+                : '')
+            : 'You write short school quiz questions ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
             'Return ONLY a JSON object, no markdown, no extra text: {"questions": [{"question": "...", "correct": "...", "incorrect": ["...", "...", "..."]}]}. ' +
             'Up to 10 questions. Each question must be about that topic and nothing else. ' +
             'CRITICAL — the correct answer must DIRECTLY answer its own question. Before returning each question, read it back and check: if a teacher read only the question and this answer, would they mark it correct? ' +
@@ -556,6 +608,17 @@ export async function buildGroqDraft(
     const parsed = extractJson(content)
     if (parsed === null) {
       return { ok: false, status: 502, error: 'Groq returned a draft that could not be read. Try again — no questions were invented.' }
+    }
+    if (wantTrueFalse) {
+      // Statements path: no question-framed self-check applies, and
+      // convertDraftItems passes true/false items through unchanged.
+      const parsedItems = parseGroqTrueFalseStatements(parsed, prompt)
+      const hasTrue = parsedItems.some((i) => i.answer === 'True')
+      const hasFalse = parsedItems.some((i) => i.answer === 'False')
+      if (parsedItems.length < 2 || !hasTrue || !hasFalse) {
+        return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic or one-sided statements were kept.' }
+      }
+      return { ok: true, model: config.model, items: parsedItems }
     }
     const parsedItems = parseGroqQuestions(parsed, prompt)
     // Answer-consistency self-check (see verifyGroqAnswers). A failed

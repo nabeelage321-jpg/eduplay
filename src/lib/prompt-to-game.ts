@@ -16,7 +16,7 @@
  */
 import type { ActivityItem } from '@/types'
 
-export type PromptGameType = 'quiz' | 'match-up' | 'unjumble'
+export type PromptGameType = 'quiz' | 'match-up' | 'unjumble' | 'true-false'
 
 /**
  * PENDING-DRAFT HANDOFF (separate prompt page, 2026-11-06) — the
@@ -34,6 +34,7 @@ export const PROMPT_GAME_TYPES: Array<{ id: PromptGameType; label: string }> = [
   { id: 'quiz', label: 'Quiz' },
   { id: 'match-up', label: 'Match Up' },
   { id: 'unjumble', label: 'Unjumble' },
+  { id: 'true-false', label: 'True False' },
 ]
 
 export interface PromptDraft {
@@ -96,12 +97,136 @@ export function convertDraftItems(
   type: PromptGameType
 ): ActivityItem[] {
   if (type === 'quiz' || type === 'match-up') return items
+  if (type === 'true-false') return convertToTrueFalse(items)
   // Unjumble: the player expects prompt = jumbled words, answer = correct phrase.
   return items.map((i) => ({
     prompt: jumbleWords(i.answer),
     answer: i.answer,
     hint: i.prompt,
   }))
+}
+
+/** Wrong answers available on a quiz-style item: the `answers` options
+ *  minus the correct one. Groq and OpenTDB both put their incorrect
+ *  answers there, so nothing is ever invented — a wrong answer is only
+ *  ever borrowed from the same draft. */
+function wrongAnswersOf(item: ActivityItem): string[] {
+  const correct = item.answer.trim().toLowerCase()
+  return (item.answers ?? [])
+    .map((a) => String(a).trim())
+    .filter((a) => a && a.toLowerCase() !== correct)
+}
+
+function capFirst(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+/**
+ * Turn one quiz question + one answer into a single declarative
+ * statement, e.g. "What is the capital of France?" + "Paris" ->
+ * "The capital of France is Paris." Only a small set of question
+ * shapes converts cleanly; anything else returns null and the caller
+ * DROPS that item instead of producing a garbled statement. Never
+ * invents, rewords loosely, or guesses — the statement is built from
+ * the question's own words plus the given answer only.
+ */
+export function questionToStatement(question: string, answer: string): string | null {
+  const q = cleanSentence(question).replace(/\?+\s*$/, '')
+  const a = cleanSentence(answer)
+  if (!q || !a || a.length > 120 || a.includes('?')) return null
+  // Fill-in-the-blank questions have no clean statement form.
+  if (q.includes('___') || /\bblank\b/i.test(q)) return null
+  let m: RegExpMatchArray | null
+
+  // Arithmetic "What is 2 + 3?" -> "2 + 3 = 5".
+  if ((m = q.match(/^what is ([\d\s+\-×x*/().]+)$/i)) && /\d/.test(m[1]) && /[+\-×x*/]/.test(m[1])) {
+    return `${m[1].trim()} = ${a}`
+  }
+  // "What is/are/was/were X?" -> "X is/are/was/were <answer>."
+  // (but never "What is not ...?" — that would read backwards.)
+  if ((m = q.match(/^what (is|are|was|were) (.+)$/i)) && !/^not\b/i.test(m[2])) {
+    return `${capFirst(m[2].trim())} ${m[1].toLowerCase()} ${a}.`
+  }
+  // "Which <noun> is/are/was/were ...?" -> "<answer> is/are/was/were ..."
+  if ((m = q.match(/^which (.+?) (is|are|was|were) (.+)$/i))) {
+    if (m[1].trim().split(/\s+/).length > 6) return null
+    return `${capFirst(a)} ${m[2].toLowerCase()} ${m[3].trim()}.`
+  }
+  // "Who is/are/was/were ...?" -> "<answer> is/are/was/were ..."
+  if ((m = q.match(/^who (is|are|was|were) (.+)$/i))) {
+    return `${capFirst(a)} ${m[1].toLowerCase()} ${m[2].trim()}.`
+  }
+  // "Who <verb> ...?" -> "<answer> <verb> ..." (wrote, painted, ...).
+  // Auxiliary verbs would need restructuring, so those drop.
+  if ((m = q.match(/^who ([A-Za-z']+) (.+)$/i))) {
+    const verb = m[1].toLowerCase()
+    if (['do', 'does', 'did', 'can', 'could', 'will', 'would', 'has', 'have', 'had', 'is', 'are', 'was', 'were'].includes(verb)) return null
+    return `${capFirst(a)} ${m[1]} ${m[2].trim()}.`
+  }
+  // "Where is/are X?" -> "X is/are in <answer>."
+  if ((m = q.match(/^where (is|are) (.+)$/i))) {
+    const subj = m[2].trim()
+    if (/^in\s/i.test(a)) return `${capFirst(subj)} ${m[1].toLowerCase()} ${a}.`
+    return `${capFirst(subj)} ${m[1].toLowerCase()} in ${a}.`
+  }
+  // "How many <noun> does/do <subject> have?" -> "<Subject> has/have <answer> <noun>."
+  if ((m = q.match(/^how many (.+?) (does|do) (.+?) have$/i))) {
+    const verb = m[2].toLowerCase() === 'does' ? 'has' : 'have'
+    return `${capFirst(m[3].trim())} ${verb} ${a} ${m[1].trim()}.`
+  }
+  // "How many <noun> are there in <place>?" -> "There are <answer> <noun> in <place>."
+  if ((m = q.match(/^how many (.+?) are there in (.+)$/i))) {
+    return `There are ${a} ${m[1].trim()} in ${m[2].trim()}.`
+  }
+  // "What do we/you call X?" -> "X is called <answer>."
+  if ((m = q.match(/^what do (?:we|you) call (.+)$/i))) {
+    return `${capFirst(m[1].trim())} is called ${a}.`
+  }
+  // Anything else (when/why/how/in-which-year/...) cannot be turned
+  // into a clean statement without rewording, so it drops.
+  return null
+}
+
+/**
+ * Convert quiz-style items to True / False statements. Each source
+ * item yields a TRUE statement (question + correct answer) and a FALSE
+ * statement (same words, a borrowed wrong answer in place of the
+ * correct one). Items whose question has no clean statement form are
+ * dropped, never garbled. Items already in true/false form (from the
+ * Groq statements path) pass through unchanged. Capped at 10.
+ * The player treats any answer other than 'true' as false, so every
+ * emitted answer is exactly 'True' or 'False'.
+ */
+function convertToTrueFalse(items: ActivityItem[]): ActivityItem[] {
+  const out: ActivityItem[] = []
+  const seen = new Set<string>()
+  for (const item of items) {
+    if (out.length >= 10) break
+    const itemAnswer = item.answer.trim().toLowerCase()
+    // Already a true/false statement: pass through, normalised.
+    if ((itemAnswer === 'true' || itemAnswer === 'false') && !item.prompt.trim().endsWith('?')) {
+      const prompt = cleanSentence(item.prompt)
+      if (!prompt || seen.has(prompt.toLowerCase())) continue
+      seen.add(prompt.toLowerCase())
+      out.push({ prompt, answer: itemAnswer === 'true' ? 'True' : 'False' })
+      continue
+    }
+    const trueStmt = questionToStatement(item.prompt, item.answer)
+    if (!trueStmt) continue
+    if (seen.has(trueStmt.toLowerCase())) continue
+    seen.add(trueStmt.toLowerCase())
+    out.push({ prompt: trueStmt, answer: 'True' })
+    if (out.length >= 10) break
+    for (const wrong of wrongAnswersOf(item)) {
+      const falseStmt = questionToStatement(item.prompt, wrong)
+      if (falseStmt && falseStmt !== trueStmt && !seen.has(falseStmt.toLowerCase())) {
+        seen.add(falseStmt.toLowerCase())
+        out.push({ prompt: falseStmt, answer: 'False' })
+        break
+      }
+    }
+  }
+  return out.slice(0, 10)
 }
 
 function cleanSentence(s: string): string {
@@ -153,6 +278,19 @@ export function buildTableDraft(prompt: string, type: PromptGameType): PromptDra
   const items: ActivityItem[] = []
   for (let i = 1; i <= 10; i++) {
     const product = n * i
+    if (type === 'true-false') {
+      // One statement per row, alternating true/false across the whole
+      // table: odd rows state the true product, even rows state a wrong
+      // product borrowed from the SAME table (n × (i±1)), never random.
+      const isTrueRow = i % 2 === 1
+      const wrongCandidates = [n * (i + 1), n * (i - 1), product + 1, product - 1, product + 2, product - 2]
+      const wrong = wrongCandidates.find((c) => c > 0 && c !== product) ?? product + 1
+      items.push({
+        prompt: `${n} × ${i} = ${isTrueRow ? product : wrong}`,
+        answer: isTrueRow ? 'True' : 'False',
+      })
+      continue
+    }
     if (type === 'unjumble') {
       // A number alone cannot be unjumbled, so unjumble the full phrase.
       const phrase = `${n} times ${i} equals ${product}`
