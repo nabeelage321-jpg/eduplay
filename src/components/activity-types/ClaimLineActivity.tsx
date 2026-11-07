@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { isRTL, shuffleArray } from './shared'
 import ScorePill from '@/components/game/ScorePill'
+import { HowToPlayButton, LivesHearts, QUESTION_CARD_STYLE, RoundPill, TimerChip } from '@/components/game/PlayChrome'
 import PlayShell, { usePlayShellStatus } from './PlayShell'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
 import InteractiveSoundToggle from './InteractiveSoundToggle'
@@ -503,19 +504,10 @@ function ClaimLineGame({ items, locale, onComplete, onProgress }: ClaimLineGameP
     return (
       <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem', flexWrap: 'wrap', gap: '0.4rem' }}>
-          <ScorePill score={score} />
-          <span aria-live="polite">{'♥'.repeat(Math.max(0, lives))}{'♡'.repeat(Math.max(0, CLAIM_LINE_LIVES - lives))} {lives} {lives === 1 ? 'life' : 'lives'}</span>
-          <span aria-live="polite" style={{ color: timeLeft <= CLAIM_LINE_WARNING_SECONDS ? 'var(--color-danger)' : undefined }}>⏱ {timeLeft}s</span>
-          <span aria-live="polite">Square {questionSquare + 1} of 9</span>
-          <button
-            onClick={() => setShowHowto(true)}
-            style={{
-              padding: '0.35rem 0.7rem', borderRadius: 'var(--radius)', border: '2px solid var(--color-border)',
-              background: 'var(--color-surface)', color: 'var(--color-text-primary)', fontSize: '0.85rem', cursor: 'pointer',
-            }}
-          >
-            How to play
-          </button>
+          <LivesHearts lives={lives} maxLives={CLAIM_LINE_LIVES} />
+          <TimerChip display={`${timeLeft}s`} warning={timeLeft <= CLAIM_LINE_WARNING_SECONDS} tickKey={timeLeft} label={`${timeLeft} seconds remaining`} />
+          <RoundPill>Square {questionSquare + 1} of 9</RoundPill>
+          <HowToPlayButton onClick={() => setShowHowto(true)} />
           <InteractiveSoundToggle />
         </div>
         <div style={{ height: '4px', background: 'var(--color-border)', borderRadius: 'var(--radius)', marginBottom: '1rem' }}>
@@ -530,7 +522,7 @@ function ClaimLineGame({ items, locale, onComplete, onProgress }: ClaimLineGameP
             🎯 Answer to claim square {questionSquare + 1}.
           </p>
           <div style={{
-            background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+            ...QUESTION_CARD_STYLE,
             borderRadius: 'var(--radius-lg)', padding: '1.5rem', marginBottom: '1.25rem',
             color: 'var(--color-text-primary)', fontSize: '1.125rem',
             fontFamily: 'var(--font-display)', boxShadow: 'var(--shadow-card)', textAlign: 'center',
@@ -591,18 +583,9 @@ function ClaimLineGame({ items, locale, onComplete, onProgress }: ClaimLineGameP
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem', flexWrap: 'wrap', gap: '0.4rem' }}>
-        <ScorePill score={score} />
-        <span aria-live="polite">{'♥'.repeat(Math.max(0, lives))}{'♡'.repeat(Math.max(0, CLAIM_LINE_LIVES - lives))} {lives} {lives === 1 ? 'life' : 'lives'}</span>
-        <span aria-live="polite">⭐ You: {playerSquares} · 🤖 Computer: {computerSquares}</span>
-        <button
-          onClick={() => setShowHowto(true)}
-          style={{
-            padding: '0.35rem 0.7rem', borderRadius: 'var(--radius)', border: '2px solid var(--color-border)',
-            background: 'var(--color-surface)', color: 'var(--color-text-primary)', fontSize: '0.85rem', cursor: 'pointer',
-          }}
-        >
-          How to play
-        </button>
+        <LivesHearts lives={lives} maxLives={CLAIM_LINE_LIVES} />
+        <RoundPill>⭐ You: {playerSquares} · 🤖 Computer: {computerSquares}</RoundPill>
+        <HowToPlayButton onClick={() => setShowHowto(true)} />
         <InteractiveSoundToggle />
       </div>
       <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textAlign: 'center', marginBottom: '0.25rem' }}>

@@ -7,6 +7,7 @@ import { isRTL, shuffleArray } from './shared'
 import PlayShell, { usePlayShellStatus } from './PlayShell'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
 import InteractiveSoundToggle from './InteractiveSoundToggle'
+import { HowToPlayButton, QUESTION_CARD_STYLE, RoundPill } from '@/components/game/PlayChrome'
 import {
   OPINION_CLOUD_REACTIONS,
   OPINION_REACTION_EMOJI,
@@ -349,16 +350,8 @@ function OpinionCloudGame({ items, locale, onComplete, onProgress }: OpinionClou
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem', flexWrap: 'wrap', gap: '0.4rem' }}>
         <motion.span key={opinionCloudShared(reactions)} initial={{ scale: 1.35 }} animate={{ scale: 1 }} transition={{ duration: 0.25 }} style={{ display: 'inline-block' }} aria-live="polite">💬 Shared: <strong style={{ color: 'var(--color-primary)' }}>{opinionCloudShared(reactions)} of {statements.length}</strong></motion.span>
         <span aria-live="polite">👍 {counts.agree} · 👎 {counts.disagree} · 🤔 {counts['not-sure']}</span>
-        <span aria-live="polite">Statement {index + 1} of {statements.length}</span>
-        <button
-          onClick={() => setShowHowto(true)}
-          style={{
-            padding: '0.35rem 0.7rem', borderRadius: 'var(--radius)', border: '2px solid var(--color-border)',
-            background: 'var(--color-surface)', color: 'var(--color-text-primary)', fontSize: '0.85rem', cursor: 'pointer',
-          }}
-        >
-          How to play
-        </button>
+        <RoundPill>Statement {index + 1} of {statements.length}</RoundPill>
+        <HowToPlayButton onClick={() => setShowHowto(true)} />
         <InteractiveSoundToggle />
       </div>
       <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textAlign: 'center', marginBottom: '0.75rem' }}>
@@ -367,7 +360,7 @@ function OpinionCloudGame({ items, locale, onComplete, onProgress }: OpinionClou
 
       <motion.div animate={{ scale: picked !== null ? [1, 1.03, 1] : 1 }} transition={{ duration: 0.3 }}>
         <div style={{
-          background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+          ...QUESTION_CARD_STYLE,
           borderRadius: 'var(--radius-lg)', padding: '1.5rem', marginBottom: '1.25rem',
           color: 'var(--color-text-primary)', fontSize: '1.125rem',
           fontFamily: 'var(--font-display)', boxShadow: 'var(--shadow-card)', textAlign: 'center',

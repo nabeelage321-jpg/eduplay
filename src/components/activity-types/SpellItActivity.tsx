@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { isRTL, shuffleArray } from './shared'
 import ScorePill from '@/components/game/ScorePill'
+import { HowToPlayButton, LivesHearts, QUESTION_CARD_STYLE, RoundPill, TimerChip } from '@/components/game/PlayChrome'
 import PlayShell, { usePlayShellStatus } from './PlayShell'
 import type { ActivityItem } from '@/types'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
@@ -88,7 +89,7 @@ import {
  */
 
 interface SpellItGameProps extends ActivityProps {
-  onProgress: (score: number, finished: boolean) => void
+  onProgress: (score: number, finished: boolean, total?: number) => void
 }
 
 const KEYBOARD_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM']
@@ -149,7 +150,7 @@ function SpellItGame({ items, locale, onComplete, onProgress }: SpellItGameProps
   useEffect(() => { scoreRef.current = score })
   useEffect(() => { livesRef.current = lives })
   useEffect(() => { wordsRef.current = wordsDone })
-  useEffect(() => { onProgress(score, finished) }, [score, finished, onProgress])
+  useEffect(() => { onProgress(score, finished, maxScore) }, [score, finished, onProgress])
 
   const finishGame = useCallback((didWin: boolean) => {
     setWon(didWin)
@@ -439,25 +440,16 @@ function SpellItGame({ items, locale, onComplete, onProgress }: SpellItGameProps
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem', flexWrap: 'wrap', gap: '0.4rem' }}>
-        <ScorePill score={score} total={maxScore} />
-        <span aria-live="polite">{'♥'.repeat(Math.max(0, lives))}{'♡'.repeat(Math.max(0, SPELL_IT_LIVES - lives))} {lives} {lives === 1 ? 'life' : 'lives'}</span>
-        <span aria-live="polite" style={{ color: timeLeft <= SPELL_IT_WARNING_SECONDS ? 'var(--color-danger)' : undefined }}>⏱ {timeLeft}s</span>
-        <span aria-live="polite">Word {current + 1} of {rounds.length}</span>
-        <button
-          onClick={() => setShowHowto(true)}
-          style={{
-            padding: '0.35rem 0.7rem', borderRadius: 'var(--radius)', border: '2px solid var(--color-border)',
-            background: 'var(--color-surface)', color: 'var(--color-text-primary)', fontSize: '0.85rem', cursor: 'pointer',
-          }}
-        >
-          How to play
-        </button>
+        <LivesHearts lives={lives} maxLives={SPELL_IT_LIVES} />
+        <TimerChip display={`${timeLeft}s`} warning={timeLeft <= SPELL_IT_WARNING_SECONDS} tickKey={timeLeft} label={`${timeLeft} seconds remaining`} />
+        <RoundPill>Word {current + 1} of {rounds.length}</RoundPill>
+        <HowToPlayButton onClick={() => setShowHowto(true)} />
         <InteractiveSoundToggle />
       </div>
 
       <motion.div animate={{ x: wrongKey ? [0, -8, 8, -4, 4, 0] : 0 }} transition={{ duration: 0.4 }}>
         <div style={{
-          background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+          ...QUESTION_CARD_STYLE,
           borderRadius: 'var(--radius-lg)', padding: '1.5rem', marginBottom: '1.25rem',
           color: 'var(--color-text-primary)', textAlign: 'center', boxShadow: 'var(--shadow-card)',
         }}>
@@ -551,6 +543,7 @@ function SpellItGame({ items, locale, onComplete, onProgress }: SpellItGameProps
 
 export default function SpellItActivity({ items, theme, locale, onComplete, autoStart }: ActivityProps) {
   const [shellScore, setShellScore] = useState(0)
+  const [shellTotal, setShellTotal] = useState<number | undefined>(undefined)
   const [shellFinished, setShellFinished] = useState(false)
   const elapsedRef = useRef(0)
   const handleElapsed = useCallback((seconds: number) => { elapsedRef.current = seconds }, [])
@@ -558,13 +551,13 @@ export default function SpellItActivity({ items, theme, locale, onComplete, auto
     onComplete(score, { ...details, elapsedSeconds: elapsedRef.current })
   }, [onComplete])
   return (
-    <PlayShell title="Spell It" score={shellScore} finished={shellFinished} onElapsed={handleElapsed} autoStart={autoStart}>
+    <PlayShell title="Spell It" score={shellScore} finished={shellFinished} totalScore={shellTotal} onElapsed={handleElapsed} autoStart={autoStart}>
       <SpellItGame
         items={items}
         theme={theme}
         locale={locale}
         onComplete={handleComplete}
-        onProgress={(s, f) => { setShellScore(s); setShellFinished(f) }}
+        onProgress={(s, f, t) => { setShellScore(s); setShellFinished(f); if (typeof t === 'number') setShellTotal(t) }}
       />
     </PlayShell>
   )

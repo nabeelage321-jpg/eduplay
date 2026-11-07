@@ -10,6 +10,7 @@ import {
   stopGameMusic,
 } from '@/lib/game-sound'
 import ScorePill from '@/components/game/ScorePill'
+import { TimerChip } from '@/components/game/PlayChrome'
 
 // BATCH 1 (final list item 19): funky + bold letters on the play
 // screen — Fredoka One, already loaded, no new dependency.
@@ -71,6 +72,11 @@ interface PlayShellProps {
   title: string
   // The wrapped player's real score, kept in sync by the player itself.
   score: number
+  // Optional: the game's max score, so the shell's single pill shows
+  // "Score: X / total" — the one pill with the denominator (owner
+  // 2026-11-07 chrome polish). Absent = no denominator (games with
+  // no fixed max, e.g. Claim Line, Opinion Cloud).
+  totalScore?: number
   finished: boolean
   // Optional: report the shell's elapsed seconds up to a host (e.g. the
   // play page) so it can use the shell's time as the SINGLE elapsed
@@ -91,7 +97,7 @@ type Phase = 'start' | 'countdown' | 'playing' | 'paused'
 const COUNTDOWN_SECONDS = 3
 const COUNTDOWN_STEP_MS = 1000
 
-export default function PlayShell({ title, score, finished, onElapsed, autoStart, children }: PlayShellProps) {
+export default function PlayShell({ title, score, totalScore, finished, onElapsed, autoStart, children }: PlayShellProps) {
   // DOUBLE-START FIX (batch 1, owner bar 2026-11-07 13:37 PKT): when
   // the host already showed the instruction scene, the shell starts
   // at the countdown — its own Start screen would make the kid tap
@@ -212,15 +218,17 @@ export default function PlayShell({ title, score, finished, onElapsed, autoStart
           display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem',
           padding: '0.5rem 1rem', color: 'var(--color-text-muted)', fontSize: '0.9rem',
         }}>
-          <span aria-label={`Elapsed time ${formatElapsed(elapsed)}`}>⏱ {formatElapsed(elapsed)}</span>
-          {/* BATCH 1 (item 8, lively screen): the score POPS every
-              time it changes, so a correct answer feels alive.
-              BOLD + COLOURFUL (owner 12:55 PKT) — a gradient pill,
-              not small plain text. KID-STYLE UPGRADE 2026-11-07:
-              the pill itself is now big + chunky and pops on its
-              own, so the shell no longer wraps it in a second
-              pop animation. */}
-          <ScorePill score={score} />
+          {/* CHROME POLISH (owner 2026-11-07): the elapsed timer
+              ticks live — one small pulse per second, like the round
+              timers. It counts up, so it never goes warm/red. */}
+          <TimerChip display={formatElapsed(elapsed)} warning={false} tickKey={elapsed} label={`Elapsed time ${formatElapsed(elapsed)}`} />
+          {/* CHROME POLISH (owner 2026-11-07): ONE score pill only.
+              The shell's pill — with the /max denominator when the
+              game has one — is the single pill during play, so the
+              wrapped games no longer render their own in-play pill
+              beside it. At finish it hides: the game's own big
+              finish pill is the single pill then. */}
+          {!finished && <ScorePill score={score} total={totalScore} />}
           {!finished && phase === 'playing' && (
             <button
               onClick={() => { playEduSound('click', soundOn); setPhase('paused') }}

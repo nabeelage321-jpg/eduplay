@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, isRTL, shuffleArray } from './shared'
 import ScorePill from '@/components/game/ScorePill'
+import { HowToPlayButton, LivesHearts, QUESTION_CARD_STYLE, RoundPill, TimerChip } from '@/components/game/PlayChrome'
 import PlayShell, { usePlayShellStatus } from './PlayShell'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
 import InteractiveSoundToggle from './InteractiveSoundToggle'
@@ -101,7 +102,7 @@ import {
 type RecallPhase = 'study' | 'recall'
 
 interface MemoryRecallGameProps extends ActivityProps {
-  onProgress: (score: number, finished: boolean) => void
+  onProgress: (score: number, finished: boolean, total?: number) => void
 }
 
 function MemoryRecallGame({ items, locale, onComplete, onProgress }: MemoryRecallGameProps) {
@@ -161,7 +162,7 @@ function MemoryRecallGame({ items, locale, onComplete, onProgress }: MemoryRecal
   useEffect(() => { scoreRef.current = score })
   useEffect(() => { livesRef.current = lives })
   useEffect(() => { correctRef.current = correctCount })
-  useEffect(() => { onProgress(score, finished) }, [score, finished, onProgress])
+  useEffect(() => { onProgress(score, finished, rounds.length * MEMORY_RECALL_POINTS) }, [score, finished, onProgress])
 
   const finishGame = useCallback((didWin: boolean) => {
     setWon(didWin)
@@ -401,15 +402,7 @@ function MemoryRecallGame({ items, locale, onComplete, onProgress }: MemoryRecal
       <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem', flexWrap: 'wrap', gap: '0.4rem' }}>
           <span>📖 Study phase — take your time, no timer</span>
-          <button
-            onClick={() => setShowHowto(true)}
-            style={{
-              padding: '0.35rem 0.7rem', borderRadius: 'var(--radius)', border: '2px solid var(--color-border)',
-              background: 'var(--color-surface)', color: 'var(--color-text-primary)', fontSize: '0.85rem', cursor: 'pointer',
-            }}
-          >
-            How to play
-          </button>
+          <HowToPlayButton onClick={() => setShowHowto(true)} />
           <InteractiveSoundToggle />
         </div>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textAlign: 'center', marginBottom: '1rem' }}>
@@ -456,19 +449,10 @@ function MemoryRecallGame({ items, locale, onComplete, onProgress }: MemoryRecal
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem', flexWrap: 'wrap', gap: '0.4rem' }}>
-        <ScorePill score={score} total={rounds.length * SCORE_PER_CORRECT} />
-        <span aria-live="polite">{'♥'.repeat(Math.max(0, lives))}{'♡'.repeat(Math.max(0, MEMORY_RECALL_LIVES - lives))} {lives} {lives === 1 ? 'life' : 'lives'}</span>
-        <span aria-live="polite" style={{ color: timeLeft <= MEMORY_RECALL_WARNING_SECONDS ? 'var(--color-danger)' : undefined }}>⏱ {timeLeft}s</span>
-        <span aria-live="polite">Recall {current + 1} of {rounds.length}</span>
-        <button
-          onClick={() => setShowHowto(true)}
-          style={{
-            padding: '0.35rem 0.7rem', borderRadius: 'var(--radius)', border: '2px solid var(--color-border)',
-            background: 'var(--color-surface)', color: 'var(--color-text-primary)', fontSize: '0.85rem', cursor: 'pointer',
-          }}
-        >
-          How to play
-        </button>
+        <LivesHearts lives={lives} maxLives={MEMORY_RECALL_LIVES} />
+        <TimerChip display={`${timeLeft}s`} warning={timeLeft <= MEMORY_RECALL_WARNING_SECONDS} tickKey={timeLeft} label={`${timeLeft} seconds remaining`} />
+        <RoundPill>Recall {current + 1} of {rounds.length}</RoundPill>
+        <HowToPlayButton onClick={() => setShowHowto(true)} />
         <InteractiveSoundToggle />
       </div>
       <div style={{ height: '4px', background: 'var(--color-border)', borderRadius: 'var(--radius)', marginBottom: '1rem' }}>
@@ -483,7 +467,7 @@ function MemoryRecallGame({ items, locale, onComplete, onProgress }: MemoryRecal
           💭 Recall from memory — the pairs are hidden now.
         </p>
         <div style={{
-          background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+          ...QUESTION_CARD_STYLE,
           borderRadius: 'var(--radius-lg)', padding: '1.5rem', marginBottom: '1.25rem',
           color: 'var(--color-text-primary)', fontSize: '1.125rem',
           fontFamily: 'var(--font-display)', boxShadow: 'var(--shadow-card)', textAlign: 'center',
@@ -540,6 +524,7 @@ function MemoryRecallGame({ items, locale, onComplete, onProgress }: MemoryRecal
 
 export default function MemoryRecallActivity({ items, theme, locale, onComplete, autoStart }: ActivityProps) {
   const [shellScore, setShellScore] = useState(0)
+  const [shellTotal, setShellTotal] = useState<number | undefined>(undefined)
   const [shellFinished, setShellFinished] = useState(false)
   const elapsedRef = useRef(0)
   const handleElapsed = useCallback((seconds: number) => { elapsedRef.current = seconds }, [])
@@ -547,13 +532,13 @@ export default function MemoryRecallActivity({ items, theme, locale, onComplete,
     onComplete(score, { ...details, elapsedSeconds: elapsedRef.current })
   }, [onComplete])
   return (
-    <PlayShell title="Memory Recall" score={shellScore} finished={shellFinished} onElapsed={handleElapsed} autoStart={autoStart}>
+    <PlayShell title="Memory Recall" score={shellScore} finished={shellFinished} totalScore={shellTotal} onElapsed={handleElapsed} autoStart={autoStart}>
       <MemoryRecallGame
         items={items}
         theme={theme}
         locale={locale}
         onComplete={handleComplete}
-        onProgress={(s, f) => { setShellScore(s); setShellFinished(f) }}
+        onProgress={(s, f, t) => { setShellScore(s); setShellFinished(f); if (typeof t === 'number') setShellTotal(t) }}
       />
     </PlayShell>
   )

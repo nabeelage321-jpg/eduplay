@@ -7,6 +7,7 @@ import { SCORE_PER_CORRECT, shuffleArray, isRTL } from './shared'
 import PlayShell from './PlayShell'
 import KidActionsBar from '@/components/game/KidActionsBar'
 import ScorePill from '@/components/game/ScorePill'
+import { RoundPill } from '@/components/game/PlayChrome'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
 import InteractiveSoundToggle from './InteractiveSoundToggle'
 
@@ -74,7 +75,7 @@ interface MatchItem { id: string; prompt: string; answer: string }
  */
 
 interface MatchUpGameProps extends ActivityProps {
-  onProgress: (score: number, finished: boolean) => void
+  onProgress: (score: number, finished: boolean, total?: number) => void
 }
 
 function MatchUpGame({ items, locale, onComplete, onProgress }: MatchUpGameProps) {
@@ -104,7 +105,7 @@ function MatchUpGame({ items, locale, onComplete, onProgress }: MatchUpGameProps
 
   // Lift the real score and finished flag to the shell header, so
   // the header shows the same score the end screen reports.
-  useEffect(() => { onProgress(score, finished) }, [score, finished, onProgress])
+  useEffect(() => { onProgress(score, finished, pairs.length * SCORE_PER_CORRECT) }, [score, finished, onProgress])
 
   // Finish sound once: win fanfare on All Matched. Sound only —
   // no rule change. (Letter Wheel pattern: ref guard so a
@@ -225,7 +226,7 @@ function MatchUpGame({ items, locale, onComplete, onProgress }: MatchUpGameProps
         </div>
       </div>
       <div style={{ marginTop: '0.6rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-        {matched.size} / {pairs.length} matched · <ScorePill score={score} />
+        <RoundPill>{matched.size} / {pairs.length} matched</RoundPill>
       </div>
     </div>
   )
@@ -233,6 +234,7 @@ function MatchUpGame({ items, locale, onComplete, onProgress }: MatchUpGameProps
 
 export default function MatchUpActivity({ items, theme, locale, onComplete, autoStart }: ActivityProps) {
   const [shellScore, setShellScore] = useState(0)
+  const [shellTotal, setShellTotal] = useState<number | undefined>(undefined)
   const [shellFinished, setShellFinished] = useState(false)
   // The shell's elapsed seconds, kept in a ref so the finish-time
   // value is exact even if a state update is still queued when the
@@ -243,9 +245,9 @@ export default function MatchUpActivity({ items, theme, locale, onComplete, auto
   const handleComplete = useCallback((score: number, details?: ActivityCompletion) => {
     onComplete(score, { ...details, elapsedSeconds: elapsedRef.current })
   }, [onComplete])
-  const handleProgress = useCallback((s: number, f: boolean) => { setShellScore(s); setShellFinished(f) }, [])
+  const handleProgress = useCallback((s: number, f: boolean, t?: number) => { setShellScore(s); setShellFinished(f); if (typeof t === 'number') setShellTotal(t) }, [])
   return (
-    <PlayShell title="Match Up" score={shellScore} finished={shellFinished} onElapsed={handleElapsed} autoStart={autoStart}>
+    <PlayShell title="Match Up" score={shellScore} finished={shellFinished} totalScore={shellTotal} onElapsed={handleElapsed} autoStart={autoStart}>
       <MatchUpGame items={items} theme={theme} locale={locale} onComplete={handleComplete} onProgress={handleProgress} />
     </PlayShell>
   )

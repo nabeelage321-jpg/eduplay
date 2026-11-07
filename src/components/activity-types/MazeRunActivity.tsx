@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { ActivityProps } from './shared'
 import { isRTL, SCORE_PER_CORRECT, shuffleArray } from './shared'
 import ScorePill from '@/components/game/ScorePill'
+import { HowToPlayButton, LivesHearts, QUESTION_CARD_STYLE, RoundPill, TimerChip } from '@/components/game/PlayChrome'
 import PlayShell, { usePlayShellStatus } from './PlayShell'
 import type { ActivityItem } from '@/types'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
@@ -80,7 +81,7 @@ import {
  */
 
 interface MazeRunGameProps extends ActivityProps {
-  onProgress: (score: number, finished: boolean) => void
+  onProgress: (score: number, finished: boolean, total?: number) => void
 }
 
 function MazeRunGame({ items, locale, onComplete, onProgress }: MazeRunGameProps) {
@@ -152,7 +153,7 @@ function MazeRunGame({ items, locale, onComplete, onProgress }: MazeRunGameProps
   useEffect(() => { scoreRef.current = score })
   useEffect(() => { livesRef.current = lives })
   useEffect(() => { correctRef.current = correctCount })
-  useEffect(() => { onProgress(score, finished) }, [score, finished, onProgress])
+  useEffect(() => { onProgress(score, finished, rounds.length * SCORE_PER_CORRECT) }, [score, finished, onProgress])
 
   const finishGame = useCallback((didWin: boolean) => {
     setWon(didWin)
@@ -422,24 +423,15 @@ function MazeRunGame({ items, locale, onComplete, onProgress }: MazeRunGameProps
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem', flexWrap: 'wrap', gap: '0.4rem' }}>
-        <ScorePill score={score} total={rounds.length * SCORE_PER_CORRECT} />
-        <span aria-live="polite">{'♥'.repeat(Math.max(0, lives))}{'♡'.repeat(Math.max(0, MAZE_RUN_LIVES - lives))} {lives} {lives === 1 ? 'life' : 'lives'}</span>
-        <span aria-live="polite" style={{ color: timeLeft <= MAZE_RUN_WARNING_SECONDS ? 'var(--color-danger)' : undefined }}>⏱ {timeLeft}s</span>
-        <span aria-live="polite">Maze {current + 1} of {rounds.length}</span>
-        <button
-          onClick={() => setShowHowto(true)}
-          style={{
-            padding: '0.35rem 0.7rem', borderRadius: 'var(--radius)', border: '2px solid var(--color-border)',
-            background: 'var(--color-surface)', color: 'var(--color-text-primary)', fontSize: '0.85rem', cursor: 'pointer',
-          }}
-        >
-          How to play
-        </button>
+        <LivesHearts lives={lives} maxLives={MAZE_RUN_LIVES} />
+        <TimerChip display={`${timeLeft}s`} warning={timeLeft <= MAZE_RUN_WARNING_SECONDS} tickKey={timeLeft} label={`${timeLeft} seconds remaining`} />
+        <RoundPill>Maze {current + 1} of {rounds.length}</RoundPill>
+        <HowToPlayButton onClick={() => setShowHowto(true)} />
         <InteractiveSoundToggle />
       </div>
 
       <div style={{
-        background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+        ...QUESTION_CARD_STYLE,
         borderRadius: 'var(--radius-lg)', padding: '1rem', marginBottom: '1rem',
         color: 'var(--color-text-primary)', textAlign: 'center', boxShadow: 'var(--shadow-card)',
       }}>
@@ -534,6 +526,7 @@ function MazeRunGame({ items, locale, onComplete, onProgress }: MazeRunGameProps
 
 export default function MazeRunActivity({ items, theme, locale, onComplete, autoStart }: ActivityProps) {
   const [shellScore, setShellScore] = useState(0)
+  const [shellTotal, setShellTotal] = useState<number | undefined>(undefined)
   const [shellFinished, setShellFinished] = useState(false)
   const elapsedRef = useRef(0)
   const handleElapsed = useCallback((seconds: number) => { elapsedRef.current = seconds }, [])
@@ -541,13 +534,13 @@ export default function MazeRunActivity({ items, theme, locale, onComplete, auto
     onComplete(score, { ...details, elapsedSeconds: elapsedRef.current })
   }, [onComplete])
   return (
-    <PlayShell title="Maze Run" score={shellScore} finished={shellFinished} onElapsed={handleElapsed} autoStart={autoStart}>
+    <PlayShell title="Maze Run" score={shellScore} finished={shellFinished} totalScore={shellTotal} onElapsed={handleElapsed} autoStart={autoStart}>
       <MazeRunGame
         items={items}
         theme={theme}
         locale={locale}
         onComplete={handleComplete}
-        onProgress={(s, f) => { setShellScore(s); setShellFinished(f) }}
+        onProgress={(s, f, t) => { setShellScore(s); setShellFinished(f); if (typeof t === 'number') setShellTotal(t) }}
       />
     </PlayShell>
   )

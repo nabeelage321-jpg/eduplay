@@ -7,6 +7,7 @@ import { SCORE_PER_CORRECT, TIMER_DEFAULT, shuffleArray, isRTL, getRandomFeedbac
 import PlayShell, { usePlayShellStatus } from './PlayShell'
 import KidActionsBar from '@/components/game/KidActionsBar'
 import ScorePill from '@/components/game/ScorePill'
+import { QUESTION_CARD_STYLE, RoundPill, TimerChip } from '@/components/game/PlayChrome'
 import type { ActivityItem } from '@/types'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
 
@@ -33,7 +34,7 @@ interface QuizQuestion {
 // intro collects is owned by the play page, which attaches it to
 // the finish screen; this player only reports score + counts.
 interface QuizGameProps extends ActivityProps {
-  onProgress: (score: number, finished: boolean) => void
+  onProgress: (score: number, finished: boolean, total?: number) => void
 }
 
 function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
@@ -54,7 +55,7 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
   const shellStatus = usePlayShellStatus()
   const onProgressRef = useRef(onProgress)
   useEffect(() => { onProgressRef.current = onProgress })
-  useEffect(() => { onProgressRef.current(score, finished) }, [score, finished])
+  useEffect(() => { onProgressRef.current(score, finished, questions.length * SCORE_PER_CORRECT) }, [score, finished])
 
   // GAME FEEL (2026-11-07, build-list item 4): Quiz now uses the
   // interactive sound system (default ON, same as Match Up) instead
@@ -262,8 +263,8 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '0.75rem 0.5rem', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-        <span>{current + 1} / {questions.length}</span>
-        <span aria-live="polite" aria-label={`${timeLeft} seconds remaining`}>{timeLeft}s</span>
+        <RoundPill>{current + 1} / {questions.length}</RoundPill>
+        <TimerChip display={`${timeLeft}s`} warning={timeLeft <= 6} tickKey={timeLeft} label={`${timeLeft} seconds remaining`} />
       </div>
       <div style={{ height: '4px', background: 'var(--color-border)', borderRadius: 'var(--radius)', marginBottom: '0.4rem' }}>
         <motion.div style={{ height: '100%', background: 'var(--color-primary)', borderRadius: 'var(--radius)' }}
@@ -287,7 +288,7 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
         <motion.div key={current} initial={{ x: rtl ? -40 : 40, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }} exit={{ x: rtl ? 40 : -40, opacity: 0 }} transition={{ duration: 0.25 }}>
           <div style={{
-            background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+            ...QUESTION_CARD_STYLE,
             borderRadius: 'var(--radius-lg)', padding: '1rem', marginBottom: '0.75rem',
             color: 'var(--color-text-primary)', fontSize: '1.15rem',
             fontFamily: FUNKY_FONT, boxShadow: 'var(--shadow-card)',
@@ -374,6 +375,7 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
 
 export default function QuizActivity({ items, theme, locale, onComplete, autoStart }: ActivityProps) {
   const [shellScore, setShellScore] = useState(0)
+  const [shellTotal, setShellTotal] = useState<number | undefined>(undefined)
   const [shellFinished, setShellFinished] = useState(false)
   // TIMER FIX 2026-11-03: the shell's elapsed seconds, kept in a ref
   // so the finish-time value is exact even if a state update is
@@ -393,13 +395,13 @@ export default function QuizActivity({ items, theme, locale, onComplete, autoSta
   }, [onComplete])
 
   return (
-    <PlayShell title="Quiz" score={shellScore} finished={shellFinished} onElapsed={handleElapsed} autoStart={autoStart}>
+    <PlayShell title="Quiz" score={shellScore} finished={shellFinished} totalScore={shellTotal} onElapsed={handleElapsed} autoStart={autoStart}>
       <QuizGame
         items={items}
         theme={theme}
         locale={locale}
         onComplete={handleComplete}
-        onProgress={(s, f) => { setShellScore(s); setShellFinished(f) }}
+        onProgress={(s, f, t) => { setShellScore(s); setShellFinished(f); if (typeof t === 'number') setShellTotal(t) }}
       />
     </PlayShell>
   )

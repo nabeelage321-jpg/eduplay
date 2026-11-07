@@ -10,9 +10,11 @@
  * Feedback is always colour + icon + text in the game itself; sound is
  * an extra layer only, never the only signal.
  *
- * Default is MUTED (sound off until the player taps the sound button),
- * because classrooms should not start with sound. The choice is saved
- * on this device only (localStorage 'eduplay-sound-on').
+ * Default is ON (sound plays unless the player taps the sound
+ * button to mute), because the owner wants engaging games to be
+ * heard — music on, loud enough to hear. The choice is saved on
+ * this device only (localStorage 'eduplay-sound-on'); one tap on
+ * the visible toggle mutes, another unmutes.
  *
  * Interactive sound system (added 2026-11-04, part 1):
  * Letter Wheel and Jump Path ONLY use a second, shared system with
@@ -21,18 +23,23 @@
  * always visible inside those two players. Its default is ON (no
  * stored choice yet means ON), because the owner wants engaging
  * games to be heard; one tap on the toggle mutes them immediately.
- * The old muted default above is UNCHANGED for every other game,
- * and Dictation/video sound behaviour is untouched. No downloaded
- * sound file is used anywhere, so there are no unclear rights.
+ * The default above is now ON for every game too (owner,
+ * 2026-11-07 — music on, high volume), and Dictation/video sound
+ * behaviour is untouched. No downloaded sound file is used
+ * anywhere, so there are no unclear rights.
  */
 export const SOUND_STORAGE_KEY = 'eduplay-sound-on'
 
 export function readSoundOn(): boolean {
-  if (typeof window === 'undefined') return false
+  if (typeof window === 'undefined') return true
   try {
-    return window.localStorage.getItem(SOUND_STORAGE_KEY) === '1'
+    // ON unless the player explicitly turned it off: no stored
+    // value means ON; only a stored '0' means off. Server-side
+    // rendering also defaults to ON so the toggle's first paint
+    // matches, like the interactive system below.
+    return window.localStorage.getItem(SOUND_STORAGE_KEY) !== '0'
   } catch {
-    return false
+    return true
   }
 }
 
@@ -41,7 +48,7 @@ export function storeSoundOn(on: boolean) {
   try {
     window.localStorage.setItem(SOUND_STORAGE_KEY, on ? '1' : '0')
   } catch {
-    /* storage unavailable — sound just stays off for this session */
+    /* storage unavailable — sound just stays on for this session */
   }
 }
 
@@ -307,18 +314,22 @@ export function playEduSound(kind: EduSoundKind, soundOn: boolean) {
  * One gentle loop while a game runs: a slow C-major pentatonic
  * arpeggio of soft sine notes (one note per step) with a quiet bass
  * note every fourth step. No melody is copied from anywhere — the
- * notes are a plain scale, the volumes stay <= 0.035 so the music
- * sits under the game, and it follows the interactive sound setting:
+ * notes are a plain scale. MUSIC UP, HIGH VOLUME (owner,
+ * 2026-11-07 18:24 PKT — "music on kar do plz", "HIGH VOLUME
+ * PLZ"): the notes play at 0.12 and the bass at 0.08, the same
+ * clearly-audible level as the tick (0.12) — loud enough to hear
+ * across the room, still under the correct/wrong sounds (claps
+ * 0.2, blast 0.22), never harsh. It follows the sound setting:
  * muting stops it, unmuting while playing restarts it. The PlayShell
  * starts it when play begins and stops it on pause/finish/unmount.
  */
 
 export const MUSIC_NOTES = [523.25, 587.33, 659.25, 783.99, 880.0, 783.99, 659.25, 587.33]
 export const MUSIC_STEP_MS = 450
-// MUSIC UP (owner, 2026-11-07 batch 1): the old 0.035/0.02 was too
-// low to hear. Audible now, still under the game sounds.
-export const MUSIC_NOTE_VOLUME = 0.08
-export const MUSIC_BASS_VOLUME = 0.05
+// MUSIC UP, HIGH VOLUME (owner, 2026-11-07): the old 0.08/0.05 was
+// still too low to hear. Audible now, at the tick's level.
+export const MUSIC_NOTE_VOLUME = 0.12
+export const MUSIC_BASS_VOLUME = 0.08
 
 /** Pure schedule for one music step — the note and whether a soft bass joins it. */
 export function musicNoteAt(step: number): { freq: number; bass: boolean } {
