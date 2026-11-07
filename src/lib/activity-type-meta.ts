@@ -66,4 +66,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'ladder-climb',      icon: '🪜', name: 'Ladder Climb',      desc: 'Climb the ladder to the right answer and dodge the rolling barrels' },
   { slug: 'beat-tap',          icon: '🥁', name: 'Beat Tap',          desc: 'Tap the drum when the note with the right answer crosses the line — on the beat' },
   { slug: 'mine-logic',        icon: '🧩', name: 'Mine Logic',        desc: 'Read the numbers, flag the hidden mines, and answer a quick question to open each safe square' },
+  { slug: 'number-merge',      icon: '🔢', name: 'Number Merge',      desc: 'Slide the numbered tiles and merge equal pairs — make 8, then 16, then 32, all the way to 4096' },
 ]

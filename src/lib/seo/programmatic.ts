@@ -106,6 +106,7 @@ export const DB_TYPE_BY_SLUG: Record<string, string> = {
   'ladder-climb': 'ladder-climb',
   'beat-tap': 'beat-tap',
   'mine-logic': 'mine-logic',
+  'number-merge': 'number-merge',
 }
 
 export interface ProgrammaticActivity {

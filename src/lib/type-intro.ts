@@ -76,6 +76,10 @@
  *     lives (a wrong answer costs no life — the square stays
  *     covered; opening a mine or flagging a safe square costs
  *     one life and ends the round).
+ *     number-merge: 10 pts per target reached (1 per round), 3
+ *     lives (a slide that moves nothing costs no life; a stuck
+ *     board costs one life and the round restarts with the same
+ *     target).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -509,6 +513,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Tap a square to open it (a question appears first). Tap the Flag button — or press F, or hold a square down — to switch to flagging, then tap the squares you are sure hide a mine.',
     timer: 'No timer — take your time to read the numbers and work out where the mines are.',
     lives: 'You have 3 lives — a wrong answer costs no life, just the streak, but opening a mine or flagging a safe square costs one life and ends the round.',
+  }),
+  'number-merge': rules({
+    howTo: 'Slide the numbered tiles on a 4 by 4 board — two equal tiles that meet merge into their sum, so 4 + 4 = 8. Each round gives you a target number to make, starting at 8 and doubling every round. Every merge shows its own sum, so you always see the maths you just did.',
+    scoring: 'Making the target number earns 10 points — one target per round, so the game is scored out of 100. Merging smaller tiles earns no points on its own — only the target does.',
+    objective: 'Make every round’s target — 8, then 16, then 32, all the way to 4096 — without running out of lives, and keep your streak of rounds won in a row going.',
+    controls: 'Swipe the board, press the arrow keys (W A S D works too), or tap the arrow buttons under the board. A slide that moves nothing does nothing — no new tile appears and no life is lost.',
+    timer: 'No timer — take your time to line up the tiles you want to merge.',
+    lives: 'You have 3 lives — a slide that moves nothing costs no life, but a board that is full with no two equal neighbours is stuck, and that costs one life and restarts the round with the same target.',
   }),
 }
 

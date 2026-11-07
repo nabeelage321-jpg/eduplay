@@ -101,6 +101,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'ladder-climb',      icon: '🪜', name: 'Ladder Climb' },
   { slug: 'beat-tap',          icon: '🥁', name: 'Beat Tap' },
   { slug: 'mine-logic',        icon: '🧩', name: 'Mine Logic' },
+  { slug: 'number-merge',      icon: '🔢', name: 'Number Merge' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -697,6 +698,14 @@ export function canConvertTo(
             reason:
               'Mine Logic needs at least three different answers across the game to borrow as wrong choices — one of these questions has no other answers to borrow from.',
           }
+
+    // Number Merge (type 57): the board makes its own numbers
+    // — each round starts with six tiles that add up to the
+    // target, and every merge is a sum on the board — so any
+    // game converts, even one with no items at all. The game's
+    // items are kept but not needed for play.
+    case 'number-merge':
+      return { ok: true, reason: '' }
 
     default:
       return {

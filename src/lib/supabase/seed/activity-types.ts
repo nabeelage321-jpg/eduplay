@@ -755,6 +755,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Mine Logic',
     description_en: 'Read the numbers, flag the hidden mines, and answer a quick question to open each safe square',
   },
+  {
+    slug: 'number-merge',
+    icon: '🔢',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Number Merge',
+    name_ur: 'Number Merge',
+    name_ar: 'Number Merge',
+    name_hi: 'Number Merge',
+    name_es: 'Number Merge',
+    name_fr: 'Number Merge',
+    description_en: 'Slide the numbered tiles and merge equal pairs — make 8, then 16, then 32, all the way to 4096',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)
