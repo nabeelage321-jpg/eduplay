@@ -48,6 +48,9 @@
  *     lane-runner: 10 pts per correct gate, 3 lives (a wrong
  *     gate or a barrier crash costs one life and ends the round;
  *     coins earn no points).
+ *     block-drop: 10 pts per completed row, 3 lives (a topped-out
+ *     well costs one life and ends the round; running out of
+ *     blocks costs no life).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -425,6 +428,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Left/right arrow keys or A/D to switch lanes, up arrow, W, or Space to jump — or the on-screen lane and JUMP buttons, or tap a lane.',
     timer: 'No timer — but the gates take about 3 seconds to reach you, so read the question and pick a lane.',
     lives: 'You have 3 lives — a wrong gate or a barrier crash costs one life and ends the round.',
+  }),
+  'block-drop': rules({
+    howTo: 'Move, turn, and drop the falling blocks so one full row spells the target word or adds up to the target number — a wrong full row stays and piles up.',
+    scoring: 'Each completed row earns 10 points.',
+    objective: 'Complete the target row in every round without running out of lives.',
+    controls: 'Left/right arrow keys or A/D to move, up arrow or X to turn, down arrow or S to drop one row, Space to drop it all the way — or the on-screen move, turn, and DROP buttons.',
+    timer: 'No timer — but a piece falls one row about every second, so aim it before it lands.',
+    lives: 'You have 3 lives — if the blocks pile up to the top so the next piece cannot fall, you lose one life and the round ends. Running out of blocks costs no life.',
   }),
 }
 

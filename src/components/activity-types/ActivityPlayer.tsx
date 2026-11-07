@@ -63,6 +63,7 @@ const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
   'fruit-slice':       lazy(() => import('./FruitSliceActivity')),
   'river-hop':         lazy(() => import('./RiverHopActivity')),
   'lane-runner':        lazy(() => import('./LaneRunnerActivity')),
+  'block-drop':         lazy(() => import('./BlockDropActivity')),
 }
 
 interface ActivityPlayerProps {

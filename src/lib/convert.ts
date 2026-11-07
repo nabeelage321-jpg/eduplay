@@ -30,6 +30,7 @@ import { parseNumberAnswer } from '@/lib/number-slider'
 import { canBuildSweetMatchTarget } from '@/lib/sweet-match'
 import { sequenceTerms, borrowNumericWrongAnswers, RIVER_HOP_MIN_NUMERIC_WRONGS } from '@/lib/river-hop'
 import { borrowWrongAnswers as borrowLaneRunnerWrongAnswers, LANE_RUNNER_MAX_WRONGS } from '@/lib/lane-runner'
+import { buildBlockDropRound } from '@/lib/block-drop'
 
 export interface ConvertTarget {
   slug: string
@@ -87,6 +88,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'fruit-slice',      icon: '🍉', name: 'Fruit Slice' },
   { slug: 'river-hop',       icon: '🌊', name: 'River Hop' },
   { slug: 'lane-runner',      icon: '🏃', name: 'Lane Runner' },
+  { slug: 'block-drop',       icon: '🧱', name: 'Block Drop' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -541,6 +543,27 @@ export function canConvertTo(
             ok: false,
             reason:
               'Lane Runner needs at least two different answers to borrow as wrong gates in every round — one of these questions has no other answers to borrow from.',
+          }
+
+    // Block Drop (type 50): the round is generated from the
+    // game's own items — one round per question, the falling
+    // blocks are the item's own target characters plus borrowed
+    // distractors. A round needs a word answer of 3–6 letters
+    // or a whole-number answer of 0–27; any other answer builds
+    // no round.
+    case 'block-drop':
+      return items.every((item) =>
+        buildBlockDropRound(
+          item.prompt,
+          item.answer,
+          items.map((i) => i.answer),
+        ),
+      )
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Block Drop needs every answer to be a word of 3–6 letters or a whole number up to 27 — one of these questions does not.',
           }
 
     default:

@@ -59,6 +59,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'fruit-slice': { prompt: 'Question for this round', answer: 'Correct answer fruit' },
   'river-hop': { prompt: 'Counting question for this crossing', answer: 'Last number of the counting sequence' },
   'lane-runner': { prompt: 'Question for this run', answer: 'Correct answer gate' },
+  'block-drop': { prompt: 'Question for this drop', answer: 'Word to spell (3–6 letters) or sum answer (0–27)' },
 }
 
 const fieldStyle: React.CSSProperties = {

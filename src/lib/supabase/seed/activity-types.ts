@@ -664,6 +664,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Lane Runner',
     description_en: 'Run the lanes and race through the gate with the right answer',
   },
+  {
+    slug: 'block-drop',
+    icon: '🧱',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Block Drop',
+    name_ur: 'Block Drop',
+    name_ar: 'Block Drop',
+    name_hi: 'Block Drop',
+    name_es: 'Block Drop',
+    name_fr: 'Block Drop',
+    description_en: 'Drop falling blocks to spell the word or make the sum',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

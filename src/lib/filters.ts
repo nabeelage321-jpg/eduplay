@@ -96,6 +96,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'fruit-slice', label: 'Fruit Slice' },
   { value: 'river-hop', label: 'River Hop' },
   { value: 'lane-runner', label: 'Lane Runner' },
+  { value: 'block-drop', label: 'Block Drop' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [
