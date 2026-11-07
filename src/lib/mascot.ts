@@ -9,13 +9,21 @@ export const MASCOT_NAME = 'Twinkle'
 // Roaming anchors: the mascot gently wanders the WHOLE screen — top,
 // middle and bottom on both edges — so kids see it walking around
 // everywhere, not locked in one corner. left/top are explicit (never
-// "auto") so the CSS transition animates the drift. The button is up
-// to 128px (8rem); the bottom anchors sit 6.5rem above the viewport
-// bottom so the fixed mobile play bar never covers it; the top anchors
-// sit 4.5rem down so the header never covers it. The centre of the
-// screen is deliberately NOT an anchor — that is where the game, the
-// Start button and the right panel live, and the mascot must never
-// cover them.
+// "auto") so the CSS transition animates the drift. The bottom anchors
+// sit 6.5rem above the viewport bottom so the fixed mobile play bar
+// never covers it; the top anchors sit 4.5rem down so the header never
+// covers it. The centre of the screen is deliberately NOT an anchor —
+// that is where the game, the Start button and the right panel live,
+// and the mascot must never cover them.
+// The mascot button is at most 8rem (128px) wide. Right-edge anchors sit
+// 9rem in from the viewport's right edge, so the button's right edge is
+// always at least 1rem inside the viewport — the mascot itself can never
+// be clipped, at any viewport width. The wrapper is exactly the button
+// wide (the helper panel / greeting float above it as absolutely
+// positioned popups), so nothing else can push the mascot out either.
+export const MASCOT_BUTTON_MAX_REM = 8
+export const MASCOT_EDGE_INSET_REM = 9
+
 export type MascotAnchor = {
   id: string
   left: string
@@ -24,13 +32,30 @@ export type MascotAnchor = {
 }
 
 export const MASCOT_ANCHORS: readonly MascotAnchor[] = [
-  { id: 'bottom-right', left: 'calc(100vw - 9rem)', top: 'calc(100dvh - 14.5rem)', side: 'right' },
-  { id: 'mid-right', left: 'calc(100vw - 9rem)', top: 'calc(50dvh - 4rem)', side: 'right' },
-  { id: 'top-right', left: 'calc(100vw - 9rem)', top: '4.5rem', side: 'right' },
+  { id: 'bottom-right', left: `calc(100vw - ${MASCOT_EDGE_INSET_REM}rem)`, top: 'calc(100dvh - 14.5rem)', side: 'right' },
+  { id: 'mid-right', left: `calc(100vw - ${MASCOT_EDGE_INSET_REM}rem)`, top: 'calc(50dvh - 4rem)', side: 'right' },
+  { id: 'top-right', left: `calc(100vw - ${MASCOT_EDGE_INSET_REM}rem)`, top: '4.5rem', side: 'right' },
   { id: 'top-left', left: '1rem', top: '4.5rem', side: 'left' },
   { id: 'mid-left', left: '1rem', top: 'calc(50dvh - 4rem)', side: 'left' },
   { id: 'bottom-left', left: '1rem', top: 'calc(100dvh - 14.5rem)', side: 'left' },
 ]
+
+// Where the helper panel / greeting opens relative to the button. The
+// popup grows INWARD from the button's edge — on the right side its
+// right edge lines up with the button's right edge (1rem inside the
+// viewport), so it can never run past the right edge; the left side
+// mirrors it. Vertically it opens above the button, except at the top
+// anchors where there is no room above — there it opens below.
+// (Live check 2026-11-07 19:06: the panel opened from a right-edge
+// anchor read truncated — "I am EduPlay's help…", "Find a ga…".)
+export type PopupPlacement = { vertical: 'above' | 'below'; horizontal: 'left' | 'right' }
+
+export function popupPlacement(anchor: MascotAnchor): PopupPlacement {
+  return {
+    vertical: anchor.id.startsWith('top') ? 'below' : 'above',
+    horizontal: anchor.side,
+  }
+}
 
 // During play the mascot stays at the bottom corners only — never near
 // the header/timer, never over the game area or the right panel.

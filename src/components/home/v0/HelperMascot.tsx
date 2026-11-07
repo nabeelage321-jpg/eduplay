@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -13,24 +14,30 @@ import {
   MASCOT_WANDER_MS,
   isPlayPath,
   pickNextAnchor,
+  popupPlacement,
   type MascotAnchor,
 } from '@/lib/mascot'
 
 // Twinkle — EduPlay's helper star. The art is the ORIGINAL orange star
 // + teal book portrait (/eduplay-mascot.png, V0 ZIP #2 port, cropped to
 // 512×512) — the cute one the owner picked; the inline-SVG character
-// from the Twinkle upgrade looked odd and is gone.
+// from the Twinkle upgrade looked odd and is gone. The PNG's cream
+// background was cleaned to real transparency (2026-11-07), so the star
+// and book stand on ANY page colour with no square tile — no blend mode.
 // The mascot is FREE on the screen, not locked in a little circle: the
 // button is the picture itself (up to 128px, no border, no background,
-// no round frame — the cream background blends away with multiply, so
-// the star and book stand on the page). It ROAMS the whole screen —
-// top, middle and bottom on both edges — drifting slowly with a soft
-// bob, and it never covers buttons, game controls, the Start button,
-// or the right panel: the wrapper takes no pointer events, only the
-// mascot button itself is tappable, and on play pages it stays at the
-// bottom corners only. Tapping it opens the helper panel (quick actions
-// only — no chat backend, no personal data, never pretending to be a
-// human). The greeting is dismissible and remembered on this device only.
+// no round frame). It ROAMS the whole screen — top, middle and bottom
+// on both edges — drifting slowly with a soft bob, and it never covers
+// buttons, game controls, the Start button, or the right panel: the
+// wrapper takes no pointer events, only the mascot button itself is
+// tappable, and on play pages it stays at the bottom corners only.
+// The helper panel / greeting float above the button as absolutely
+// positioned popups that grow INWARD from the button's edge, so they
+// can never run past the viewport edge (right side opens to the left;
+// top anchors open below the button, where there is room). Tapping the
+// mascot opens the helper panel (quick actions only — no chat backend,
+// no personal data, never pretending to be a human). The greeting is
+// dismissible and remembered on this device only.
 const GREETING_KEY = 'eduplay-helper-greeted'
 
 export default function HelperMascot({ locale }: { locale: string }) {
@@ -86,17 +93,33 @@ export default function HelperMascot({ locale }: { locale: string }) {
     { label: 'How does EduPlay work?', href: '#how-it-works', Icon: CircleHelp },
   ] as const
 
+  // Where the helper panel / greeting opens: above the button, growing
+  // inward from the button's edge (right side opens to the left, so it
+  // can never run past the viewport's right edge); below the button at
+  // the top anchors, where there is no room above.
+  const placement = popupPlacement(anchor)
+  const popupPos: CSSProperties = {
+    position: 'absolute',
+    ...(placement.vertical === 'below'
+      ? { top: 'calc(100% + 0.75rem)' }
+      : { bottom: 'calc(100% + 0.75rem)' }),
+    ...(placement.horizontal === 'right' ? { right: 0 } : { left: 0 }),
+  }
+
   return (
+    // The wrapper is EXACTLY the button wide (up to 128px) — the panel /
+    // greeting are absolutely positioned popups, so they can never widen
+    // the wrapper and push the mascot (or themselves) past the viewport
+    // edge. Right anchors sit 9rem in, the button is at most 8rem wide,
+    // so the mascot's right edge is always ≥1rem inside the viewport.
     <div
       style={{
         position: 'fixed',
         left: anchor.left,
         top: anchor.top,
+        width: 'clamp(84px, 12vw, 128px)',
+        height: 'clamp(84px, 12vw, 128px)',
         zIndex: 40,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: anchor.side === 'right' ? 'flex-end' : 'flex-start',
-        gap: '0.75rem',
         pointerEvents: 'none',
         transition: `left ${MASCOT_MOVE_MS}ms ease-in-out, top ${MASCOT_MOVE_MS}ms ease-in-out`,
       }}
@@ -105,7 +128,7 @@ export default function HelperMascot({ locale }: { locale: string }) {
         <div
           role="dialog"
           aria-label={`${MASCOT_NAME} — EduPlay's helper`}
-          style={{ width: 'min(20rem, calc(100vw - 2rem))', borderRadius: '1.5rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '1rem', boxShadow: '0 8px 0 0 var(--color-border)', color: 'var(--color-text-primary)', pointerEvents: 'auto' }}
+          style={{ ...popupPos, width: 'min(20rem, calc(100vw - 2rem))', borderRadius: '1.5rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '1rem', boxShadow: '0 8px 0 0 var(--color-border)', color: 'var(--color-text-primary)', pointerEvents: 'auto' }}
         >
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
             <p style={{ fontSize: '1.125rem', fontWeight: 600 }}>{MASCOT_NAME}</p>
@@ -142,7 +165,7 @@ export default function HelperMascot({ locale }: { locale: string }) {
       {showGreeting && !open && (
         <div
           role="status"
-          style={{ position: 'relative', display: 'flex', maxWidth: '16rem', alignItems: 'flex-start', gap: '0.25rem', borderRadius: '1.5rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '0.75rem 0.25rem 0.75rem 1rem', color: 'var(--color-text-primary)', boxShadow: '0 6px 0 0 var(--color-border)', pointerEvents: 'auto' }}
+          style={{ ...popupPos, width: 'min(16rem, calc(100vw - 2rem))', display: 'flex', alignItems: 'flex-start', gap: '0.25rem', borderRadius: '1.5rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '0.75rem 0.25rem 0.75rem 1rem', color: 'var(--color-text-primary)', boxShadow: '0 6px 0 0 var(--color-border)', pointerEvents: 'auto' }}
         >
           <p style={{ fontSize: '0.875rem', fontWeight: 600, lineHeight: 1.5 }}>
             Hi! I&apos;m {MASCOT_NAME} — EduPlay&apos;s helper. I can help you find a game or make one from a prompt.
@@ -167,9 +190,9 @@ export default function HelperMascot({ locale }: { locale: string }) {
         aria-expanded={open}
         aria-label={open ? `Close ${MASCOT_NAME} helper` : `Open ${MASCOT_NAME} helper`}
         className="eduplay-mascot-bob"
-        style={{ position: 'relative', width: 'clamp(84px, 12vw, 128px)', height: 'clamp(84px, 12vw, 128px)', border: 'none', background: 'transparent', boxShadow: 'none', cursor: 'pointer', padding: 0, pointerEvents: 'auto' }}
+        style={{ position: 'relative', width: '100%', height: '100%', border: 'none', background: 'transparent', boxShadow: 'none', cursor: 'pointer', padding: 0, pointerEvents: 'auto' }}
       >
-        <Image src="/eduplay-mascot.png" alt={`${MASCOT_NAME}, EduPlay's helper star`} width={512} height={512} style={{ width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply' }} />
+        <Image src="/eduplay-mascot.png" alt={`${MASCOT_NAME}, EduPlay's helper star`} width={512} height={512} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
       </button>
     </div>
   )
