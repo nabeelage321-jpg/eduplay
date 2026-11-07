@@ -31,7 +31,8 @@ import ThemeSection from '@/components/home/v0/ThemeSection'
 // only — no homepage restyle, no new section. Fresh devices show no
 // streak number, only the honest starter line (see StreakBadge).
 import { StreakBadge } from '@/components/activity-types/StreakBadge'
-import { TILES, TILE_INK } from '@/components/home/v0/tiles'
+import { TILES, TILE_INK, SUBJECT_TILE_COLOURS } from '@/components/home/v0/tiles'
+import { getTypePill } from '@/lib/type-colour'
 
 interface HomePageProps {
   params: { locale: string }
@@ -55,7 +56,7 @@ export async function generateMetadata({ params }: HomePageProps): Promise<Metad
 }
 
 const SUBJECT_EMOJI: Record<string, string> = {
-  mathematics: '➕', science: '🔬', english: '📖', urdu: '🇵🇰',
+  mathematics: '➕', science: '🔬', english: '📖', urdu: '✒️',
   islamiat: '🕌', history: '🏺', geography: '🌍', 'computer-science': '💻',
   art: '🎨', 'physical-education': '⚽', biology: '🧬', chemistry: '⚗️',
   physics: '🚀', 'social-studies': '🌍', 'general-knowledge': '🧠',
@@ -228,6 +229,51 @@ export default async function HomePage({ params }: HomePageProps) {
 
         <ThemeSection />
 
+        {/* PROMPT GAME-MAKING FUNNEL ENTRY (2026-11-04): one clear link
+            that takes a viewer into the prompt game-making system —
+            first who they are, then which one game to make, then the
+            maker with that game already selected. No new maker here. */}
+        <section aria-labelledby="make-prompt-title" style={sectionStyle}>
+          <p style={eyebrowStyle}>Make a game with a prompt</p>
+          <h2 id="make-prompt-title" style={{ marginTop: '0.5rem', ...h2Style }}>Make a game with a prompt</h2>
+          <p style={subStyle}>Pick who you are, pick one game, write a few words — the system makes your draft, you approve it, and the game is ready.</p>
+          <Link
+            href={`/${locale}/make`}
+            style={{ marginTop: '1.5rem', display: 'inline-flex', minHeight: '48px', alignItems: 'center', gap: '0.5rem', borderRadius: '9999px', background: 'var(--color-primary)', padding: '0 1.5rem', fontSize: '1.125rem', fontWeight: 800, color: 'white' }}
+          >
+            Make a game with a prompt →
+          </Link>
+        </section>
+
+
+        {/* CHAPTER-TO-GAME HOMEPAGE SECTION (2026-11-04): a prominent
+            homepage entry for the chapter flow — paste a chapter, or
+            photograph its pages, and a game is made from it, to share
+            with friends. No new chapter flow here: the button links to
+            the existing chapter flow at the top of /create (paste /
+            photo scan / draft / approve / Preview / Save, unchanged).
+            Copyright-safe copy, per the owner's paraphrase rule: the
+            game is made in NEW words from the chapter's facts, never
+            the book's exact sentences, and stays private until a
+            teacher or parent has checked it. English wording for every
+            locale, like the prompt-funnel section above — no
+            translations invented. */}
+        <section aria-labelledby="make-chapter-title" style={{ ...sectionStyle, background: 'var(--color-surface-alt)' }}>
+          <p style={eyebrowStyle}>From your chapter</p>
+          <h2 id="make-chapter-title" style={{ marginTop: '0.5rem', ...h2Style }}>Turn your chapter into a game</h2>
+          <p style={subStyle}>Paste your chapter, or photograph its pages — the system makes a game from it, to share with friends.</p>
+          <p style={{ marginTop: '0.75rem', fontSize: '1rem', lineHeight: 1.6, color: 'var(--color-text-secondary)' }}>
+            Made in NEW words from your chapter&apos;s facts — never the book&apos;s exact sentences — and private until a teacher or parent has checked it.
+          </p>
+          <Link
+            href={`/${locale}/create`}
+            style={{ marginTop: '1.5rem', display: 'inline-flex', minHeight: '48px', alignItems: 'center', gap: '0.5rem', borderRadius: '9999px', background: 'var(--color-primary)', padding: '0 1.5rem', fontSize: '1.125rem', fontWeight: 800, color: 'white' }}
+          >
+            Make a game from your chapter →
+          </Link>
+        </section>
+
+
         {/* Popular activities — REAL DB games only, real play links. */}
         <section id="popular" aria-labelledby="popular-title" style={sectionStyle}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} className="md:flex-row md:items-end md:justify-between">
@@ -277,17 +323,20 @@ export default async function HomePage({ params }: HomePageProps) {
           <p style={eyebrowStyle}>15 subjects</p>
           <h2 id="subjects-title" style={{ marginTop: '0.5rem', ...h2Style }}>{t('popularSubjects')}</h2>
           <p style={subStyle}>From Math to Islamiyat — find games for the lesson you are teaching this week.</p>
-          {/* UI polish: subjects are LARGE TILE CARDS (icon on top, coloured
-              tile, dark ink) — deliberately different from the small type
-              pills below. Destination unchanged: /browse?subject=<DB subject>. */}
+          {/* UI polish (2026-11-07, final 6, item 10): each subject has
+              its OWN colour (SUBJECT_TILE_COLOURS) and a BIGGER icon,
+              and the tiles are interactive (hover lift, tap shrink).
+              Urdu gets a proper writing icon (✒️), not the "PK" flag
+              text. Destination unchanged: /browse?subject=<DB subject>. */}
           <ul style={{ marginTop: '2rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', listStyle: 'none', padding: 0 }} aria-label="Subjects">
-            {Object.keys(DB_SUBJECT_BY_SLUG).map((slug, i) => (
+            {Object.keys(DB_SUBJECT_BY_SLUG).map((slug) => (
               <li key={slug}>
                 <Link
                   href={`/${locale}/browse?subject=${encodeURIComponent(DB_SUBJECT_BY_SLUG[slug])}`}
-                  style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', minWidth: '132px', minHeight: '112px', borderRadius: '1rem', border: '2px solid var(--color-border)', background: TILES[i % TILES.length], padding: '1rem 1.25rem', fontSize: '1rem', fontWeight: 800, color: TILE_INK, textAlign: 'center' }}
+                  className="transition-all duration-150 hover:-translate-y-1 hover:shadow-lg active:scale-95"
+                  style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', minWidth: '132px', minHeight: '128px', borderRadius: '1rem', border: '2px solid var(--color-border)', background: SUBJECT_TILE_COLOURS[slug] ?? TILES[0], padding: '1rem 1.25rem', fontSize: '1rem', fontWeight: 800, color: TILE_INK, textAlign: 'center' }}
                 >
-                  <span aria-hidden="true" style={{ fontSize: '2rem', lineHeight: 1 }}>{SUBJECT_EMOJI[slug] ?? '📚'}</span>
+                  <span aria-hidden="true" style={{ fontSize: '2.75rem', lineHeight: 1 }}>{SUBJECT_EMOJI[slug] ?? '📚'}</span>
                   <span>{DB_SUBJECT_BY_SLUG[slug]}</span>
                 </Link>
               </li>
@@ -298,66 +347,37 @@ export default async function HomePage({ params }: HomePageProps) {
         <section aria-labelledby="types-title" style={{ ...sectionStyle, background: 'var(--color-surface-alt)' }}>
           <p style={eyebrowStyle}>{Object.keys(DB_TYPE_BY_SLUG).length} game types</p>
           <h2 id="types-title" style={{ marginTop: '0.5rem', ...h2Style }}>Browse by game type</h2>
-          <p style={subStyle}>Write your questions once, then play them as a Quiz, a Match Up, a Spin Wheel — or any of the others.</p>
-          {/* UI polish: game types are SMALL PILLS on the surface-alt
-              background, no coloured dot, smaller than the subject tiles
-              above — different shape, size and colour at a glance.
-              Destination unchanged: /activities/<type slug>. */}
+          <p style={subStyle}>For teachers: write your questions once, then play them in 40 ways — pick a type to see its games.</p>
+          {/* UI polish (2026-11-07, final 6, item 11): every pill has
+              its OWN icon + colour (getTypePill — same hues as the
+              Popular cards, so a type looks the same everywhere).
+              Destination made clear: a pill opens that type's game
+              list — the Play Games grid, by contrast, starts playing
+              right away. Destinations unchanged: /activities/<slug>. */}
           <ul style={{ marginTop: '2rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', listStyle: 'none', padding: 0 }} aria-label="Game types">
-            {Object.keys(DB_TYPE_BY_SLUG).map((slug) => (
-              <li key={slug}>
-                <Link
-                  href={`/${locale}/activities/${slug}`}
-                  style={{ display: 'inline-flex', minHeight: '40px', alignItems: 'center', borderRadius: '9999px', border: '1px solid var(--color-border)', background: 'var(--color-surface-alt)', padding: '0 0.875rem', fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text-primary)' }}
-                >
-                  {humanType(slug)}
-                </Link>
-              </li>
-            ))}
+            {Object.keys(DB_TYPE_BY_SLUG).map((slug) => {
+              const pill = getTypePill(slug)
+              return (
+                <li key={slug}>
+                  <Link
+                    href={`/${locale}/activities/${slug}`}
+                    aria-label={`See all ${pill?.name ?? humanType(slug)} games`}
+                    className="transition-all duration-150 hover:-translate-y-0.5 active:scale-95"
+                    style={{ display: 'inline-flex', minHeight: '40px', alignItems: 'center', gap: '0.375rem', borderRadius: '9999px', border: `1px solid ${pill?.borderColor ?? 'var(--color-border)'}`, background: pill?.background ?? 'var(--color-surface-alt)', padding: '0 0.875rem', fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text-primary)' }}
+                  >
+                    <span aria-hidden="true">{pill?.icon ?? '🎮'}</span>
+                    {pill?.name ?? humanType(slug)}
+                  </Link>
+                </li>
+              )
+            })}
           </ul>
-        </section>
-
-        {/* PROMPT GAME-MAKING FUNNEL ENTRY (2026-11-04): one clear link
-            that takes a viewer into the prompt game-making system —
-            first who they are, then which one game to make, then the
-            maker with that game already selected. No new maker here. */}
-        <section aria-labelledby="make-prompt-title" style={sectionStyle}>
-          <p style={eyebrowStyle}>Make a game with a prompt</p>
-          <h2 id="make-prompt-title" style={{ marginTop: '0.5rem', ...h2Style }}>Make a game with a prompt</h2>
-          <p style={subStyle}>Pick who you are, pick one game, write a few words — the system makes your draft, you approve it, and the game is ready.</p>
-          <Link
-            href={`/${locale}/make`}
-            style={{ marginTop: '1.5rem', display: 'inline-flex', minHeight: '48px', alignItems: 'center', gap: '0.5rem', borderRadius: '9999px', background: 'var(--color-primary)', padding: '0 1.5rem', fontSize: '1.125rem', fontWeight: 800, color: 'white' }}
-          >
-            Make a game with a prompt →
-          </Link>
-        </section>
-
-        {/* CHAPTER-TO-GAME HOMEPAGE SECTION (2026-11-04): a prominent
-            homepage entry for the chapter flow — paste a chapter, or
-            photograph its pages, and a game is made from it, to share
-            with friends. No new chapter flow here: the button links to
-            the existing chapter flow at the top of /create (paste /
-            photo scan / draft / approve / Preview / Save, unchanged).
-            Copyright-safe copy, per the owner's paraphrase rule: the
-            game is made in NEW words from the chapter's facts, never
-            the book's exact sentences, and stays private until a
-            teacher or parent has checked it. English wording for every
-            locale, like the prompt-funnel section above — no
-            translations invented. */}
-        <section aria-labelledby="make-chapter-title" style={{ ...sectionStyle, background: 'var(--color-surface-alt)' }}>
-          <p style={eyebrowStyle}>From your chapter</p>
-          <h2 id="make-chapter-title" style={{ marginTop: '0.5rem', ...h2Style }}>Turn your chapter into a game</h2>
-          <p style={subStyle}>Paste your chapter, or photograph its pages — the system makes a game from it, to share with friends.</p>
-          <p style={{ marginTop: '0.75rem', fontSize: '1rem', lineHeight: 1.6, color: 'var(--color-text-secondary)' }}>
-            Made in NEW words from your chapter&apos;s facts — never the book&apos;s exact sentences — and private until a teacher or parent has checked it.
+          <p style={{ marginTop: '1.25rem', fontSize: '1rem', color: 'var(--color-text-secondary)' }}>
+            Tap a type to see its games — or{' '}
+            <Link href={`/${locale}/play-games`} style={{ fontWeight: 800, color: 'var(--color-primary)' }}>
+              open Play Games to start playing right away →
+            </Link>
           </p>
-          <Link
-            href={`/${locale}/create`}
-            style={{ marginTop: '1.5rem', display: 'inline-flex', minHeight: '48px', alignItems: 'center', gap: '0.5rem', borderRadius: '9999px', background: 'var(--color-primary)', padding: '0 1.5rem', fontSize: '1.125rem', fontWeight: 800, color: 'white' }}
-          >
-            Make a game from your chapter →
-          </Link>
         </section>
 
         {/* How it works — V0 3 steps + friends-first callout. */}

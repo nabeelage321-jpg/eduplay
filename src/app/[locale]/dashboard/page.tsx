@@ -134,6 +134,14 @@ export default async function DashboardPage({ params }: Props) {
           <Link href={`/${locale}/browse`} className="btn-ghost" style={{ padding: '0.6rem 1.2rem' }}>
             Browse games
           </Link>
+          {/* SOCIAL EDITOR (2026-11-07, final 6, item 13): social
+              media creators only — the page itself refuses kids
+              (role 'student'), so the link is hidden for them here. */}
+          {sessionUser.role !== 'student' ? (
+            <Link href={`/${locale}/creator/social-editor`} className="btn-ghost" style={{ padding: '0.6rem 1.2rem' }}>
+              Social editor
+            </Link>
+          ) : null}
         </div>
 
         {/* KIDS SOCIAL APPROVAL v1 (2026-11-04): kid creators invite a

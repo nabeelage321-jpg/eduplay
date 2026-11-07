@@ -15,6 +15,13 @@ interface HomeGameShareProps {
   gameTitle: string
   /** Data-driven gate: only an explicitly public game gets a control. */
   isPublic: boolean
+  /**
+   * Compact mode (2026-11-07, final 6, item 14): ONE Share button
+   * (device sheet, else copy link) instead of the full
+   * WhatsApp/Facebook/Copy/Copy-for-Instagram row — the row on
+   * every Popular card was clutter.
+   */
+  compact?: boolean
 }
 
 const smallBtn: React.CSSProperties = {
@@ -64,7 +71,7 @@ async function copyToClipboard(text: string): Promise<void> {
  *   navigator.share exists; it shares the same title, text and URL,
  *   and falls back to copying the link if the sheet is cancelled.
  */
-export default function HomeGameShare({ locale, gameId, gameTitle, isPublic }: HomeGameShareProps) {
+export default function HomeGameShare({ locale, gameId, gameTitle, isPublic, compact }: HomeGameShareProps) {
   const [canShare, setCanShare] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
 
@@ -98,6 +105,25 @@ export default function HomeGameShare({ locale, gameId, gameTitle, isPublic }: H
       // Sheet cancelled or failed: fall back to copying the link.
       await copy('link', playUrl)
     }
+  }
+
+  // Compact mode: a single Share button — the device sheet where it
+  // exists, otherwise copy the play link. Same URL and caption as
+  // the full row; no share target is invented.
+  if (compact) {
+    return (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }} aria-label={`Share ${gameTitle}`}>
+        {canShare ? (
+          <button type="button" onClick={shareViaSheet} style={smallBtn} aria-label={`Share ${gameTitle} with the device share sheet`}>
+            📤 Share
+          </button>
+        ) : (
+          <button type="button" onClick={() => copy('link', playUrl)} style={smallBtn} aria-label={`Copy link to ${gameTitle}`}>
+            🔗 {copied === 'link' ? 'Link copied!' : 'Copy link'}
+          </button>
+        )}
+      </div>
+    )
   }
 
   return (

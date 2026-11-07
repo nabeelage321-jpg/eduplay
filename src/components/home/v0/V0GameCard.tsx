@@ -15,7 +15,8 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import HomeGameShare from '@/components/home/HomeGameShare'
-import { TILES, TILE_INK } from './tiles'
+import { TILE_INK } from './tiles'
+import { typeTileColour } from '@/lib/type-colour'
 
 export interface V0HomeGame {
   id: string
@@ -63,7 +64,12 @@ const FALLBACK_ART = { main: '🎲', side: ['⭐', '🎈'] as [string, string] }
 export default function V0GameCard({ game, locale, index }: { game: V0HomeGame; locale: string; index: number }) {
   const Icon = TYPE_ICONS[game.type] ?? Gamepad2
   const art = SUBJECT_ART[game.subject.toLowerCase()] ?? FALLBACK_ART
-  const tile = TILES[index % TILES.length]
+  // (2026-11-07, final 6, item 14): the card's tile colour is the
+  // GAME TYPE's own colour — not the position in the list — so a kid
+  // recognises the game before reading the title. Same hues as the
+  // homepage type pills. `index` stays in the props for callers.
+  void index
+  const tile = typeTileColour(game.type)
   const playHref = `/${locale}/activity/${game.id}/play`
   return (
     <article
@@ -111,11 +117,14 @@ export default function V0GameCard({ game, locale, index }: { game: V0HomeGame; 
         </div>
         {/* Homepage share row (2026-11-04): WhatsApp, Facebook, copy
             link, copy-for-Instagram and the device share sheet, for
-            public games only. The play-page ShareGameButton is NOT
-            used here and is left untouched. */}
+            public games only. (2026-11-07, final 6, item 14): the
+            full row on every card was clutter — trimmed to ONE
+            compact Share button (device sheet, else copy link).
+            The play-page ShareGameButton is NOT used here and is
+            left untouched. */}
         {game.isPublic ? (
           <div style={{ marginTop: '0.5rem' }}>
-            <HomeGameShare locale={locale} gameId={game.id} gameTitle={game.title} isPublic={game.isPublic} />
+            <HomeGameShare locale={locale} gameId={game.id} gameTitle={game.title} isPublic={game.isPublic} compact />
           </div>
         ) : null}
       </div>

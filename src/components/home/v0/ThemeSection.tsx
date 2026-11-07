@@ -14,6 +14,7 @@ import {
   type RoleThemeEntry,
 } from '@/lib/role-themes'
 import { TILES } from './tiles'
+import ThemeRequestSection from './ThemeRequestSection'
 
 // Role-first theme section for the homepage (build-list item 8, owner
 // order 2026-11-07). Themes are by ROLE, not gender — Ladies/Gents
@@ -167,6 +168,11 @@ export default function ThemeSection() {
                   )
                 })}
               </ul>
+
+              {/* THEME REQUESTS (2026-11-07, final 6, item 9): below
+                  the 15 kids worlds, signed-in users only — the
+                  component itself renders nothing when signed out. */}
+              <ThemeRequestSection />
 
               <h4 style={{ marginTop: '2rem', fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
                 Gen Alpha themes

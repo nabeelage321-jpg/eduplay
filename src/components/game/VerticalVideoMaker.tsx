@@ -23,6 +23,21 @@
  * the frames. The end card carries the creator's end text and the
  * EduPlay name only — no URL text at all.
  *
+ * SOCIAL EDITOR BRANDING (2026-11-07, final 6, item 13): videos
+ * made in the gated social editor carry OUR NAME — every frame gets
+ * a small "EduPlay" mark (branded=true). That is the enforcement
+ * half of the verification deal: the video is identifiable as ours,
+ * so the team can ask a platform to remove it if the creator drops
+ * the link. The plain video page (branded unset) stays exactly as
+ * before — no watermark, no link inside the video. Kids'/teachers'
+ * downloads are never branded.
+ *
+ * TRIM + THUMBNAIL (social editor only): the editor can record only
+ * questions X–Y (trim) and download the title card as a PNG
+ * thumbnail. Crop is the shape selector (9:16 / 1:1) that already
+ * exists here. Full clip crop/trim of uploaded video is phase 2
+ * (needs a video pipeline) and is NOT promised.
+ *
  * Share (item 5): a ready caption + the real hosted-page link
  * (the vertical mode page itself). EduPlay CANNOT upload directly
  * to a creator's TikTok/Facebook/Instagram account — those APIs and
@@ -39,7 +54,7 @@
  * decision, and no fullscreen ad ever goes before a kid's game.
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import type { VerticalQuestion } from '@/lib/video-mode'
 import {
   VIDEO_SHAPE_DIMS, VIDEO_TIMINGS, buildVideoFrames, frameAt, pickVideoMimeType,
@@ -53,6 +68,18 @@ interface VerticalVideoMakerProps {
   gameTitle: string
   /** The hosted vertical page URL (real clickable link). */
   pageUrl: string
+  /**
+   * SOCIAL EDITOR ONLY: when true, every frame carries a small
+   * "EduPlay" mark — the video is identifiable as ours (see the
+   * header comment). The plain video page never passes this, so its
+   * downloads stay unbranded.
+   */
+  branded?: boolean
+  /**
+   * SOCIAL EDITOR ONLY: when true, the editor shows trim controls
+   * (record only questions X–Y) and a thumbnail download button.
+   */
+  showTrimControls?: boolean
 }
 
 type MakerStatus = 'idle' | 'recording' | 'done' | 'error'
@@ -68,7 +95,9 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 }
 
 /** Draw one frame of the slideshow onto the canvas. Own colours and
- *  layout only — no rival art, wording, or audio is copied. */
+ *  layout only — no rival art, wording, or audio is copied. When
+ *  branded is true (social editor only), every frame carries a small
+ *  "EduPlay" mark so the video is identifiable as ours. */
 function drawFrame(
   ctx: CanvasRenderingContext2D,
   width: number,
@@ -77,6 +106,7 @@ function drawFrame(
   questions: VerticalQuestion[],
   titleText: string,
   endText: string,
+  branded = false,
 ) {
   const bg = ctx.createLinearGradient(0, 0, 0, height)
   bg.addColorStop(0, '#1e1b4b')
@@ -87,6 +117,16 @@ function drawFrame(
   ctx.textBaseline = 'middle'
   const pad = 48
   const inner = width - pad * 2
+
+  // Social-editor branding: a small EduPlay mark on EVERY frame, so
+  // the video is identifiable as ours (see the header comment).
+  if (branded) {
+    ctx.fillStyle = 'rgba(255,255,255,0.8)'
+    ctx.font = '28px sans-serif'
+    ctx.textAlign = 'right'
+    ctx.fillText('EduPlay', width - 24, height - 24)
+    ctx.textAlign = 'center'
+  }
 
   if (frame.kind === 'title') {
     ctx.font = '120px sans-serif'
@@ -163,7 +203,7 @@ function drawFrame(
   }
 }
 
-export default function VerticalVideoMaker({ questions, gameTitle, pageUrl }: VerticalVideoMakerProps) {
+export default function VerticalVideoMaker({ questions, gameTitle, pageUrl, branded = false, showTrimControls = false }: VerticalVideoMakerProps) {
   const [titleText, setTitleText] = useState(gameTitle)
   const [endText, setEndText] = useState('Thanks for playing!')
   const [shape, setShape] = useState<VideoShape>('vertical')
@@ -174,6 +214,10 @@ export default function VerticalVideoMaker({ questions, gameTitle, pageUrl }: Ve
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [caption, setCaption] = useState(videoShareText(gameTitle, pageUrl))
   const [copied, setCopied] = useState<string | null>(null)
+  // Social-editor trim: record only questions trimFrom–trimTo
+  // (1-based, inclusive). Plain video page never shows these controls.
+  const [trimFrom, setTrimFrom] = useState(1)
+  const [trimTo, setTrimTo] = useState(questions.length)
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
@@ -181,7 +225,15 @@ export default function VerticalVideoMaker({ questions, gameTitle, pageUrl }: Ve
   const cancelledRef = useRef(false)
   const lastSecRef = useRef(-1)
   const dims = VIDEO_SHAPE_DIMS[shape]
-  const totalSec = videoDurationSeconds(questions.length)
+  // Trimmed question list: the social editor records only the chosen
+  // range; the plain video page always uses the full list.
+  const shownQuestions = useMemo(() => {
+    if (!showTrimControls) return questions
+    const from = Math.max(1, Math.min(trimFrom, trimTo, questions.length))
+    const to = Math.max(from, Math.min(trimTo, questions.length))
+    return questions.slice(from - 1, to)
+  }, [questions, showTrimControls, trimFrom, trimTo])
+  const totalSec = videoDurationSeconds(shownQuestions.length)
 
   // Idle preview: the canvas always shows the title card so the
   // creator sees what the video starts with before recording.
@@ -190,9 +242,9 @@ export default function VerticalVideoMaker({ questions, gameTitle, pageUrl }: Ve
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
     if (!canvas || !ctx) return
-    drawFrame(ctx, dims.width, dims.height, { kind: 'title', durationSec: VIDEO_TIMINGS.titleSec }, questions, titleText, endText)
+    drawFrame(ctx, dims.width, dims.height, { kind: 'title', durationSec: VIDEO_TIMINGS.titleSec }, shownQuestions, titleText, endText, branded)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, shape, titleText, endText, questions.length])
+  }, [status, shape, titleText, endText, shownQuestions.length, branded])
 
   useEffect(() => () => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
@@ -214,6 +266,25 @@ export default function VerticalVideoMaker({ questions, gameTitle, pageUrl }: Ve
     setProgressSec(0)
   }
 
+  // Social-editor thumbnail: the title card as a PNG, for the reel /
+  // post cover. Draws the current title frame onto the canvas and
+  // downloads it — no server, no upload.
+  function downloadThumbnail() {
+    const canvas = canvasRef.current
+    const ctx = canvas?.getContext('2d')
+    if (!canvas || !ctx) return
+    drawFrame(ctx, dims.width, dims.height, { kind: 'title', durationSec: VIDEO_TIMINGS.titleSec }, shownQuestions, titleText, endText, branded)
+    canvas.toBlob((blob) => {
+      if (!blob) return
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${gameTitle.replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'game'}-thumbnail.png`
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    }, 'image/png')
+  }
+
   function startRecording() {
     const canvas = canvasRef.current
     if (!canvas) { setErrorMsg('The video canvas is not ready yet. Reload the page and try again.'); setStatus('error'); return }
@@ -231,7 +302,7 @@ export default function VerticalVideoMaker({ questions, gameTitle, pageUrl }: Ve
       return
     }
     if (downloadUrl) { URL.revokeObjectURL(downloadUrl); setDownloadUrl(null) }
-    const frames = buildVideoFrames(questions.length)
+    const frames = buildVideoFrames(shownQuestions.length)
     const chunks: BlobPart[] = []
     let recorder: MediaRecorder
     try {
@@ -271,7 +342,7 @@ export default function VerticalVideoMaker({ questions, gameTitle, pageUrl }: Ve
       if (whole !== lastSecRef.current) { lastSecRef.current = whole; setProgressSec(Math.min(whole, totalSec)) }
       if (ctx) {
         const frame = frameAt(frames, elapsed)
-        if (frame) drawFrame(ctx, dims.width, dims.height, frame, questions, titleText, endText)
+        if (frame) drawFrame(ctx, dims.width, dims.height, frame, shownQuestions, titleText, endText, branded)
       }
       if (elapsed >= totalSec) {
         try { recorder.stop() } catch { /* already stopped */ }
@@ -306,7 +377,9 @@ export default function VerticalVideoMaker({ questions, gameTitle, pageUrl }: Ve
         🎬 Make a vertical video
       </h2>
       <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>
-        Simple editor: title card, end card, and shape. No watermark, no link inside the video.
+        {branded
+          ? 'Simple editor: title card, end card, and shape. This video carries the EduPlay name — it is a social-creator video.'
+          : 'Simple editor: title card, end card, and shape. No watermark, no link inside the video.'}
       </p>
 
       <label style={{ display: 'block', marginTop: '1rem', color: 'var(--color-text-primary)', fontWeight: 600 }}>
@@ -352,6 +425,44 @@ export default function VerticalVideoMaker({ questions, gameTitle, pageUrl }: Ve
         </button>
       </div>
 
+      {/* Social-editor trim: record only questions X–Y. Crop is the
+          shape selector above (9:16 / 1:1). */}
+      {showTrimControls ? (
+        <div style={{ marginTop: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <label style={{ flex: 1, fontWeight: 600, color: 'var(--color-text-primary)' }}>
+              Trim: from question
+              <input
+                type="number"
+                min={1}
+                max={questions.length}
+                value={trimFrom}
+                disabled={recording}
+                onChange={(e) => setTrimFrom(Math.max(1, Math.min(questions.length, Number(e.target.value) || 1)))}
+                aria-label="Trim from question"
+                style={{ display: 'block', width: '100%', marginTop: '0.25rem', padding: '0.6rem', borderRadius: 'var(--radius)', border: '2px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)' }}
+              />
+            </label>
+            <label style={{ flex: 1, fontWeight: 600, color: 'var(--color-text-primary)' }}>
+              to question
+              <input
+                type="number"
+                min={1}
+                max={questions.length}
+                value={trimTo}
+                disabled={recording}
+                onChange={(e) => setTrimTo(Math.max(1, Math.min(questions.length, Number(e.target.value) || 1)))}
+                aria-label="Trim to question"
+                style={{ display: 'block', width: '100%', marginTop: '0.25rem', padding: '0.6rem', borderRadius: 'var(--radius)', border: '2px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)' }}
+              />
+            </label>
+          </div>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+            Recording only questions {Math.min(trimFrom, trimTo)}–{Math.max(trimFrom, trimTo)} of {questions.length}.
+          </p>
+        </div>
+      ) : null}
+
       <div style={{ marginTop: '1rem', textAlign: 'center' }}>
         <canvas
           ref={canvasRef}
@@ -390,6 +501,15 @@ export default function VerticalVideoMaker({ questions, gameTitle, pageUrl }: Ve
           <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
             Recording runs in real time. The file is a .webm video — it plays in browsers and uploads to TikTok. MP4 conversion is a later step, not in this version.
           </p>
+          {showTrimControls ? (
+            <button
+              type="button"
+              onClick={downloadThumbnail}
+              style={{ marginTop: '0.75rem', padding: '0.6rem 1.25rem', borderRadius: 'var(--radius)', border: '2px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)', cursor: 'pointer' }}
+            >
+              🖼️ Download thumbnail (PNG)
+            </button>
+          ) : null}
         </div>
       )}
 
@@ -410,7 +530,9 @@ export default function VerticalVideoMaker({ questions, gameTitle, pageUrl }: Ve
             ⬇ Download {downloadName}
           </a>
           <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-            This file was made here on EduPlay — not a screen recording. No watermark, no link inside the video.
+            {branded
+              ? 'This file was made here on EduPlay — not a screen recording. It carries the EduPlay name, so it is identifiable as ours.'
+              : 'This file was made here on EduPlay — not a screen recording. No watermark, no link inside the video.'}
           </p>
         </div>
       ) : null}
@@ -450,7 +572,9 @@ export default function VerticalVideoMaker({ questions, gameTitle, pageUrl }: Ve
           Instagram has no link-sharer page — copy the caption and link, then paste them on Instagram. Nothing is posted from here.
         </p>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-          Earning note: a URL shown inside video frames is not a Google backlink — only this clickable link counts. This video carries no URL and no watermark. No ads are placed in this version.
+          {branded
+            ? 'Earning note: a URL shown inside video frames is not a Google backlink — only this clickable link counts. This video carries the EduPlay name (no URL, no watermark beyond the name). No ads are placed in this version.'
+            : 'Earning note: a URL shown inside video frames is not a Google backlink — only this clickable link counts. This video carries no URL and no watermark. No ads are placed in this version.'}
         </p>
       </div>
     </div>

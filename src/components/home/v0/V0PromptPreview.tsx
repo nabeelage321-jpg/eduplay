@@ -2,10 +2,18 @@ import Link from 'next/link'
 import { ArrowDown, Check, PencilLine, Sparkles, X } from 'lucide-react'
 
 // V0 prompt-preview port, static (no fake typing animation, no fake
-// draft submission). The card is a preview of the real /create flow:
-// its only action links to the real locale create page.
+// draft submission). The card is a preview of the real /create flow.
+// (2026-11-07, final 6, item 12): the WHOLE card is clickable — it
+// goes to the prompt page (/prompt-to-game), where the prompt box and
+// starter chips live. The "Try it" line is the visible CTA text.
 export default function V0PromptPreview({ locale }: { locale: string }) {
   return (
+    <Link
+      href={`/${locale}/prompt-to-game`}
+      aria-label="Start from a prompt — make a game"
+      className="transition-all duration-150 hover:-translate-y-1"
+      style={{ display: 'block', textDecoration: 'none' }}
+    >
     <figure
       style={{
         position: 'relative',
@@ -81,12 +89,12 @@ export default function V0PromptPreview({ locale }: { locale: string }) {
         ))}
       </div>
 
-      <Link
-        href={`/${locale}/create`}
+      <span
         style={{ marginTop: '1rem', display: 'inline-flex', minHeight: '48px', alignItems: 'center', fontWeight: 800, color: 'var(--color-primary)' }}
       >
         Try it — start from a prompt →
-      </Link>
+      </span>
     </figure>
+    </Link>
   )
 }
