@@ -16,7 +16,9 @@ interface V0HeroProps {
 
 // V0 hero port. Link mapping (V0 locale-less paths do not exist in
 // EduPlay, so every href is mapped to a real locale route):
-//   /play      -> /{locale}/activities  (Play Games, dominant action)
+//   /play      -> /{locale}/play-games  (Play Games, dominant action;
+//              changed 2026-11-07: the kid must reach the 40-type grid,
+//              not the /activities catalogue)
 //   /join      -> /{locale}/join
 //   /activities-> /{locale}/browse      (Browse Activities)
 //   /create    -> /{locale}/create
@@ -78,7 +80,7 @@ export default function V0Hero({
 
           <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
             <Link
-              href={`/${locale}/activities`}
+              href={`/${locale}/play-games`}
               style={{ display: 'inline-flex', minHeight: '72px', alignItems: 'center', gap: '1rem', borderRadius: '9999px', background: 'var(--color-primary)', padding: '0 3rem', fontSize: '1.75rem', fontWeight: 800, color: 'white', boxShadow: '0 6px 0 0 var(--color-primary-dark)' }}
             >
               <Play style={{ width: '2rem', height: '2rem', fill: 'currentColor' }} aria-hidden="true" />

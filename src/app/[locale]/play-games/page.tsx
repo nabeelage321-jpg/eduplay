@@ -8,37 +8,31 @@ import { PlayGamesClient } from './PlayGamesClient'
 
 export const revalidate = 86400
 
-// ─── Separate play listing (owner order 2026-11-06 22:14 PKT) ───────────────
-// Owner's ask, in his words: a SEPARATE listing where you click to play
-// a game and pick the game, the class and everything yourself.
-// Overlap check (read, not asserted):
-//   /en/browse is a filterable CATALOGUE tool (BrowseClient: subject /
-//   grade / type filters + search + sort + "New games" section). Its
-//   Play buttons go to the LEGACY player —
-//   router.push(`/${locale}/play/${activity.id}`) — the route the
-//   owner himself flagged (/en/play decision still pending; legacy
-//   QuizGame "Lets Play" did not advance; new types show "Game Type
-//   Not Found" there).
-//   The hubs (T1 type hubs, free / Urdu / Islamiyat / Pakistan hubs)
-//   link game cards to the DETAIL page /activity/<id> — one more click
-//   before playing.
-//   NOTHING exists that is a play-first listing: big pickers on top
-//   (game type, class, subject), minimal text, and ONE click straight
-//   to the NEW play page /activity/<id>/play. That single-click
-//   destination is the genuine difference — not a presentation tweak.
-//   So this page is built: pickers + list only, no search, no sort,
-//   no New-games section, no descriptions, no play counts. Play goes
-//   to the new play page, NEVER to the legacy /play/<id> route.
-//   /en/browse is NOT touched by this batch.
-// LIVE COUNT (verified 2026-11-05 against GET /api/activities?
-//   sort=newest — pagination.total): 5,112 public games. POPULATED
-//   from day one. All copy is in English. No official-status claims,
-//   no ratings, no invented counts.
+// ─── 40-TYPE PLAY GRID (owner order 2026-11-07 07:27 PKT, launch day) ────────
+// When a kid clicks Play Games he must reach ALL the game types as
+// tiles — exactly like the Create page "Choose Activity Type" grid —
+// and ONE click on a tile opens a game of that type IMMEDIATELY on
+// the NEW play page /activity/<id>/play. No detail page in between.
+// Per-tile game rule: the NEWEST public game of that type matching
+// the sidebar pick (subject + class), served by ONE batched request
+// (GET /api/activities/by-type — 40 separate calls would burn the
+// /api/activities 60-requests-per-minute rate limit). A type with
+// zero public games for the pick shows the honest "No game yet —
+// make the first one" state. The right-side selection panel holds
+// class + subject — the only other filter dimensions filters.ts
+// offers that change which game a tile opens (type IS the grid).
+// The old 100-newest list is REPLACED by this grid; the pickers
+// moved into the right-side panel. The homepage hero Play Games
+// button now points here (was /{locale}/activities).
+// LIVE COUNT (verified 2026-11-07 against GET /api/activities):
+// 5,112 public games; 23 types have games, 17 have none yet.
+// POPULATED from day one for 23 types. All copy is in English. No
+// official-status claims, no ratings, no invented counts.
 
 const PAGE_TITLE = 'Play Games — Pick Your Game and Play'
 const PAGE_TITLE_TAG = `${PAGE_TITLE} | EduPlay`
 const PAGE_DESCRIPTION =
-  'Pick a game type, your class and a subject — then play. Free educational games for kids, no account needed to play.'
+  'All 40 game types as tiles — tap one and play right away. Pick a class and a subject on the side and every tile opens a game for that pick. Free educational games for kids, no account needed to play.'
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 // Same gate as the hubs: noindex until >=1 real saved game exists.
@@ -130,8 +124,9 @@ export default async function PlayGamesPage({ params }: { params: { locale: stri
               margin: '0 auto',
             }}
           >
-            Pick a game type, your class and a subject below — then tap Play.
-            Free to play, no account needed to play.
+            Pick a game type below — tap it and play right away.
+            Pick a class and a subject on the side and every tile opens
+            a game for that pick. Free to play, no account needed to play.
           </p>
           <p
             style={{
