@@ -742,6 +742,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Beat Tap',
     description_en: 'Tap the drum when the note with the right answer crosses the line — on the beat',
   },
+  {
+    slug: 'mine-logic',
+    icon: '🧩',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Mine Logic',
+    name_ur: 'Mine Logic',
+    name_ar: 'Mine Logic',
+    name_hi: 'Mine Logic',
+    name_es: 'Mine Logic',
+    name_fr: 'Mine Logic',
+    description_en: 'Read the numbers, flag the hidden mines, and answer a quick question to open each safe square',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

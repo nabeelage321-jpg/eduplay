@@ -65,4 +65,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'rock-blaster',      icon: '🪨', name: 'Rock Blaster',      desc: 'Fly your ship through space and blast the asteroid with the right answer' },
   { slug: 'ladder-climb',      icon: '🪜', name: 'Ladder Climb',      desc: 'Climb the ladder to the right answer and dodge the rolling barrels' },
   { slug: 'beat-tap',          icon: '🥁', name: 'Beat Tap',          desc: 'Tap the drum when the note with the right answer crosses the line — on the beat' },
+  { slug: 'mine-logic',        icon: '🧩', name: 'Mine Logic',        desc: 'Read the numbers, flag the hidden mines, and answer a quick question to open each safe square' },
 ]

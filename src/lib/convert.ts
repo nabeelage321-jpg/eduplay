@@ -36,6 +36,7 @@ import { buildBrickBounceRound } from '@/lib/brick-bounce'
 import { buildRockBlasterRound } from '@/lib/rock-blaster'
 import { buildLadderClimbRound } from '@/lib/ladder-climb'
 import { buildBeatTapRound } from '@/lib/beat-tap'
+import { buildMineLogicRound } from '@/lib/mine-logic'
 
 export interface ConvertTarget {
   slug: string
@@ -99,6 +100,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'rock-blaster',      icon: '🪨', name: 'Rock Blaster' },
   { slug: 'ladder-climb',      icon: '🪜', name: 'Ladder Climb' },
   { slug: 'beat-tap',          icon: '🥁', name: 'Beat Tap' },
+  { slug: 'mine-logic',        icon: '🧩', name: 'Mine Logic' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -678,6 +680,22 @@ export function canConvertTo(
             ok: false,
             reason:
               'Beat Tap needs at least two different answers to borrow as wrong notes in every round — one of these questions has no other answers to borrow from.',
+          }
+
+    // Mine Logic (type 56): the round is generated from the
+    // game's own items — one grid per round, every square
+    // opened by answering a quick question from the game's
+    // items, the right answer plus wrong answers borrowed
+    // from the other items. The whole list builds one queue,
+    // so it needs at least three different answers across
+    // the game, or the questions have no choice in them.
+    case 'mine-logic':
+      return buildMineLogicRound(items)
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Mine Logic needs at least three different answers across the game to borrow as wrong choices — one of these questions has no other answers to borrow from.',
           }
 
     default:

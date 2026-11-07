@@ -72,6 +72,10 @@
  *     3 lives (a wrong note or an off-beat tap breaks the
  *     streak but costs no life; letting the correct note pass
  *     the line untapped costs one life and ends the round).
+ *     mine-logic: 10 pts per cleared grid (1 per round), 3
+ *     lives (a wrong answer costs no life — the square stays
+ *     covered; opening a mine or flagging a safe square costs
+ *     one life and ends the round).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -497,6 +501,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Tap the big drum, press Space, or tap a note on the track — the moment it crosses the line.',
     timer: 'No timer — the notes set the pace, one per beat, and the right note falls in a different place every round.',
     lives: 'You have 3 lives — a wrong note or an off-beat tap only breaks your streak, but letting the right-answer note pass the line untapped costs one life and ends the round.',
+  }),
+  'mine-logic': rules({
+    howTo: 'A 6 by 6 grid hides 6 mines. Tap a covered square and answer the quick question to open it — a number tells you how many mines touch that square, so a 3 means 3 mines touch it. Use the numbers to work out where the mines are, then flag them.',
+    scoring: 'Each cleared grid earns 10 points — one grid per round, so a cleared grid is the only thing that scores.',
+    objective: 'Clear every grid by opening all its safe squares and flagging the mines, without running out of lives.',
+    controls: 'Tap a square to open it (a question appears first). Tap the Flag button — or press F, or hold a square down — to switch to flagging, then tap the squares you are sure hide a mine.',
+    timer: 'No timer — take your time to read the numbers and work out where the mines are.',
+    lives: 'You have 3 lives — a wrong answer costs no life, just the streak, but opening a mine or flagging a safe square costs one life and ends the round.',
   }),
 }
 
