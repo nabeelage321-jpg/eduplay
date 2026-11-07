@@ -20,8 +20,13 @@
  *
  * Key: GEMINI_API_KEY (Vercel env, set by the owner 2026-11-07).
  * Free tier (Google AI Studio, no card): 1,500 requests/day and
- * 8 hours of YouTube video/day. Model: gemini-2.5-flash by default,
- * override only with GEMINI_MODEL.
+ * 8 hours of YouTube video/day. Model: gemini-3.5-flash-lite
+ * by default, override only with GEMINI_MODEL.
+ * (gemini-2.5-flash was the default until 2026-11-07: Google
+ * deprecated it 2026-11-02 and serves the 2.5 models only to
+ * users who used them before — a new key gets a 404 for it.
+ * Google's own replacement for new projects is
+ * gemini-3.5-flash-lite, on the free tier.)
  *
  * KEY MODEL (owner decision 2026-11-07): each creator will
  * eventually bring their OWN free Gemini key — that is the scale
@@ -46,7 +51,7 @@
 import type { ActivityItem } from '@/types'
 import { parseGroqChapterQuestions } from '@/lib/groq'
 
-export const GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash'
+export const GEMINI_DEFAULT_MODEL = 'gemini-3.5-flash-lite'
 export const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 /** Free-tier budget guard: videos longer than this are refused. */
 export const GEMINI_MAX_VIDEO_MINUTES = 15
@@ -193,8 +198,11 @@ function responseText(data: GeminiContent): string | null {
 
 /** Plain-language error for a Gemini HTTP failure. Never leaks the
  *  key, the raw body, or provider internals — only what the creator
- *  can act on. A 429 is the free-tier daily limit: "try tomorrow". */
-function geminiHttpError(status: number, data: GeminiContent): { ok: false; status: number; error: string } {
+ *  can act on. A 429 is the free-tier daily limit: "try tomorrow".
+ *  The 404 names the model that failed, so the next diagnosis is
+ *  instant (a dead model string and a bad key look the same
+ *  without it). */
+function geminiHttpError(status: number, data: GeminiContent, model: string): { ok: false; status: number; error: string } {
   if (status === 429) {
     return {
       ok: false,
@@ -224,7 +232,7 @@ function geminiHttpError(status: number, data: GeminiContent): { ok: false; stat
       ok: false,
       status: 502,
       error:
-        'The Gemini model is not available right now. Try again in a moment — no game was made.',
+        `The Gemini model "${model}" is not available right now. Try again in a moment — no game was made.`,
     }
   }
   const message =
@@ -265,7 +273,7 @@ async function geminiGenerateContent(
       }
     )
     const data = (await res.json().catch(() => ({}))) as GeminiContent
-    if (!res.ok) return geminiHttpError(res.status, data)
+    if (!res.ok) return geminiHttpError(res.status, data, config.model)
     const text = responseText(data)
     if (!text) {
       return {
