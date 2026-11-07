@@ -50,4 +50,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'claim-line',       icon: '🎯', name: 'Claim Line',       desc: 'Answer to claim squares — first line wins' },
   { slug: 'opinion-cloud',    icon: '☁️', name: 'Opinion Cloud',    desc: 'Share your opinion — no right or wrong answers' },
   { slug: 'number-slider',    icon: '🎚️', name: 'Number Slider',    desc: 'Slide to the number on the line' },
+  { slug: 'maze-chase',      icon: '👻', name: 'Maze Chase',      desc: 'Eat the right answer, dodge the ghost' },
 ]

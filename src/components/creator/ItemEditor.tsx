@@ -50,6 +50,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'claim-line': { prompt: 'Question', answer: 'Correct answer' },
   'opinion-cloud': { prompt: 'Statement to react to', answer: 'Not shown — opinions have no right answer' },
   'number-slider': { prompt: 'Question', answer: 'Number answer' },
+  'maze-chase': { prompt: 'Question for this maze', answer: 'Correct answer ball' },
 }
 
 const fieldStyle: React.CSSProperties = {

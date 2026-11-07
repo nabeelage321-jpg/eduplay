@@ -87,6 +87,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'claim-line', label: 'Claim Line' },
   { value: 'opinion-cloud', label: 'Opinion Cloud' },
   { value: 'number-slider', label: 'Number Slider' },
+  { value: 'maze-chase', label: 'Maze Chase' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

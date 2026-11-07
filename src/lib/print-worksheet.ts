@@ -120,6 +120,7 @@ export const NOT_PRINTABLE_WORKSHEET_REASONS: Record<string, string> = {
   'wordsearch': 'This game needs its letter grid, so a word list alone is not printed yet.',
   'random-wheel': 'This game picks a name or topic at random — it has no questions to print.',
   'maze-run': 'This game needs its maze to move through, so it cannot be printed as a text worksheet yet.',
+  'maze-chase': 'This game needs its maze and moving ghost, so it cannot be printed as a text worksheet yet.',
 }
 
 export function isPrintableWorksheetType(slug: string | undefined | null): boolean {

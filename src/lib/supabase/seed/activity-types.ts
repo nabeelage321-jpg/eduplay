@@ -547,6 +547,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Number Slider',
     description_en: 'Slide to the number on the line',
   },
+  {
+    slug: 'maze-chase',
+    icon: '👻',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Maze Chase',
+    name_ur: 'Maze Chase',
+    name_ar: 'Maze Chase',
+    name_hi: 'Maze Chase',
+    name_es: 'Maze Chase',
+    name_fr: 'Maze Chase',
+    description_en: 'Eat the right answer, dodge the ghost',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

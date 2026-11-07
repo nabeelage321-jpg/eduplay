@@ -27,7 +27,9 @@
  *     30s/round, 3 lives. memory-recall: 10 pts, 30s/round, 3 lives.
  *   claim-line: 10 pts, 30s/question, 3 lives. opinion-cloud: NO
  *     lives, NO timer, NO wrong answers. number-slider: exact +10,
- *     near +5, far 0 and -1 life, 30s/round, 3 lives. aster-quiz:
+ *     near +5, far 0 and -1 life, 30s/round, 3 lives. maze-chase:
+ *     10 pts, 45s/round, 3 lives (wrong ball, ghost catch, or
+ *     time-up costs one). aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
  *     10 pts per card you know. random-wheel / open-box: 10 pts
@@ -332,6 +334,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Drag the slider, then lock it in.',
     timer: '30 seconds per round.',
     lives: 'You have 3 lives — a far miss costs one.',
+  }),
+  'maze-chase': rules({
+    howTo: 'Steer your chaser through the maze — eat the ball with the correct answer, dodge the ghost.',
+    scoring: 'Each correct ball earns 10 points.',
+    objective: 'Eat the right ball in every maze without the ghost catching you.',
+    controls: 'Arrow keys or WASD, or the on-screen arrow pad.',
+    timer: '45 seconds per round.',
+    lives: 'You have 3 lives — a wrong ball, a ghost catch, or a time-up costs one.',
   }),
 }
 

@@ -90,6 +90,7 @@ export const DB_TYPE_BY_SLUG: Record<string, string> = {
   'claim-line': 'claim-line',
   'opinion-cloud': 'opinion-cloud',
   'number-slider': 'number-slider',
+  'maze-chase': 'maze-chase',
 }
 
 export interface ProgrammaticActivity {
