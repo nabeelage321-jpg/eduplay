@@ -501,6 +501,46 @@ export function parseGroqTrueFalseStatements(raw: unknown, prompt: string): Acti
 }
 
 /**
+ * Parse + validate a Groq FILL-BLANK draft: {"sentences": [{"sentence": "The capital of France is ___.", "answer": "Paris"}]}.
+ * Same strictness as parseGroqQuestions — a sentence must be a plain
+ * sentence (never a question), on-topic, and deduplicated — but there
+ * is no incorrect list: each sentence carries its own blank and its
+ * missing word. Rules: exactly one `___`, answer a single word/short
+ * phrase (max 3 words) that does NOT already appear in the sentence,
+ * answers deduped (the player borrows other items' answers as tap
+ * options). The caller rejects the draft if fewer than 2 survive.
+ */
+export function parseGroqFillBlankSentences(raw: unknown, prompt: string): ActivityItem[] {
+  if (typeof raw !== 'object' || raw === null) return []
+  const sentences = (raw as { sentences?: unknown }).sentences
+  if (!Array.isArray(sentences)) return []
+  const keywords = topicKeywords(prompt)
+  const seen = new Set<string>()
+  const seenAnswers = new Set<string>()
+  const items: ActivityItem[] = []
+  for (const s of sentences) {
+    const r = s as { sentence?: unknown; answer?: unknown }
+    const sentence = asNonEmptyString(r.sentence, 300)
+    const answer = asNonEmptyString(r.answer, 40)
+    if (!sentence || !answer) continue
+    if (sentence.endsWith('?')) continue
+    if ((sentence.match(/___/g) ?? []).length !== 1) continue
+    if (answer.includes('___') || answer.includes('?')) continue
+    if (answer.split(/\s+/).length > 3) continue
+    // The answer must fit the blank, not already sit in the sentence.
+    if (sentence.toLowerCase().includes(answer.toLowerCase())) continue
+    const key = sentence.toLowerCase()
+    if (seen.has(key) || seenAnswers.has(answer.toLowerCase())) continue
+    if (!isOnTopic(sentence, answer, keywords)) continue
+    seen.add(key)
+    seenAnswers.add(answer.toLowerCase())
+    items.push({ prompt: sentence.endsWith('.') ? sentence : `${sentence}.`, answer })
+    if (items.length >= 10) break
+  }
+  return items
+}
+
+/**
  * One Groq call for a topic-specific draft. `fetchImpl` exists only so
  * tests can inject a mock — the route always passes the real fetch.
  * Never throws for a provider failure: it returns a distinct result
@@ -521,18 +561,26 @@ export function parseGroqTrueFalseStatements(raw: unknown, prompt: string): Acti
  * lossy question-to-statement conversion), and the question-framed
  * answer-consistency self-check is skipped: it judges whether an
  * answer answers a question, which does not apply to statements.
+ *
+ * FILL-BLANK (2026-11-07): `gameType` may also be 'fill-blank' —
+ * same pattern as true-false. Groq is asked for sentences with
+ * exactly one `___` plus the missing word, parsed by
+ * parseGroqFillBlankSentences, and the question-framed self-check
+ * is skipped for the same reason: there is no question to check an
+ * answer against.
  */
 export async function buildGroqDraft(
   prompt: string,
   fetchImpl: typeof fetch = fetch,
   syllabusContext?: string,
-  gameType?: 'true-false'
+  gameType?: 'true-false' | 'fill-blank'
 ): Promise<GroqDraftResult> {
   const config = getGroqConfig()
   if (!config) {
     return { ok: false, status: 503, error: 'GROQ_NOT_CONFIGURED' }
   }
   const wantTrueFalse = gameType === 'true-false'
+  const wantFillBlank = gameType === 'fill-blank'
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS)
   try {
@@ -541,7 +589,18 @@ export async function buildGroqDraft(
       messages: [
         {
           role: 'system',
-          content: wantTrueFalse
+          content: wantFillBlank
+            ? 'You write short fill-in-the-blank sentences ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
+              'Return ONLY a JSON object, no markdown, no extra text: {"sentences": [{"sentence": "The capital of France is ___.", "answer": "Paris"}]}. ' +
+              'Up to 10 sentences. Each sentence must be ONE clear fact about that topic, with exactly ONE blank written as ___ where a single word or short phrase belongs — never a question, never two blanks. ' +
+              'The answer must be the single word or short phrase that fills the blank, and the sentence must read naturally with the blank filled in. ' +
+              'Every sentence must state a fact you are sure of — never invent dates, statistics, names, or facts you are unsure of; leave such a sentence out instead. ' +
+              'Do not repeat the same fact or the same answer twice.' +
+              (syllabusContext
+                ? ` Write the sentences in the style typical for ${syllabusContext} topics, at the level the prompt implies. ` +
+                  'This is style context only: you cannot fetch, verify, or reproduce that syllabus, and you must never claim a sentence is official syllabus material.'
+                : '')
+            : wantTrueFalse
             ? 'You write short true-or-false statements ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
               'Return ONLY a JSON object, no markdown, no extra text: {"statements": [{"statement": "...", "correct": true}]}. ' +
               'Up to 10 statements. Mix true and false statements — about half of each. ' +
@@ -608,6 +667,15 @@ export async function buildGroqDraft(
     const parsed = extractJson(content)
     if (parsed === null) {
       return { ok: false, status: 502, error: 'Groq returned a draft that could not be read. Try again — no questions were invented.' }
+    }
+    if (wantFillBlank) {
+      // Sentences path: no question-framed self-check applies, and
+      // convertDraftItems passes fill-blank items through, validated.
+      const parsedItems = parseGroqFillBlankSentences(parsed, prompt)
+      if (parsedItems.length < 2) {
+        return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic or unclear fill-in-the-blank sentences were kept.' }
+      }
+      return { ok: true, model: config.model, items: parsedItems }
     }
     if (wantTrueFalse) {
       // Statements path: no question-framed self-check applies, and

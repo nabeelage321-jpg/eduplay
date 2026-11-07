@@ -16,7 +16,7 @@
  */
 import type { ActivityItem } from '@/types'
 
-export type PromptGameType = 'quiz' | 'match-up' | 'unjumble' | 'true-false'
+export type PromptGameType = 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank'
 
 /**
  * PENDING-DRAFT HANDOFF (separate prompt page, 2026-11-06) — the
@@ -35,6 +35,7 @@ export const PROMPT_GAME_TYPES: Array<{ id: PromptGameType; label: string }> = [
   { id: 'match-up', label: 'Match Up' },
   { id: 'unjumble', label: 'Unjumble' },
   { id: 'true-false', label: 'True False' },
+  { id: 'fill-blank', label: 'Fill Blank' },
 ]
 
 export interface PromptDraft {
@@ -98,6 +99,7 @@ export function convertDraftItems(
 ): ActivityItem[] {
   if (type === 'quiz' || type === 'match-up') return items
   if (type === 'true-false') return convertToTrueFalse(items)
+  if (type === 'fill-blank') return convertToFillBlank(items)
   // Unjumble: the player expects prompt = jumbled words, answer = correct phrase.
   return items.map((i) => ({
     prompt: jumbleWords(i.answer),
@@ -229,6 +231,88 @@ function convertToTrueFalse(items: ActivityItem[]): ActivityItem[] {
   return out.slice(0, 10)
 }
 
+/**
+ * Turn one quiz question + one answer into a fill-in-the-blank
+ * sentence, e.g. "What is the capital of France?" + "Paris" ->
+ * "The capital of France is ___." The sentence is built from the
+ * question's own words via questionToStatement, and the answer is
+ * replaced by `___` — only when the answer occurs exactly ONCE in
+ * that statement, as a whole word/phrase. Anything else returns null
+ * and the caller DROPS that item instead of producing a garbled
+ * sentence. The blank word must be a single word or short phrase
+ * (max 3 words), so the player can offer it as one tap option.
+ * A question that already carries exactly one `___` is kept as-is,
+ * normalised to end with a full stop.
+ */
+export function questionToBlankSentence(question: string, answer: string): string | null {
+  const a = cleanSentence(answer)
+  if (!a || a.includes('?') || a.includes('___')) return null
+  if (a.split(/\s+/).length > 3 || a.length > 40) return null
+  const q = cleanSentence(question).replace(/\?+\s*$/, '')
+  if (!q) return null
+  // Already a fill-in-the-blank sentence: keep it, normalised.
+  const blanks = (q.match(/___/g) ?? []).length
+  if (blanks === 1) {
+    return q.endsWith('.') ? q : `${q}.`
+  }
+  if (blanks > 1) return null
+  const statement = questionToStatement(question, answer)
+  if (!statement) return null
+  // Replace the answer's single occurrence in the statement with ___.
+  // Whole-word/phrase only, so "art" never blanks inside "heart",
+  // and an answer that appears twice ("2 + 3 = 3") drops instead of
+  // blanking the wrong one.
+  const lower = statement.toLowerCase()
+  const needle = a.toLowerCase()
+  const hits: number[] = []
+  let from = 0
+  for (;;) {
+    const idx = lower.indexOf(needle, from)
+    if (idx < 0) break
+    const before = idx === 0 ? '' : lower[idx - 1]
+    const after = idx + needle.length >= lower.length ? '' : lower[idx + needle.length]
+    if (!/[a-z0-9]/.test(before) && !/[a-z0-9]/.test(after)) hits.push(idx)
+    from = idx + needle.length
+  }
+  if (hits.length !== 1) return null
+  const idx = hits[0]
+  const sentence = `${statement.slice(0, idx)}___${statement.slice(idx + a.length)}`
+  if ((sentence.match(/___/g) ?? []).length !== 1) return null
+  // The sentence must still have real content around the blank —
+  // at least 2 letters/digits (an arithmetic sentence like
+  // "2 + 3 = ___" leaves only "23", so the bar is 2, not 3).
+  if (sentence.replace(/___/g, '').replace(/[^a-z0-9]/gi, '').length < 2) return null
+  return sentence
+}
+
+/**
+ * Convert quiz-style items to fill-in-the-blank sentences. Items
+ * whose question has no clean sentence form are dropped, never
+ * garbled. Items already in fill-blank form (from the Groq sentences
+ * path) pass through, validated. Capped at 10. Answers are deduped:
+ * the player builds its 4 tap options by borrowing the OTHER items'
+ * answers, so two items with the same answer would offer the same
+ * option twice.
+ */
+function convertToFillBlank(items: ActivityItem[]): ActivityItem[] {
+  const out: ActivityItem[] = []
+  const seenSentences = new Set<string>()
+  const seenAnswers = new Set<string>()
+  for (const item of items) {
+    if (out.length >= 10) break
+    const answer = cleanSentence(item.answer)
+    if (!answer) continue
+    const sentence = questionToBlankSentence(item.prompt, answer)
+    if (!sentence) continue
+    const key = sentence.toLowerCase()
+    if (seenSentences.has(key) || seenAnswers.has(answer.toLowerCase())) continue
+    seenSentences.add(key)
+    seenAnswers.add(answer.toLowerCase())
+    out.push({ prompt: sentence, answer })
+  }
+  return out.slice(0, 10)
+}
+
 function cleanSentence(s: string): string {
   return s.replace(/\s+/g, ' ').trim()
 }
@@ -295,6 +379,11 @@ export function buildTableDraft(prompt: string, type: PromptGameType): PromptDra
       // A number alone cannot be unjumbled, so unjumble the full phrase.
       const phrase = `${n} times ${i} equals ${product}`
       items.push({ prompt: jumbleWords(phrase), answer: phrase, hint: `What is ${n} × ${i}?` })
+      continue
+    }
+    if (type === 'fill-blank') {
+      // A table fact makes a clean blank deterministically.
+      items.push({ prompt: `${n} × ${i} = ___`, answer: String(product) })
       continue
     }
     const candidates = [product - 2, product + 2, product - 1, product + 1, product + 10, product - 10, n * (i + 1), n * (i - 1)]

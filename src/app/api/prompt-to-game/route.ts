@@ -11,7 +11,7 @@ import { buildGroqChapterDraft, buildGroqDraft, getGroqConfig } from '@/lib/groq
 import { getSyllabus, resolveCurriculumTag } from '@/lib/curricula'
 import type { ActivityItem } from '@/types'
 
-const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble', 'true-false']
+const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble', 'true-false', 'fill-blank']
 
 /** A true/false draft needs at least 2 statements with at least one
  *  true and one false — otherwise the game has no choice in it.
@@ -26,6 +26,20 @@ function trueFalseUsable(items: ActivityItem[]): boolean {
 const TRUE_FALSE_TOO_FEW =
   'Could not turn enough of these questions into clear true-or-false statements. Try a simpler topic, or make the game manually — no half-finished draft was kept.'
 
+/** A fill-blank draft needs at least 2 sentences, each with exactly
+ *  one `___` and a real missing word — otherwise the game has no
+ *  blank to fill. Conversion drops unclean questions, so the check
+ *  runs AFTER conversion, on every path (chapter, Groq, OpenTDB). */
+function fillBlankUsable(items: ActivityItem[]): boolean {
+  if (items.length < 2) return false
+  return items.every(
+    (i) => (i.prompt.match(/___/g) ?? []).length === 1 && i.answer.trim().length > 0
+  )
+}
+
+const FILL_BLANK_TOO_FEW =
+  'Could not turn enough of these questions into clear fill-in-the-blank sentences. Try a simpler topic, or make the game manually — no half-finished draft was kept.'
+
 interface OpenTdbQuestion {
   question?: string
   correct_answer?: string
@@ -34,7 +48,7 @@ interface OpenTdbQuestion {
 
 /**
  * POST /api/prompt-to-game — draft only, never a published game.
- * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble' | 'true-false', chapterText? }
+ * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank', chapterText? }
  * - With chapterText: the draft is PARAPHRASED from the chapter via Groq —
  *   the same facts in new words, never the book's exact sentences.
  *   No verbatim fallback exists: if paraphrasing fails, or no Groq key
@@ -92,6 +106,9 @@ export async function POST(req: NextRequest) {
       if (type === 'true-false' && !trueFalseUsable(chapterItems)) {
         return NextResponse.json({ error: TRUE_FALSE_TOO_FEW }, { status: 502 })
       }
+      if (type === 'fill-blank' && !fillBlankUsable(chapterItems)) {
+        return NextResponse.json({ error: FILL_BLANK_TOO_FEW }, { status: 502 })
+      }
       const draft: PromptDraft = {
         title: prompt,
         type,
@@ -118,11 +135,14 @@ export async function POST(req: NextRequest) {
     // it does NOT silently fall back to random trivia, or the
     // creator would see off-topic questions and think Groq worked.
     if (getGroqConfig()) {
-      const groq = await buildGroqDraft(prompt, fetch, syllabusContext, type === 'true-false' ? 'true-false' : undefined)
+      const groq = await buildGroqDraft(prompt, fetch, syllabusContext, type === 'fill-blank' ? 'fill-blank' : type === 'true-false' ? 'true-false' : undefined)
       if (groq.ok) {
         const groqItems = convertDraftItems(groq.items, type)
         if (type === 'true-false' && !trueFalseUsable(groqItems)) {
           return NextResponse.json({ error: TRUE_FALSE_TOO_FEW }, { status: 502 })
+        }
+        if (type === 'fill-blank' && !fillBlankUsable(groqItems)) {
+          return NextResponse.json({ error: FILL_BLANK_TOO_FEW }, { status: 502 })
         }
         const draft: PromptDraft = {
           title: prompt,
@@ -184,6 +204,9 @@ export async function POST(req: NextRequest) {
     const converted = convertDraftItems(items, type)
     if (type === 'true-false' && !trueFalseUsable(converted)) {
       return NextResponse.json({ error: TRUE_FALSE_TOO_FEW }, { status: 502 })
+    }
+    if (type === 'fill-blank' && !fillBlankUsable(converted)) {
+      return NextResponse.json({ error: FILL_BLANK_TOO_FEW }, { status: 502 })
     }
 
     const draft: PromptDraft = {
