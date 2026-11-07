@@ -21,6 +21,7 @@
  * is an error, never silently replaced with invented questions.
  */
 import type { ActivityItem } from '@/types'
+import { containsAnswerWordOnce } from './prompt-to-game'
 
 export const GROQ_DEFAULT_MODEL = 'openai/gpt-oss-20b'
 export const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
@@ -470,6 +471,46 @@ export async function verifyGroqAnswers(
 }
 
 /**
+ * Parse + validate a Groq MISSING-WORD draft: {"sentences": [{"sentence": "Jupiter is the largest planet.", "answer": "Jupiter"}]}.
+ * Same strictness as parseGroqQuestions — a sentence must be a plain
+ * sentence (never a question, never a blank), on-topic, and
+ * deduplicated — but there is no incorrect list: each sentence
+ * carries its own missing word. Rules: the answer is ONE single
+ * word that occurs in the sentence as a whole word exactly once
+ * (the player blanks that word itself), answers deduped (the player
+ * borrows other items' answers as tap options). The caller rejects
+ * the draft if fewer than 2 survive.
+ */
+export function parseGroqMissingWordSentences(raw: unknown, prompt: string): ActivityItem[] {
+  if (typeof raw !== 'object' || raw === null) return []
+  const sentences = (raw as { sentences?: unknown }).sentences
+  if (!Array.isArray(sentences)) return []
+  const keywords = topicKeywords(prompt)
+  const seen = new Set<string>()
+  const seenAnswers = new Set<string>()
+  const items: ActivityItem[] = []
+  for (const s of sentences) {
+    const r = s as { sentence?: unknown; answer?: unknown }
+    const sentence = asNonEmptyString(r.sentence, 300)
+    const answer = asNonEmptyString(r.answer, 40)
+    if (!sentence || !answer) continue
+    if (sentence.endsWith('?') || sentence.includes('___')) continue
+    if (answer.includes('___') || answer.includes('?') || /\s/.test(answer)) continue
+    // The missing word must be IN the sentence, as a whole word,
+    // exactly once — otherwise the player shows no blank at all.
+    if (!containsAnswerWordOnce(sentence, answer)) continue
+    const key = sentence.toLowerCase()
+    if (seen.has(key) || seenAnswers.has(answer.toLowerCase())) continue
+    if (!isOnTopic(sentence, answer, keywords)) continue
+    seen.add(key)
+    seenAnswers.add(answer.toLowerCase())
+    items.push({ prompt: sentence.endsWith('.') ? sentence : `${sentence}.`, answer })
+    if (items.length >= 10) break
+  }
+  return items
+}
+
+/**
  * Parse + validate a Groq TRUE/FALSE draft: {"statements": [{"statement": "...", "correct": true|false}]}.
  * Same strictness as parseGroqQuestions — a statement must be a plain
  * sentence (never a question or a blank), on-topic, and deduplicated —
@@ -568,12 +609,19 @@ export function parseGroqFillBlankSentences(raw: unknown, prompt: string): Activ
  * parseGroqFillBlankSentences, and the question-framed self-check
  * is skipped for the same reason: there is no question to check an
  * answer against.
+ *
+ * MISSING-WORD (2026-11-07): `gameType` may also be 'missing-word' —
+ * same pattern again. Groq is asked for plain sentences plus the
+ * one word in each sentence that is the missing word, parsed by
+ * parseGroqMissingWordSentences (the word must occur in its sentence
+ * as a whole word exactly once), and the question-framed self-check
+ * is skipped for the same reason.
  */
 export async function buildGroqDraft(
   prompt: string,
   fetchImpl: typeof fetch = fetch,
   syllabusContext?: string,
-  gameType?: 'true-false' | 'fill-blank'
+  gameType?: 'true-false' | 'fill-blank' | 'missing-word'
 ): Promise<GroqDraftResult> {
   const config = getGroqConfig()
   if (!config) {
@@ -581,6 +629,7 @@ export async function buildGroqDraft(
   }
   const wantTrueFalse = gameType === 'true-false'
   const wantFillBlank = gameType === 'fill-blank'
+  const wantMissingWord = gameType === 'missing-word'
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS)
   try {
@@ -589,7 +638,18 @@ export async function buildGroqDraft(
       messages: [
         {
           role: 'system',
-          content: wantFillBlank
+          content: wantMissingWord
+            ? 'You write short sentences ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
+              'Return ONLY a JSON object, no markdown, no extra text: {"sentences": [{"sentence": "Jupiter is the largest planet.", "answer": "Jupiter"}]}. ' +
+              'Up to 10 sentences. Each sentence must be ONE clear fact about that topic, written as a plain sentence — never a question, never a blank. ' +
+              'The answer must be ONE single word that appears in the sentence as a whole word, exactly once — that word is the missing word the player will guess. ' +
+              'Every sentence must state a fact you are sure of — never invent dates, statistics, names, or facts you are unsure of; leave such a sentence out instead. ' +
+              'Do not repeat the same fact or the same answer twice.' +
+              (syllabusContext
+                ? ` Write the sentences in the style typical for ${syllabusContext} topics, at the level the prompt implies. ` +
+                  'This is style context only: you cannot fetch, verify, or reproduce that syllabus, and you must never claim a sentence is official syllabus material.'
+                : '')
+            : wantFillBlank
             ? 'You write short fill-in-the-blank sentences ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
               'Return ONLY a JSON object, no markdown, no extra text: {"sentences": [{"sentence": "The capital of France is ___.", "answer": "Paris"}]}. ' +
               'Up to 10 sentences. Each sentence must be ONE clear fact about that topic, with exactly ONE blank written as ___ where a single word or short phrase belongs — never a question, never two blanks. ' +
@@ -667,6 +727,15 @@ export async function buildGroqDraft(
     const parsed = extractJson(content)
     if (parsed === null) {
       return { ok: false, status: 502, error: 'Groq returned a draft that could not be read. Try again — no questions were invented.' }
+    }
+    if (wantMissingWord) {
+      // Sentences path: no question-framed self-check applies, and
+      // convertDraftItems passes missing-word items through, validated.
+      const parsedItems = parseGroqMissingWordSentences(parsed, prompt)
+      if (parsedItems.length < 2) {
+        return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic or unclear missing-word sentences were kept.' }
+      }
+      return { ok: true, model: config.model, items: parsedItems }
     }
     if (wantFillBlank) {
       // Sentences path: no question-framed self-check applies, and

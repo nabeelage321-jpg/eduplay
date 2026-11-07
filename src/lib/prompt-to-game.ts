@@ -16,7 +16,7 @@
  */
 import type { ActivityItem } from '@/types'
 
-export type PromptGameType = 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank'
+export type PromptGameType = 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word'
 
 /**
  * PENDING-DRAFT HANDOFF (separate prompt page, 2026-11-06) — the
@@ -36,6 +36,7 @@ export const PROMPT_GAME_TYPES: Array<{ id: PromptGameType; label: string }> = [
   { id: 'unjumble', label: 'Unjumble' },
   { id: 'true-false', label: 'True False' },
   { id: 'fill-blank', label: 'Fill Blank' },
+  { id: 'missing-word', label: 'Missing Word' },
 ]
 
 export interface PromptDraft {
@@ -100,6 +101,7 @@ export function convertDraftItems(
   if (type === 'quiz' || type === 'match-up') return items
   if (type === 'true-false') return convertToTrueFalse(items)
   if (type === 'fill-blank') return convertToFillBlank(items)
+  if (type === 'missing-word') return convertToMissingWord(items)
   // Unjumble: the player expects prompt = jumbled words, answer = correct phrase.
   return items.map((i) => ({
     prompt: jumbleWords(i.answer),
@@ -313,6 +315,105 @@ function convertToFillBlank(items: ActivityItem[]): ActivityItem[] {
   return out.slice(0, 10)
 }
 
+/**
+ * True when `answer` occurs in `sentence` as a whole word, exactly
+ * once, case-insensitively — so "art" never matches inside "heart",
+ * and an answer that appears twice ("2 + 3 = 3" for answer "3")
+ * does not count. Plain indexOf, never a regex built from the
+ * answer, so punctuation in the answer cannot break the check.
+ * The MissingWord player blanks the word with the same whole-word
+ * rule, so a sentence that passes here always shows a blank there.
+ */
+export function containsAnswerWordOnce(sentence: string, answer: string): boolean {
+  const lower = sentence.toLowerCase()
+  const needle = answer.trim().toLowerCase()
+  if (!needle) return false
+  let count = 0
+  let from = 0
+  for (;;) {
+    const idx = lower.indexOf(needle, from)
+    if (idx < 0) break
+    const before = idx === 0 ? '' : lower[idx - 1]
+    const after = idx + needle.length >= lower.length ? '' : lower[idx + needle.length]
+    if (!/[a-z0-9]/.test(before) && !/[a-z0-9]/.test(after)) count++
+    from = idx + needle.length
+  }
+  return count === 1
+}
+
+/**
+ * True when a draft item is a usable Missing Word item: the prompt
+ * is a plain sentence (never a question, never a fill-in-the-blank
+ * with `___`) and the answer is one single word that occurs in it
+ * as a whole word exactly once. Used by the route as the
+ * after-conversion check, on every path.
+ */
+export function isMissingWordItem(item: ActivityItem): boolean {
+  const answer = cleanSentence(item.answer)
+  if (!answer || /\s/.test(answer) || answer.includes('___') || answer.includes('?')) return false
+  const prompt = cleanSentence(item.prompt)
+  if (!prompt || prompt.endsWith('?') || prompt.includes('___')) return false
+  return containsAnswerWordOnce(prompt, answer)
+}
+
+/**
+ * Turn one quiz question + one answer into a Missing Word sentence,
+ * e.g. "What is the largest planet?" + "Jupiter" ->
+ * "The largest planet is Jupiter." The sentence is built from the
+ * question's own words via questionToStatement, and the answer must
+ * be a SINGLE word that occurs in that statement as a whole word
+ * exactly once. Anything else returns null and the caller DROPS
+ * that item instead of producing a sentence without its missing
+ * word in it, or a garbled one. A prompt that is already such a
+ * sentence (from the Groq sentences path) passes through,
+ * normalised to end with a full stop.
+ */
+export function questionToMissingWordSentence(question: string, answer: string): string | null {
+  const a = cleanSentence(answer)
+  if (!a || /\s/.test(a) || a.length > 40 || a.includes('?') || a.includes('___')) return null
+  const q = cleanSentence(question)
+  if (!q) return null
+  // Already a missing-word sentence: keep it, normalised — but it
+  // must still be a real sentence, not a lone word or a question.
+  if (!q.endsWith('?') && !q.includes('___') && q.split(/\s+/).length >= 3 && containsAnswerWordOnce(q, a)) {
+    return q.endsWith('.') ? q : `${q}.`
+  }
+  const statement = questionToStatement(question, answer)
+  if (!statement) return null
+  if (statement.split(/\s+/).length < 3) return null
+  if (!containsAnswerWordOnce(statement, a)) return null
+  return statement.endsWith('.') ? statement : `${statement}.`
+}
+
+/**
+ * Convert quiz-style items to Missing Word sentences. Items whose
+ * question has no clean sentence form, whose answer is not a single
+ * word, or whose answer does not occur exactly once as a whole word
+ * in the sentence are dropped, never garbled. Items already in
+ * missing-word form (from the Groq sentences path) pass through,
+ * validated. Capped at 10. Answers are deduped: the player builds
+ * its tap options by borrowing the OTHER items' answers, so two
+ * items with the same answer would offer the same option twice.
+ */
+function convertToMissingWord(items: ActivityItem[]): ActivityItem[] {
+  const out: ActivityItem[] = []
+  const seenSentences = new Set<string>()
+  const seenAnswers = new Set<string>()
+  for (const item of items) {
+    if (out.length >= 10) break
+    const answer = cleanSentence(item.answer)
+    if (!answer) continue
+    const sentence = questionToMissingWordSentence(item.prompt, answer)
+    if (!sentence) continue
+    const key = sentence.toLowerCase()
+    if (seenSentences.has(key) || seenAnswers.has(answer.toLowerCase())) continue
+    seenSentences.add(key)
+    seenAnswers.add(answer.toLowerCase())
+    out.push({ prompt: sentence, answer })
+  }
+  return out.slice(0, 10)
+}
+
 function cleanSentence(s: string): string {
   return s.replace(/\s+/g, ' ').trim()
 }
@@ -322,6 +423,22 @@ const WORD_NUMBERS: Record<string, number> = {
   nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14,
   fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
   twenty: 20,
+}
+
+/**
+ * Single-word number words for Missing Word table sentences, e.g.
+ * "Two times three equals six." Only products with a one-word form
+ * are built (1–20 and the tens to 90): a product like 21 or 100 has
+ * no single-word form ("twenty-one", "one hundred"), so that row is
+ * DROPPED rather than inventing one — the route then errors if
+ * fewer than 2 rows survive, never a half draft.
+ */
+const NUMBER_WORDS: Record<number, string> = {
+  1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven',
+  8: 'eight', 9: 'nine', 10: 'ten', 11: 'eleven', 12: 'twelve', 13: 'thirteen',
+  14: 'fourteen', 15: 'fifteen', 16: 'sixteen', 17: 'seventeen', 18: 'eighteen',
+  19: 'nineteen', 20: 'twenty', 30: 'thirty', 40: 'forty', 50: 'fifty',
+  60: 'sixty', 70: 'seventy', 80: 'eighty', 90: 'ninety',
 }
 
 /**
@@ -384,6 +501,24 @@ export function buildTableDraft(prompt: string, type: PromptGameType): PromptDra
     if (type === 'fill-blank') {
       // A table fact makes a clean blank deterministically.
       items.push({ prompt: `${n} × ${i} = ___`, answer: String(product) })
+      continue
+    }
+    if (type === 'missing-word') {
+      // A word-form sentence: "2 times 3 equals six." — the
+      // product word is the missing word, and it occurs in the
+      // sentence as a whole word exactly once. The factors stay
+      // digits on purpose: spelling them out ("Two times one
+      // equals two.") would repeat the answer word on every i = 1
+      // row — and on every row of the table of 1 — so the player
+      // would blank the first occurrence and leave the answer
+      // visible at the end. Rows whose product has no single-word
+      // form are dropped, never invented.
+      const pWord = NUMBER_WORDS[product]
+      if (!pWord) continue
+      items.push({
+        prompt: `${n} times ${i} equals ${pWord}.`,
+        answer: pWord,
+      })
       continue
     }
     const candidates = [product - 2, product + 2, product - 1, product + 1, product + 10, product - 10, n * (i + 1), n * (i - 1)]

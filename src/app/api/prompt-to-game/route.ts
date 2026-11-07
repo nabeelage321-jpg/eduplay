@@ -3,6 +3,7 @@ import {
   buildTableDraft,
   convertDraftItems,
   decodeHtmlEntities,
+  isMissingWordItem,
   sanitizePrompt,
   type PromptDraft,
   type PromptGameType,
@@ -11,7 +12,7 @@ import { buildGroqChapterDraft, buildGroqDraft, getGroqConfig } from '@/lib/groq
 import { getSyllabus, resolveCurriculumTag } from '@/lib/curricula'
 import type { ActivityItem } from '@/types'
 
-const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble', 'true-false', 'fill-blank']
+const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble', 'true-false', 'fill-blank', 'missing-word']
 
 /** A true/false draft needs at least 2 statements with at least one
  *  true and one false — otherwise the game has no choice in it.
@@ -40,6 +41,20 @@ function fillBlankUsable(items: ActivityItem[]): boolean {
 const FILL_BLANK_TOO_FEW =
   'Could not turn enough of these questions into clear fill-in-the-blank sentences. Try a simpler topic, or make the game manually — no half-finished draft was kept.'
 
+/** A missing-word draft needs at least 2 sentences, each a plain
+ *  sentence whose missing word is one single word that occurs in it
+ *  as a whole word exactly once — otherwise the player shows no
+ *  blank at all. Conversion drops unclean questions, so the check
+ *  runs AFTER conversion, on every path (chapter, Groq, OpenTDB,
+ *  and tables, whose word-form rows can drop below 2). */
+function missingWordUsable(items: ActivityItem[]): boolean {
+  if (items.length < 2) return false
+  return items.every((i) => isMissingWordItem(i))
+}
+
+const MISSING_WORD_TOO_FEW =
+  'Could not turn enough of these questions into clear sentences with one missing word. Try a simpler topic, or make the game manually — no half-finished draft was kept.'
+
 interface OpenTdbQuestion {
   question?: string
   correct_answer?: string
@@ -48,7 +63,7 @@ interface OpenTdbQuestion {
 
 /**
  * POST /api/prompt-to-game — draft only, never a published game.
- * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank', chapterText? }
+ * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word', chapterText? }
  * - With chapterText: the draft is PARAPHRASED from the chapter via Groq —
  *   the same facts in new words, never the book's exact sentences.
  *   No verbatim fallback exists: if paraphrasing fails, or no Groq key
@@ -109,6 +124,9 @@ export async function POST(req: NextRequest) {
       if (type === 'fill-blank' && !fillBlankUsable(chapterItems)) {
         return NextResponse.json({ error: FILL_BLANK_TOO_FEW }, { status: 502 })
       }
+      if (type === 'missing-word' && !missingWordUsable(chapterItems)) {
+        return NextResponse.json({ error: MISSING_WORD_TOO_FEW }, { status: 502 })
+      }
       const draft: PromptDraft = {
         title: prompt,
         type,
@@ -125,6 +143,12 @@ export async function POST(req: NextRequest) {
     // failure: a trivia-service timeout fell through to a generic 500).
     const tableDraft = buildTableDraft(prompt, type)
     if (tableDraft) {
+      // A missing-word table can drop below 2 rows when products
+      // have no single-word form (e.g. table of 19 keeps only 19) —
+      // that is a plain error, never a one-row draft.
+      if (type === 'missing-word' && !missingWordUsable(tableDraft.items)) {
+        return NextResponse.json({ error: MISSING_WORD_TOO_FEW }, { status: 502 })
+      }
       return NextResponse.json({ draft: tableDraft })
     }
 
@@ -135,7 +159,7 @@ export async function POST(req: NextRequest) {
     // it does NOT silently fall back to random trivia, or the
     // creator would see off-topic questions and think Groq worked.
     if (getGroqConfig()) {
-      const groq = await buildGroqDraft(prompt, fetch, syllabusContext, type === 'fill-blank' ? 'fill-blank' : type === 'true-false' ? 'true-false' : undefined)
+      const groq = await buildGroqDraft(prompt, fetch, syllabusContext, type === 'missing-word' ? 'missing-word' : type === 'fill-blank' ? 'fill-blank' : type === 'true-false' ? 'true-false' : undefined)
       if (groq.ok) {
         const groqItems = convertDraftItems(groq.items, type)
         if (type === 'true-false' && !trueFalseUsable(groqItems)) {
@@ -143,6 +167,9 @@ export async function POST(req: NextRequest) {
         }
         if (type === 'fill-blank' && !fillBlankUsable(groqItems)) {
           return NextResponse.json({ error: FILL_BLANK_TOO_FEW }, { status: 502 })
+        }
+        if (type === 'missing-word' && !missingWordUsable(groqItems)) {
+          return NextResponse.json({ error: MISSING_WORD_TOO_FEW }, { status: 502 })
         }
         const draft: PromptDraft = {
           title: prompt,
@@ -207,6 +234,9 @@ export async function POST(req: NextRequest) {
     }
     if (type === 'fill-blank' && !fillBlankUsable(converted)) {
       return NextResponse.json({ error: FILL_BLANK_TOO_FEW }, { status: 502 })
+    }
+    if (type === 'missing-word' && !missingWordUsable(converted)) {
+      return NextResponse.json({ error: MISSING_WORD_TOO_FEW }, { status: 502 })
     }
 
     const draft: PromptDraft = {

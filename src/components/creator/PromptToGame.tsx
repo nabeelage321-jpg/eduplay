@@ -82,7 +82,9 @@ export function DraftEditor({
             }}
           >
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.25rem' }}>
-              {draft.type === 'fill-blank'
+              {draft.type === 'missing-word'
+                ? `Sentence ${i + 1} — it must contain the missing word`
+                : draft.type === 'fill-blank'
                 ? `Sentence ${i + 1} — use ___ for the blank`
                 : draft.type === 'true-false' ? `Statement ${i + 1}` : `Question / prompt ${i + 1}`}
             </label>
@@ -91,13 +93,15 @@ export function DraftEditor({
               onChange={(e) => editItem(i, 'prompt', e.target.value)}
               style={{ ...fieldStyle, marginBottom: '0.5rem' }}
               aria-label={
-                draft.type === 'fill-blank'
+                draft.type === 'missing-word'
+                  ? `Draft sentence ${i + 1}`
+                  : draft.type === 'fill-blank'
                   ? `Draft sentence ${i + 1}`
                   : draft.type === 'true-false' ? `Draft statement ${i + 1}` : `Draft question ${i + 1}`
               }
             />
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.25rem' }}>
-              {draft.type === 'fill-blank' ? 'Missing word' : 'Answer'}
+              {draft.type === 'fill-blank' || draft.type === 'missing-word' ? 'Missing word' : 'Answer'}
             </label>
             {draft.type === 'true-false' ? (
               // TRUE/FALSE (2026-11-07): the answer is a True/False
