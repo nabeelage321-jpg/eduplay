@@ -31,6 +31,8 @@
  *     10 pts, 45s/round, 3 lives (wrong ball, ghost catch, or
  *     time-up costs one). apple-snake: 10 pts, 45s/round, 3 lives
  *     (wrong apple, wall bump, tail bite, or time-up costs one).
+ *     flutter-flight: 10 pts, 45s/round, 3 lives (wrong gate, gate
+ *     hit, ground touch, or time-up costs one).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -352,6 +354,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Arrow keys or WASD, or the on-screen arrow pad.',
     timer: '45 seconds per round.',
     lives: 'You have 3 lives — a wrong apple, a wall bump, a tail bite, or a time-up costs one.',
+  }),
+  'flutter-flight': rules({
+    howTo: 'Tap to flap your bird through the sky — fly through the gate with the correct answer.',
+    scoring: 'Each correct gate earns 10 points.',
+    objective: 'Fly through the right gate in every sky without running out of lives.',
+    controls: 'Tap the sky, click it, or press Space to flap.',
+    timer: '45 seconds per round.',
+    lives: 'You have 3 lives — a wrong gate, a gate hit, a ground touch, or a time-up costs one.',
   }),
 }
 

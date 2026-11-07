@@ -77,6 +77,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'number-slider',    icon: '🎚️', name: 'Number Slider' },
   { slug: 'maze-chase',      icon: '👻', name: 'Maze Chase' },
   { slug: 'apple-snake',     icon: '🍎', name: 'Apple Snake' },
+  { slug: 'flutter-flight',  icon: '🐦', name: 'Flutter Flight' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -413,6 +414,21 @@ export function canConvertTo(
             ok: false,
             reason:
               'Apple Snake needs at least one different answer to borrow as a wrong apple in every garden — one of these questions has no other answer to borrow from.',
+          }
+
+    // Flutter Flight (type 43): the sky is generated from the game's
+    // own items — one sky per question, gates are the correct
+    // answer plus wrong answers borrowed from the other items,
+    // exactly like Maze Run. A round needs at least one wrong
+    // gate whose label differs from the correct answer, or the
+    // sky has no choice in it.
+    case 'flutter-flight':
+      return items.every((_, i) => hasBorrowableWrong(items, i))
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Flutter Flight needs at least one different answer to borrow as a wrong gate in every sky — one of these questions has no other answer to borrow from.',
           }
 
     default:

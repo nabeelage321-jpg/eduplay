@@ -573,6 +573,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Apple Snake',
     description_en: 'Eat the right apple and grow',
   },
+  {
+    slug: 'flutter-flight',
+    icon: '🐦',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Flutter Flight',
+    name_ur: 'Flutter Flight',
+    name_ar: 'Flutter Flight',
+    name_hi: 'Flutter Flight',
+    name_es: 'Flutter Flight',
+    name_fr: 'Flutter Flight',
+    description_en: 'Flap through the gate with the right answer',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

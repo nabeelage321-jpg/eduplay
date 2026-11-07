@@ -92,6 +92,7 @@ export const DB_TYPE_BY_SLUG: Record<string, string> = {
   'number-slider': 'number-slider',
   'maze-chase': 'maze-chase',
   'apple-snake': 'apple-snake',
+  'flutter-flight': 'flutter-flight',
 }
 
 export interface ProgrammaticActivity {

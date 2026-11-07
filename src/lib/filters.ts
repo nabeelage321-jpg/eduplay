@@ -89,6 +89,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'number-slider', label: 'Number Slider' },
   { value: 'maze-chase', label: 'Maze Chase' },
   { value: 'apple-snake', label: 'Apple Snake' },
+  { value: 'flutter-flight', label: 'Flutter Flight' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

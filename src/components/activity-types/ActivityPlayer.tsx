@@ -56,6 +56,7 @@ const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
   'number-slider':    lazy(() => import('./NumberSliderActivity')),
   'maze-chase':       lazy(() => import('./MazeChaseActivity')),
   'apple-snake':      lazy(() => import('./AppleSnakeActivity')),
+  'flutter-flight':   lazy(() => import('./FlutterFlightActivity')),
 }
 
 interface ActivityPlayerProps {

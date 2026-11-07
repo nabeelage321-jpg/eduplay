@@ -52,4 +52,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'number-slider',    icon: '🎚️', name: 'Number Slider',    desc: 'Slide to the number on the line' },
   { slug: 'maze-chase',      icon: '👻', name: 'Maze Chase',      desc: 'Eat the right answer, dodge the ghost' },
   { slug: 'apple-snake',     icon: '🍎', name: 'Apple Snake',     desc: 'Eat the right apple and grow' },
+  { slug: 'flutter-flight',  icon: '🐦', name: 'Flutter Flight',  desc: 'Flap through the gate with the right answer' },
 ]
