@@ -7,7 +7,6 @@ import ActivityPlayer from '@/components/activity-types/ActivityPlayer'
 import type { ActivityCompletion } from '@/components/activity-types/shared'
 import { adaptActivityItems, dbTypeOf } from '@/lib/activity-content'
 import { canConvertTo, convertTargetLabel, resolveConvertTarget } from '@/lib/convert'
-import ConvertToType from '@/components/activity-types/ConvertToType'
 import ActivityIdLine from '@/components/activity-types/ActivityIdLine'
 import ShareGameButton from '@/components/home/ShareGameButton'
 import SoundToggle from '@/components/activity-types/SoundToggle'
@@ -414,7 +413,6 @@ function PlayPageInner() {
 
       {/* Game area */}
       <div style={{ padding: '1rem 0.5rem', maxWidth: '700px', margin: '0 auto' }}>
-        <ConvertToType locale={locale} activityId={id} originalSlug={originalSlug} currentTarget={convertTarget} />
         {convertTarget && !convertBlockedPrivate && convertCheck?.ok ? (
           <p style={{
             maxWidth: '700px', margin: '0 auto 1rem', padding: '0.75rem 1rem',
