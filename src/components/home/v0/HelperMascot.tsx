@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, CircleHelp, Search, Sparkles, X } from 'lucide-react'
-import TwinkleArt from './TwinkleArt'
 import {
   MASCOT_NAME,
   MASCOT_ANCHORS,
@@ -16,16 +16,21 @@ import {
   type MascotAnchor,
 } from '@/lib/mascot'
 
-// Twinkle — EduPlay's helper star (original inline-SVG character: eyes,
-// smile, hands, feet; one hand holds a book, the other a phone).
-// The mascot ROAMS: it slowly drifts between screen corners so kids see
-// it walking around on every screen. Small, always at the edges, and it
-// never covers buttons, game controls, the Start button, or the right
-// panel — the wrapper takes no pointer events, only the mascot button
-// itself is tappable, and on play pages it stays at the bottom corners
-// only. Tapping it opens the helper panel (quick actions only — no chat
-// backend, no personal data, never pretending to be a human). The
-// greeting is dismissible and remembered on this device only.
+// Twinkle — EduPlay's helper star. The art is the ORIGINAL orange star
+// + teal book portrait (/eduplay-mascot.png, V0 ZIP #2 port, cropped to
+// 512×512) — the cute one the owner picked; the inline-SVG character
+// from the Twinkle upgrade looked odd and is gone.
+// The mascot is FREE on the screen, not locked in a little circle: the
+// button is the picture itself (up to 128px, no border, no background,
+// no round frame — the cream background blends away with multiply, so
+// the star and book stand on the page). It ROAMS the whole screen —
+// top, middle and bottom on both edges — drifting slowly with a soft
+// bob, and it never covers buttons, game controls, the Start button,
+// or the right panel: the wrapper takes no pointer events, only the
+// mascot button itself is tappable, and on play pages it stays at the
+// bottom corners only. Tapping it opens the helper panel (quick actions
+// only — no chat backend, no personal data, never pretending to be a
+// human). The greeting is dismissible and remembered on this device only.
 const GREETING_KEY = 'eduplay-helper-greeted'
 
 export default function HelperMascot({ locale }: { locale: string }) {
@@ -48,7 +53,7 @@ export default function HelperMascot({ locale }: { locale: string }) {
     }
   }, [])
 
-  // Wander: drift to a new corner every so often. Never while the helper
+  // Wander: drift to a new spot every so often. Never while the helper
   // panel is open — the panel must not drift away from the reader.
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -58,8 +63,8 @@ export default function HelperMascot({ locale }: { locale: string }) {
     return () => window.clearInterval(id)
   }, [allowed])
 
-  // If a top corner is showing when a play page opens, drift back down
-  // to a bottom corner (play pages use the bottom corners only).
+  // If a top or middle spot is showing when a play page opens, drift
+  // back down to a bottom corner (play pages use the bottom corners only).
   useEffect(() => {
     if (onPlayPage && anchor.id !== 'bottom-right' && anchor.id !== 'bottom-left') {
       setAnchor(MASCOT_ANCHORS[0])
@@ -162,9 +167,9 @@ export default function HelperMascot({ locale }: { locale: string }) {
         aria-expanded={open}
         aria-label={open ? `Close ${MASCOT_NAME} helper` : `Open ${MASCOT_NAME} helper`}
         className="eduplay-mascot-bob"
-        style={{ position: 'relative', width: '64px', height: '64px', overflow: 'hidden', borderRadius: '9999px', border: '2px solid var(--color-border)', background: '#FFF8E7', boxShadow: '0 4px 0 0 var(--color-primary-dark)', cursor: 'pointer', padding: '4px', pointerEvents: 'auto' }}
+        style={{ position: 'relative', width: 'clamp(84px, 12vw, 128px)', height: 'clamp(84px, 12vw, 128px)', border: 'none', background: 'transparent', boxShadow: 'none', cursor: 'pointer', padding: 0, pointerEvents: 'auto' }}
       >
-        <TwinkleArt />
+        <Image src="/eduplay-mascot.png" alt={`${MASCOT_NAME}, EduPlay's helper star`} width={512} height={512} style={{ width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply' }} />
       </button>
     </div>
   )
