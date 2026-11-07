@@ -207,7 +207,7 @@ export default async function HomePage({ params }: HomePageProps) {
 
         {/* Stats — V0 coloured tiles, real numbers only. */}
         <section aria-label="EduPlay in numbers" style={{ padding: '0 1rem' }}>
-          <div style={{ margin: '0 auto', maxWidth: '80rem', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2px', overflow: 'hidden', borderRadius: '1.5rem', border: '2px solid var(--color-text-primary)', background: 'var(--color-text-primary)' }} className="md:grid-cols-4">
+          <div style={{ margin: '0 auto', maxWidth: '80rem', display: 'grid', gap: '2px', overflow: 'hidden', borderRadius: '1.5rem', border: '2px solid var(--color-text-primary)', background: 'var(--color-text-primary)' }} className="grid-cols-2 md:grid-cols-4">
             {[
               { value: total > 0 ? total.toLocaleString() : '—', label: t('statsActivities'), tile: TILES[2] },
               { value: '15', label: t('statsSubjects'), tile: TILES[1] },
