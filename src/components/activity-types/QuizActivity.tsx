@@ -6,7 +6,7 @@ import type { ActivityCompletion, ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, TIMER_DEFAULT, shuffleArray, isRTL, getRandomFeedback } from './shared'
 import PlayShell, { usePlayShellStatus } from './PlayShell'
 import type { ActivityItem } from '@/types'
-import { playGameSound, readSoundOn } from '@/lib/game-sound'
+import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
 
 interface QuizQuestion {
   item: ActivityItem
@@ -37,10 +37,15 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
   useEffect(() => { onProgressRef.current = onProgress })
   useEffect(() => { onProgressRef.current(score, finished) }, [score, finished])
 
-  // Sound is an extra layer only (colour + icon + text already signal
-  // correct/wrong). Default is muted; the play-page sound button turns it on.
+  // GAME FEEL (2026-11-07, build-list item 4): Quiz now uses the
+  // interactive sound system (default ON, same as Match Up) instead
+  // of the old muted-by-default one, so correct/wrong are heard:
+  // the pleasant rising sound for right, the hard/harsh buzz for
+  // wrong. Sound is an extra layer only (colour + icon + text
+  // already signal correct/wrong). The play-page header toggle for
+  // Quiz is the interactive toggle, so one tap mutes all of it.
   useEffect(() => {
-    if (feedback) playGameSound(feedback.type, readSoundOn())
+    if (feedback) playEduSound(feedback.type, readInteractiveSoundOn())
   }, [feedback])
 
   // QUIZ RE-RENDER FIX (2026-11-02): the play page re-renders every
@@ -108,7 +113,13 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
     if (qs.length === 0) return
     if (currentRef.current + 1 >= qs.length) {
       setFinished(true)
-      onCompleteRef.current(scoreRef.current)
+      // GAME FEEL: report correct/total counts so the play page can
+      // tell good marks (>= 50%, fireworks) from a try-again finish.
+      // Score is 10 per correct answer, so correct = score / 10.
+      onCompleteRef.current(scoreRef.current, {
+        correctCount: scoreRef.current / SCORE_PER_CORRECT,
+        totalCount: qs.length,
+      })
     } else {
       setCurrent((c) => c + 1)
     }
@@ -153,6 +164,9 @@ function QuizGame({ items, locale, onComplete, onProgress }: QuizGameProps) {
     if (selected !== null) return
     const q = questions[current]
     if (!q) return
+    // GAME FEEL: a click on every answer tap, before the
+    // correct/wrong feedback sound that follows.
+    playEduSound('click', readInteractiveSoundOn())
     setSelected(idx)
     if (idx === q.correctIndex) {
       setScore((s) => s + SCORE_PER_CORRECT)

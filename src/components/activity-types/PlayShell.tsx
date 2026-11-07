@@ -1,6 +1,13 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import {
+  INTERACTIVE_SOUND_EVENT,
+  playEduSound,
+  readInteractiveSoundOn,
+  startGameMusic,
+  stopGameMusic,
+} from '@/lib/game-sound'
 
 /**
  * PLAY SHELL (2026-11-03, first launch work after the one-click host).
@@ -25,6 +32,16 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
  * No scores, ratings, plays, or leaderboard entries are invented here:
  * the header shows only the wrapped player's real score, and the
  * timer shows only real elapsed seconds since the countdown ended.
+ *
+ * GAME FEEL (2026-11-07, build-list item 4): the shell now adds the
+ * shared play feel — soft background music while playing (own
+ * synthesized Web Audio, quiet, following the interactive sound
+ * setting, so the visible mute button stops it), a soft tick with
+ * each elapsed second, and click sounds on the Start/Pause/Resume
+ * buttons. The shell timer was already visible in the header; the
+ * tick is its sound, not a second timer. Music starts when play
+ * begins (after the countdown), pauses with the game, and stops at
+ * finish or unmount.
  */
 
 export type PlayShellStatus = 'idle' | 'playing' | 'paused'
@@ -67,6 +84,35 @@ export default function PlayShell({ title, score, finished, onElapsed, children 
   const [phase, setPhase] = useState<Phase>('start')
   const [count, setCount] = useState(COUNTDOWN_SECONDS)
   const [elapsed, setElapsed] = useState(0)
+  // GAME FEEL: the interactive sound setting (default ON) drives the
+  // music, the tick, and the button clicks. The visible mute button
+  // (the header InteractiveSoundToggle on the play page) dispatches
+  // this event, so muting stops the music immediately.
+  const [soundOn, setSoundOn] = useState<boolean>(() => readInteractiveSoundOn())
+  useEffect(() => {
+    setSoundOn(readInteractiveSoundOn())
+    const sync = (e: Event) => {
+      const detail = (e as CustomEvent<{ on?: boolean }>).detail
+      if (typeof detail?.on === 'boolean') setSoundOn(detail.on)
+    }
+    window.addEventListener(INTERACTIVE_SOUND_EVENT, sync)
+    return () => window.removeEventListener(INTERACTIVE_SOUND_EVENT, sync)
+  }, [])
+
+  // GAME FEEL: music runs only while the game is actually playing —
+  // not on the Start screen, not during the countdown, not while
+  // paused, and never after finish. Stops on unmount too.
+  useEffect(() => {
+    if (phase === 'playing' && !finished && soundOn) startGameMusic()
+    else stopGameMusic()
+    return () => stopGameMusic()
+  }, [phase, finished, soundOn])
+
+  // GAME FEEL: one soft tick per elapsed second while playing — the
+  // sound of the visible header timer. Very quiet by design.
+  useEffect(() => {
+    if (phase === 'playing' && !finished && soundOn && elapsed > 0) playEduSound('tick', true)
+  }, [elapsed, phase, finished, soundOn])
 
   // Countdown: 3, then 2, then 1, one second each, then play starts.
   useEffect(() => {
@@ -110,7 +156,7 @@ export default function PlayShell({ title, score, finished, onElapsed, children 
           {title}
         </h2>
         <button
-          onClick={() => { setCount(COUNTDOWN_SECONDS); setPhase('countdown') }}
+          onClick={() => { playEduSound('click', soundOn); setCount(COUNTDOWN_SECONDS); setPhase('countdown') }}
           style={{
             background: 'var(--color-primary)', color: '#fff', border: 'none',
             borderRadius: 'var(--radius)', padding: '0.875rem 2.5rem',
@@ -146,7 +192,7 @@ export default function PlayShell({ title, score, finished, onElapsed, children 
           <span>Score: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong></span>
           {!finished && phase === 'playing' && (
             <button
-              onClick={() => setPhase('paused')}
+              onClick={() => { playEduSound('click', soundOn); setPhase('paused') }}
               style={{
                 background: 'var(--color-surface)', color: 'var(--color-text-primary)',
                 border: '1px solid var(--color-border)', borderRadius: 'var(--radius)',
@@ -173,7 +219,7 @@ export default function PlayShell({ title, score, finished, onElapsed, children 
             }}>
               <div style={{ fontSize: '1.5rem', fontFamily: 'var(--font-display)' }}>Paused</div>
               <button
-                onClick={() => setPhase('playing')}
+                onClick={() => { playEduSound('click', soundOn); setPhase('playing') }}
                 style={{
                   background: 'var(--color-primary)', color: '#fff', border: 'none',
                   borderRadius: 'var(--radius)', padding: '0.75rem 2rem',

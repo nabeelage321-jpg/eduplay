@@ -54,13 +54,13 @@ function getCtx(): AudioContext | null {
   return ctx
 }
 
-function tone(freq: number, start: number, duration: number, volume = 0.12) {
+function tone(freq: number, start: number, duration: number, volume = 0.12, type: OscillatorType = 'sine') {
   const audio = getCtx()
   if (!audio) return
   try {
     const osc = audio.createOscillator()
     const gain = audio.createGain()
-    osc.type = 'sine'
+    osc.type = type
     osc.frequency.value = freq
     gain.gain.setValueAtTime(volume, audio.currentTime + start)
     gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + start + duration)
@@ -106,14 +106,115 @@ export function playGameSound(kind: 'correct' | 'wrong' | 'tap', soundOn: boolea
   }
 }
 
+/* ---- Game-feel batch (2026-11-07, build-list item 4) ----
+ * The shared shell's play feel: soft background music while a game
+ * runs, a soft tick with the visible shell timer, and a wrong sound
+ * that is HARD/HARSH (the owner's word) so it can never be mistaken
+ * for the pleasant rising correct sound. All Web Audio, no assets.
+ *
+ * Specs are pure data (getEduSoundSpec) so tests can prove the
+ * wrong/correct distinction, the tick's quietness, and the music's
+ * gentle volumes without a browser. playEduSound only renders a spec.
+ */
+
+export interface SoundToneSpec {
+  freq: number
+  start: number
+  duration: number
+  volume: number
+  type?: OscillatorType
+}
+
+export interface SoundSwoopSpec {
+  freqStart: number
+  freqEnd: number
+  start: number
+  duration: number
+  volume: number
+  type?: OscillatorType
+}
+
+export interface EduSoundSpec {
+  tones: SoundToneSpec[]
+  swoops: SoundSwoopSpec[]
+}
+
+/** Distinct synthesized pattern per kind; all Web Audio, no assets. */
+export function getEduSoundSpec(kind: EduSoundKind): EduSoundSpec {
+  if (kind === 'correct') {
+    return {
+      tones: [
+        { freq: 523.25, start: 0, duration: 0.14, volume: 0.12 },
+        { freq: 659.25, start: 0.1, duration: 0.14, volume: 0.12 },
+        { freq: 783.99, start: 0.2, duration: 0.22, volume: 0.12 },
+      ],
+      swoops: [],
+    }
+  }
+  if (kind === 'wrong') {
+    // HARD/HARSH (owner, 2026-11-07): low sawtooth buzz, descending,
+    // clearly distinct from the pleasant sine arpeggio of 'correct'.
+    return {
+      tones: [
+        { freq: 110, start: 0, duration: 0.18, volume: 0.12, type: 'sawtooth' },
+        { freq: 82.5, start: 0.12, duration: 0.25, volume: 0.12, type: 'sawtooth' },
+      ],
+      swoops: [{ freqStart: 180, freqEnd: 70, start: 0, duration: 0.3, volume: 0.1, type: 'sawtooth' }],
+    }
+  }
+  if (kind === 'click') {
+    return { tones: [{ freq: 660, start: 0, duration: 0.05, volume: 0.07 }], swoops: [] }
+  }
+  if (kind === 'jump') {
+    return {
+      tones: [{ freq: 1046.5, start: 0.3, duration: 0.12, volume: 0.08 }],
+      swoops: [{ freqStart: 400, freqEnd: 950, start: 0, duration: 0.35, volume: 0.12 }],
+    }
+  }
+  if (kind === 'win') {
+    return {
+      tones: [
+        { freq: 523.25, start: 0, duration: 0.15, volume: 0.12 },
+        { freq: 659.25, start: 0.13, duration: 0.15, volume: 0.12 },
+        { freq: 783.99, start: 0.26, duration: 0.15, volume: 0.12 },
+        { freq: 1046.5, start: 0.39, duration: 0.3, volume: 0.12 },
+      ],
+      swoops: [],
+    }
+  }
+  if (kind === 'lose') {
+    return {
+      tones: [
+        { freq: 392, start: 0, duration: 0.18, volume: 0.1 },
+        { freq: 329.63, start: 0.16, duration: 0.18, volume: 0.1 },
+        { freq: 261.63, start: 0.32, duration: 0.22, volume: 0.1 },
+        { freq: 196, start: 0.48, duration: 0.3, volume: 0.1 },
+      ],
+      swoops: [],
+    }
+  }
+  if (kind === 'timerWarning') {
+    return {
+      tones: [
+        { freq: 880, start: 0, duration: 0.08, volume: 0.09 },
+        { freq: 880, start: 0.14, duration: 0.08, volume: 0.09 },
+      ],
+      swoops: [],
+    }
+  }
+  // 'tick': the shell timer's soft tick — very quiet, very short,
+  // so a whole game of ticks never gets annoying.
+  return { tones: [{ freq: 1200, start: 0, duration: 0.03, volume: 0.03 }], swoops: [] }
+}
+
 /* ---- Interactive sound system: Letter Wheel + Jump Path only ---- */
 
 export const INTERACTIVE_SOUND_STORAGE_KEY = 'eduplay-interactive-sound-on'
 export const INTERACTIVE_SOUND_EVENT = 'eduplay-interactive-sound'
 
-export type EduSoundKind = 'correct' | 'wrong' | 'click' | 'jump' | 'win' | 'lose' | 'timerWarning'
+export type EduSoundKind = 'correct' | 'wrong' | 'click' | 'jump' | 'win' | 'lose' | 'timerWarning' | 'tick'
 
-export const EDU_SOUND_KINDS: EduSoundKind[] = ['correct', 'wrong', 'click', 'jump', 'win', 'lose', 'timerWarning']
+export const EDU_SOUND_KINDS: EduSoundKind[] = ['correct', 'wrong', 'click', 'jump', 'win', 'lose', 'timerWarning', 'tick']
 
 /**
  * Interactive sound is ON unless the player explicitly turned it off.
@@ -139,32 +240,56 @@ export function storeInteractiveSoundOn(on: boolean) {
   }
 }
 
-/** Distinct synthesized pattern per kind; all Web Audio, no assets. */
+/** Renders a sound spec (see getEduSoundSpec above). */
 export function playEduSound(kind: EduSoundKind, soundOn: boolean) {
   if (!soundOn) return
-  if (kind === 'correct') {
-    tone(523.25, 0, 0.14)
-    tone(659.25, 0.1, 0.14)
-    tone(783.99, 0.2, 0.22)
-  } else if (kind === 'wrong') {
-    swoop(220, 110, 0, 0.3, 0.1, 'triangle')
-  } else if (kind === 'click') {
-    tone(660, 0, 0.05, 0.07)
-  } else if (kind === 'jump') {
-    swoop(400, 950, 0, 0.35, 0.12)
-    tone(1046.5, 0.3, 0.12, 0.08)
-  } else if (kind === 'win') {
-    tone(523.25, 0, 0.15)
-    tone(659.25, 0.13, 0.15)
-    tone(783.99, 0.26, 0.15)
-    tone(1046.5, 0.39, 0.3)
-  } else if (kind === 'lose') {
-    tone(392, 0, 0.18, 0.1)
-    tone(329.63, 0.16, 0.18, 0.1)
-    tone(261.63, 0.32, 0.22, 0.1)
-    tone(196, 0.48, 0.3, 0.1)
-  } else if (kind === 'timerWarning') {
-    tone(880, 0, 0.08, 0.09)
-    tone(880, 0.14, 0.08, 0.09)
+  const spec = getEduSoundSpec(kind)
+  for (const t of spec.tones) tone(t.freq, t.start, t.duration, t.volume, t.type ?? 'sine')
+  for (const s of spec.swoops) swoop(s.freqStart, s.freqEnd, s.start, s.duration, s.volume, s.type ?? 'sine')
+}
+
+/* ---- Soft background music (game-feel batch, 2026-11-07) ----
+ * One gentle loop while a game runs: a slow C-major pentatonic
+ * arpeggio of soft sine notes (one note per step) with a quiet bass
+ * note every fourth step. No melody is copied from anywhere — the
+ * notes are a plain scale, the volumes stay <= 0.035 so the music
+ * sits under the game, and it follows the interactive sound setting:
+ * muting stops it, unmuting while playing restarts it. The PlayShell
+ * starts it when play begins and stops it on pause/finish/unmount.
+ */
+
+export const MUSIC_NOTES = [523.25, 587.33, 659.25, 783.99, 880.0, 783.99, 659.25, 587.33]
+export const MUSIC_STEP_MS = 450
+export const MUSIC_NOTE_VOLUME = 0.035
+export const MUSIC_BASS_VOLUME = 0.02
+
+/** Pure schedule for one music step — the note and whether a soft bass joins it. */
+export function musicNoteAt(step: number): { freq: number; bass: boolean } {
+  const i = ((step % MUSIC_NOTES.length) + MUSIC_NOTES.length) % MUSIC_NOTES.length
+  return { freq: MUSIC_NOTES[i], bass: step % 4 === 0 }
+}
+
+let musicTimer: ReturnType<typeof setInterval> | null = null
+let musicStep = 0
+
+export function startGameMusic() {
+  if (typeof window === 'undefined' || musicTimer) return
+  musicStep = 0
+  musicTimer = setInterval(() => {
+    const { freq, bass } = musicNoteAt(musicStep)
+    tone(freq, 0, 0.4, MUSIC_NOTE_VOLUME)
+    if (bass) tone(130.81, 0, 0.8, MUSIC_BASS_VOLUME)
+    musicStep += 1
+  }, MUSIC_STEP_MS)
+}
+
+export function stopGameMusic() {
+  if (musicTimer) {
+    clearInterval(musicTimer)
+    musicTimer = null
   }
+}
+
+export function isGameMusicPlaying(): boolean {
+  return musicTimer !== null
 }

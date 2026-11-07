@@ -16,6 +16,11 @@ import InteractiveSoundToggle from '@/components/activity-types/InteractiveSound
 // handler and never touches this; game scoring is never altered.
 import { recordFinish, type FinishResult } from '@/lib/streak'
 import { StreakFinishLine } from '@/components/activity-types/StreakBadge'
+// GAME FEEL (2026-11-07, build-list item 4): fireworks for good
+// marks (>= 50%), warm "Play again" encouragement below 50%.
+import { completionPercent, finishCelebration } from '@/lib/game-feel'
+import Fireworks from '@/components/activity-types/Fireworks'
+import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
 import { useThemeStore } from '@/lib/store/theme-store'
 import type { Activity, SupportedLocale } from '@/types'
 
@@ -131,6 +136,10 @@ function PlayPageInner() {
   }
   const [finalScore, setFinalScore] = useState<number | null>(null)
   const [finalElapsed, setFinalElapsed] = useState<number | null>(null)
+  // GAME FEEL: percent of correct answers at finish (null when the
+  // player did not report counts — then the finish screen is plain,
+  // exactly as before).
+  const [finalPercent, setFinalPercent] = useState<number | null>(null)
   // STREAK v1: the finish just recorded (null until a finish). The ref
   // guards one finish against a player calling onComplete twice for
   // the same completion; it resets only on Play Again, when a genuinely
@@ -210,11 +219,21 @@ function PlayPageInner() {
       setStreakResult(recordFinish(score))
     }
     setFinalScore(score)
+    setFinalPercent(completionPercent(details))
     // Shell-wrapped types: the shell's elapsed (0-based from play
     // start). Other types: details carry no elapsed, so fall back
     // to this page's own timer, exactly as before.
     setFinalElapsed(details?.elapsedSeconds ?? elapsed)
   }
+
+  // GAME FEEL: a win fanfare when the finish is good marks (>= 50%).
+  // Below 50% there is no sad sound — the encouragement line on the
+  // finish screen does the cheering instead.
+  useEffect(() => {
+    if (finalScore !== null && finalPercent !== null && finalPercent >= 50) {
+      playEduSound('win', readInteractiveSoundOn())
+    }
+  }, [finalScore, finalPercent])
 
   function formatTime(secs: number) {
     const m = Math.floor(secs / 60).toString().padStart(2, '0')
@@ -342,18 +361,18 @@ function PlayPageInner() {
             {isPending ? '⏳ Waiting for teacher/parent approval' : '✕ Not approved'}
           </span>
         )}
-        {/* MATCH UP SOUNDS 2026-11-04: the header toggle and the
-            in-player toggle must drive ONE setting for Match Up.
-            The header's old SoundToggle ('eduplay-sound-on',
-            default muted) is a different key from the interactive
-            setting ('eduplay-interactive-sound-on', default ON)
-            that Match Up's sounds read, so for Match Up — and
-            only Match Up, keyed on the EFFECTIVE type so a
-            ?as=match-up converted view counts too — the header
-            renders the interactive toggle instead. Both toggles
-            then stay in sync via the interactive storage event.
-            Every other type's header is untouched. */}
-        {effectiveActivity && dbTypeOf(effectiveActivity) === 'match-up' ? (
+        {/* MATCH UP SOUNDS 2026-11-04, extended to QUIZ 2026-11-07
+            (game feel): the header toggle and the in-player sounds
+            must drive ONE setting. The header's old SoundToggle
+            ('eduplay-sound-on', default muted) is a different key
+            from the interactive setting
+            ('eduplay-interactive-sound-on', default ON) that Quiz
+            and Match Up sounds now read, so for Quiz and Match Up —
+            keyed on the EFFECTIVE type so a ?as= conversion counts
+            too — the header renders the interactive toggle instead.
+            Both toggles then stay in sync via the interactive
+            storage event. Every other type's header is untouched. */}
+        {effectiveActivity && ['quiz', 'match-up'].includes(dbTypeOf(effectiveActivity)) ? (
           <InteractiveSoundToggle />
         ) : (
           <SoundToggle />
@@ -434,13 +453,26 @@ function PlayPageInner() {
                 textAlign: 'center', padding: '2.5rem 1rem',
                 background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)',
                 border: '2px solid var(--color-success)', boxShadow: 'var(--shadow-card)',
-                marginTop: '2rem',
+                marginTop: '2rem', position: 'relative', overflow: 'hidden',
               }}
             >
+              {/* GAME FEEL: fireworks for good marks (>= 50%) — the
+                  canvas sits behind the text, decorative only. */}
+              {finalPercent !== null && finishCelebration(finalPercent) === 'fireworks' ? <Fireworks /> : null}
               <div style={{ fontSize: '4rem', marginBottom: '0.5rem' }}>🏆</div>
               <h2 style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontSize: '1.5rem', marginBottom: '0.25rem' }}>
                 Activity Complete!
               </h2>
+              {finalPercent !== null && finishCelebration(finalPercent) === 'fireworks' ? (
+                <p style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontSize: '1.1rem', marginBottom: '0.25rem' }}>
+                  Amazing! You did great! 🎆
+                </p>
+              ) : null}
+              {finalPercent !== null && finishCelebration(finalPercent) === 'encourage' ? (
+                <p style={{ color: 'var(--color-text-secondary)', fontSize: '1rem', marginBottom: '0.25rem' }}>
+                  Good try! 🌟 Play again and beat your score — every try makes you sharper.
+                </p>
+              ) : null}
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.1rem', marginBottom: '0.25rem' }}>
                 Final Score: <strong style={{ color: 'var(--color-primary)' }}>{finalScore}</strong>
               </p>
@@ -455,7 +487,7 @@ function PlayPageInner() {
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <motion.button
                   whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                  onClick={() => { setFinalScore(null); setFinalElapsed(null); setElapsed(0); setStreakResult(null); streakRecordedRef.current = false }}
+                  onClick={() => { setFinalScore(null); setFinalElapsed(null); setFinalPercent(null); setElapsed(0); setStreakResult(null); streakRecordedRef.current = false }}
                   style={{
                     padding: '1rem 1.75rem', borderRadius: 'var(--radius)', minHeight: '56px',
                     border: 'none', background: 'var(--gradient-btn)',
