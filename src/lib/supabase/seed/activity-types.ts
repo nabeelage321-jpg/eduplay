@@ -677,6 +677,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Block Drop',
     description_en: 'Drop falling blocks to spell the word or make the sum',
   },
+  {
+    slug: 'slingshot-aim',
+    icon: '🎯',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Slingshot Aim',
+    name_ur: 'Slingshot Aim',
+    name_ar: 'Slingshot Aim',
+    name_hi: 'Slingshot Aim',
+    name_es: 'Slingshot Aim',
+    name_fr: 'Slingshot Aim',
+    description_en: 'Aim the slingshot and knock down the tower with the right answer',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

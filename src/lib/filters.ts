@@ -97,6 +97,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'river-hop', label: 'River Hop' },
   { value: 'lane-runner', label: 'Lane Runner' },
   { value: 'block-drop', label: 'Block Drop' },
+  { value: 'slingshot-aim', label: 'Slingshot Aim' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

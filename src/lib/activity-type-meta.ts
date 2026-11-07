@@ -60,4 +60,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'river-hop',       icon: '🌊', name: 'River Hop',       desc: 'Hop the pads in counting order to cross the river' },
   { slug: 'lane-runner',      icon: '🏃', name: 'Lane Runner',      desc: 'Run the lanes and race through the gate with the right answer' },
   { slug: 'block-drop',       icon: '🧱', name: 'Block Drop',       desc: 'Drop falling blocks to spell the word or make the sum' },
+  { slug: 'slingshot-aim',    icon: '🎯', name: 'Slingshot Aim',    desc: 'Aim the slingshot and knock down the tower with the right answer' },
 ]

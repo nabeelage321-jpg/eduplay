@@ -31,6 +31,7 @@ import { canBuildSweetMatchTarget } from '@/lib/sweet-match'
 import { sequenceTerms, borrowNumericWrongAnswers, RIVER_HOP_MIN_NUMERIC_WRONGS } from '@/lib/river-hop'
 import { borrowWrongAnswers as borrowLaneRunnerWrongAnswers, LANE_RUNNER_MAX_WRONGS } from '@/lib/lane-runner'
 import { buildBlockDropRound } from '@/lib/block-drop'
+import { buildSlingshotAimRound } from '@/lib/slingshot-aim'
 
 export interface ConvertTarget {
   slug: string
@@ -89,6 +90,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'river-hop',       icon: '🌊', name: 'River Hop' },
   { slug: 'lane-runner',      icon: '🏃', name: 'Lane Runner' },
   { slug: 'block-drop',       icon: '🧱', name: 'Block Drop' },
+  { slug: 'slingshot-aim',    icon: '🎯', name: 'Slingshot Aim' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -564,6 +566,26 @@ export function canConvertTo(
             ok: false,
             reason:
               'Block Drop needs every answer to be a word of 3–6 letters or a whole number up to 27 — one of these questions does not.',
+          }
+
+    // Slingshot Aim (type 51): the round is generated from the
+    // game's own items — one round per question, the towers are
+    // the item's own answer plus two wrong answers borrowed from
+    // the other items. A round needs at least two different
+    // answers to borrow, or the towers have no choice in them.
+    case 'slingshot-aim':
+      return items.every((item) =>
+        buildSlingshotAimRound(
+          item.prompt,
+          item.answer,
+          items.map((i) => i.answer),
+        ),
+      )
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Slingshot Aim needs at least two different answers to borrow as wrong towers in every round — one of these questions has no other answers to borrow from.',
           }
 
     default:

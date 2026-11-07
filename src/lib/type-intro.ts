@@ -51,6 +51,10 @@
  *     block-drop: 10 pts per completed row, 3 lives (a topped-out
  *     well costs one life and ends the round; running out of
  *     blocks costs no life).
+ *     slingshot-aim: 10 pts per correct tower, 3 lives (a wrong
+ *     tower or a miss wastes one of 3 stones; spending all 3
+ *     stones without the correct tower costs one life and ends
+ *     the round).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -436,6 +440,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Left/right arrow keys or A/D to move, up arrow or X to turn, down arrow or S to drop one row, Space to drop it all the way — or the on-screen move, turn, and DROP buttons.',
     timer: 'No timer — but a piece falls one row about every second, so aim it before it lands.',
     lives: 'You have 3 lives — if the blocks pile up to the top so the next piece cannot fall, you lose one life and the round ends. Running out of blocks costs no life.',
+  }),
+  'slingshot-aim': rules({
+    howTo: 'Drag back on the slingshot and release to launch a stone at the towers — knock down the tower with the right answer. The dotted path shows where the stone will fly.',
+    scoring: 'Each correct tower knocked down earns 10 points.',
+    objective: 'Knock down the correct tower in every round without running out of lives.',
+    controls: 'Drag back on the slingshot with your mouse or finger and release to fire — or use the up/down arrow keys for angle, left/right for power, and Space to fire.',
+    timer: 'No timer — take your time to aim, but you only get 3 stones per round.',
+    lives: 'You have 3 lives — a wrong tower or a miss only wastes a stone, but spending all 3 stones without the correct tower costs one life and ends the round.',
   }),
 }
 
