@@ -8,9 +8,13 @@ import type { ActivityCompletion } from '@/components/activity-types/shared'
 import { SCORE_PER_CORRECT } from '@/components/activity-types/shared'
 import { adaptActivityItems, dbTypeOf } from '@/lib/activity-content'
 import { canConvertTo, convertTargetLabel, resolveConvertTarget } from '@/lib/convert'
-import ActivityIdLine from '@/components/activity-types/ActivityIdLine'
-import ShareSheetButton from '@/components/game/ShareSheetButton'
 import PlayIntro from '@/components/game/PlayIntro'
+// ITEM 37 (owner order 2026-11-07 14:07 PKT): the small right
+// panel (Share, sound, Activity ID, game name, Game No.) lives
+// in PlaySidePanel and shows on ALL THREE screens (intro, play,
+// finish). It is NOT in the top header any more.
+import PlaySidePanel from '@/components/game/PlaySidePanel'
+import { typeIntro } from '@/lib/type-intro'
 import ScorePill from '@/components/game/ScorePill'
 import SoundToggle from '@/components/activity-types/SoundToggle'
 import InteractiveSoundToggle from '@/components/activity-types/InteractiveSoundToggle'
@@ -407,16 +411,11 @@ function PlayPageInner() {
           }}>
             {activity.title}
           </p>
-          {/* TEACHER-ID BATCH 2026-11-02: the id was only in the URL. */}
-          <ActivityIdLine id={id} gameNumber={activity.game_number ?? null} />
         </div>
-        {showShare ? (
-          <ShareSheetButton locale={locale} gameId={id} gameTitle={activity.title} />
-        ) : (
-          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', flexShrink: 0 }}>
-            {isPending ? '⏳ Waiting for teacher/parent approval' : '✕ Not approved'}
-          </span>
-        )}
+        {/* ITEM 37: Activity ID + Share moved OUT of this header —
+            they live in the right panel (PlaySidePanel) on every
+            screen now, so they are never duplicated. The header
+            keeps only the title, the sound toggle, and the timer. */}
         {/* MATCH UP SOUNDS 2026-11-04, extended to QUIZ 2026-11-07
             (game feel): the header toggle and the in-player sounds
             must drive ONE setting. The header's old SoundToggle
@@ -514,7 +513,7 @@ function PlayPageInner() {
             ),
           )}
         </div>
-        <div style={{ position: 'relative', zIndex: 1, padding: '0.75rem 0.5rem', maxWidth: '860px', margin: '0 auto' }}>
+        <div style={{ position: 'relative', zIndex: 1, padding: '0.5rem', maxWidth: '1120px', margin: '0 auto' }}>
         {convertTarget && !convertBlockedPrivate && convertCheck?.ok ? (
           <p style={{
             maxWidth: '700px', margin: '0 auto 1rem', padding: '0.75rem 1rem',
@@ -526,6 +525,21 @@ function PlayPageInner() {
             The original game is not changed.
           </p>
         ) : null}
+        {/* ITEM 37 (owner order 2026-11-07 14:07 PKT): the right
+            panel sits beside the game on EVERY screen — intro,
+            play, finish. One grid, one panel; it never remounts
+            when the screen changes, and it is never duplicated in
+            the header. Below 720px it stacks under the game. */}
+        <div
+          style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem' }}
+          className="eduplay-play-grid"
+        >
+          <style>{`
+            @media (min-width: 720px) {
+              .eduplay-play-grid { grid-template-columns: minmax(0, 1fr) 220px !important; }
+            }
+          `}</style>
+          <div style={{ minWidth: 0 }}>
         <AnimatePresence mode="wait">
           {finalScore !== null ? (
             <motion.div
@@ -600,13 +614,9 @@ function PlayPageInner() {
                   </motion.button>
                 </div>
               ) : null}
-              {/* BATCH 1 (item 6): share the score board — device
-                  sheet first, copy link fallback. */}
-              {showShare ? (
-                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                  <ShareSheetButton locale={locale} gameId={id} gameTitle={activity.title} />
-                </div>
-              ) : null}
+              {/* ITEM 37: the finish screen's Share lives in the
+                  right panel (PlaySidePanel) now, not as a second
+                  button here — one place for Share on every screen. */}
               {/* BATCH 1 (item 9): Top 10 from THIS device's own real
                   finishes — never invented. */}
               <div style={{ maxWidth: '420px', margin: '0 auto 1.25rem', textAlign: 'left' }}>
@@ -677,13 +687,9 @@ function PlayPageInner() {
             // never re-asks.
             <motion.div key="intro" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <PlayIntro
-                gameId={id}
-                gameTitle={activity.title}
                 typeSlug={dbTypeOf(effectiveActivity ?? activity)}
                 itemCount={originalItems.length}
                 locale={locale}
-                showShare={showShare}
-                gameNumber={activity.game_number ?? null}
                 onStart={(name) => { setPagePlayerName(name); setIntroDone(true) }}
               />
             </motion.div>
@@ -738,6 +744,17 @@ function PlayPageInner() {
             </motion.div>
           )}
         </AnimatePresence>
+          </div>
+          <PlaySidePanel
+            gameId={id}
+            gameTitle={activity.title}
+            typeName={typeIntro(dbTypeOf(effectiveActivity ?? activity), originalItems.length).name}
+            itemCount={originalItems.length}
+            locale={locale}
+            showShare={showShare}
+            gameNumber={activity.game_number ?? null}
+          />
+        </div>
         </div>
       </div>
     </div>
