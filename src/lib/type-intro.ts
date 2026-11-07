@@ -40,6 +40,8 @@
  *     descent steps, one step every 3.5s).
  *     jump-blocks: 10 pts + 1 coin per correct block, 3 lives
  *     (a wrong block costs one life and cracks).
+ *     fruit-slice: 10 pts, 3 lives (a wrong fruit or a bomb
+ *     costs one life; a correct fruit escaping costs none).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -393,6 +395,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Hold the arrow keys or A/D to run, Space, Arrow Up, or W to jump — or hold the on-screen arrows and tap JUMP.',
     timer: 'No timer — look before you leap.',
     lives: 'You have 3 lives — a wrong block costs one life and cracks so you cannot hit it again.',
+  }),
+  'fruit-slice': rules({
+    howTo: 'Swipe across the fruit carrying the correct answer to slice it — or tap the fruit. Never slice the bomb.',
+    scoring: 'Each correct fruit earns 10 points.',
+    objective: 'Slice the right fruit in every round without running out of lives.',
+    controls: 'Swipe across a fruit with your finger or mouse, or tap a fruit to slice it.',
+    timer: 'No timer — watch the arcs and slice at the right moment.',
+    lives: 'You have 3 lives — a wrong fruit or a bomb costs one life; a correct fruit flying away costs none.',
   }),
 }
 

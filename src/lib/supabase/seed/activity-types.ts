@@ -625,6 +625,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Jump Blocks',
     description_en: 'Run and jump to hit the block with the right answer',
   },
+  {
+    slug: 'fruit-slice',
+    icon: '🍉',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Fruit Slice',
+    name_ur: 'Fruit Slice',
+    name_ar: 'Fruit Slice',
+    name_hi: 'Fruit Slice',
+    name_es: 'Fruit Slice',
+    name_fr: 'Fruit Slice',
+    description_en: 'Slice the fruit with the right answer',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

@@ -82,6 +82,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'sweet-match',     icon: '🍬', name: 'Sweet Match' },
   { slug: 'star-shooter',    icon: '👾', name: 'Star Shooter' },
   { slug: 'jump-blocks',     icon: '🧱', name: 'Jump Blocks' },
+  { slug: 'fruit-slice',      icon: '🍉', name: 'Fruit Slice' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -477,6 +478,21 @@ export function canConvertTo(
             ok: false,
             reason:
               'Jump Blocks needs at least one different answer to borrow as a wrong block in every level — one of these questions has no other answer to borrow from.',
+          }
+
+    // Fruit Slice (type 47): the round is generated from the game's
+    // own items — one round per question, the fruits are the
+    // correct answer plus wrong answers borrowed from the other
+    // items, exactly like Jump Blocks, plus one bomb fruit. A round
+    // needs at least one wrong fruit whose label differs from the
+    // correct answer, or the round has no choice in it.
+    case 'fruit-slice':
+      return items.every((_, i) => hasBorrowableWrong(items, i))
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Fruit Slice needs at least one different answer to borrow as a wrong fruit in every round — one of these questions has no other answer to borrow from.',
           }
 
     default:

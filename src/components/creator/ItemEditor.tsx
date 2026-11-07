@@ -56,6 +56,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'sweet-match': { prompt: 'Question for this board', answer: 'Word to spell or sum answer' },
   'star-shooter': { prompt: 'Question for this sky', answer: 'Correct answer invader' },
   'jump-blocks': { prompt: 'Question for this level', answer: 'Correct answer block' },
+  'fruit-slice': { prompt: 'Question for this round', answer: 'Correct answer fruit' },
 }
 
 const fieldStyle: React.CSSProperties = {

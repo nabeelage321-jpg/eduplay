@@ -93,6 +93,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'sweet-match', label: 'Sweet Match' },
   { value: 'star-shooter', label: 'Star Shooter' },
   { value: 'jump-blocks', label: 'Jump Blocks' },
+  { value: 'fruit-slice', label: 'Fruit Slice' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [
