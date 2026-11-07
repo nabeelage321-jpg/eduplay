@@ -5,9 +5,10 @@ import type { ActivityItem, Audience, SupportedLocale } from '@/types'
  *  (wordsCorrect / totalWords / passagesDone), Dialogue
  *  (linesRead / totalLines / characters), Jigsaw
  *  (piecesPlaced / totalPieces), and Letter Wheel
- *  (skippedCount / missedCount) supply this today; every other type
- *  keeps calling onComplete(score) with no second argument, which
- *  stays valid. */
+ *  (skippedCount / missedCount) supply this today; Quiz also
+ *  supplies playerName (build-list item 5) and elapsedSeconds /
+ *  correctCount / totalCount. Every other type keeps calling
+ *  onComplete(score) with no second argument, which stays valid. */
 export interface ActivityCompletion {
   // TIMER FIX 2026-11-03: the play shell's elapsed seconds at finish
   // (0-based from play start, countdown excluded), so a host page
@@ -16,6 +17,11 @@ export interface ActivityCompletion {
   elapsedSeconds?: number
   correctCount?: number
   totalCount?: number
+  // QUIZ INTRO (2026-11-07, build-list item 5): the name the player
+  // typed (or had auto-filled from their signed-in account) on the
+  // Quiz How-to-Play screen. Shown on the finish screen only — it
+  // never changes scoring, lives, timers, or questions.
+  playerName?: string
   letterHintsUsed?: number
   livesLeft?: number
   wordsCorrect?: number

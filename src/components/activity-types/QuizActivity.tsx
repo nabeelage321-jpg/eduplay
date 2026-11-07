@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useSession } from 'next-auth/react'
 import type { ActivityCompletion, ActivityProps } from './shared'
 import { SCORE_PER_CORRECT, TIMER_DEFAULT, shuffleArray, isRTL, getRandomFeedback } from './shared'
 import PlayShell, { usePlayShellStatus } from './PlayShell'
 import type { ActivityItem } from '@/types'
 import { playEduSound, readInteractiveSoundOn } from '@/lib/game-sound'
+import { cleanPlayerName, loadPlayerName, resolvePlayerName, savePlayerName } from '@/lib/player-name'
 
 interface QuizQuestion {
   item: ActivityItem
@@ -289,9 +291,115 @@ export default function QuizActivity({ items, theme, locale, onComplete }: Activ
   // final Time instead of its own load-time timer.
   const elapsedRef = useRef(0)
   const handleElapsed = useCallback((seconds: number) => { elapsedRef.current = seconds }, [])
+
+  // QUIZ INTRO (2026-11-07, build-list item 5): How to Play + name
+  // FIRST, before the shell's Start screen. The old legacy player
+  // had a HowToPlay screen; the new play page lost it, and Quiz
+  // opened straight to Start with no instructions and no name
+  // prompt. The intro shows once per page load — Play Again never
+  // re-asks — and the shell's own Start screen follows it.
+  const { data: session, status } = useSession()
+  const sessionName = session?.user?.name ? cleanPlayerName(session.user.name) : ''
+  const [showIntro, setShowIntro] = useState(true)
+  // The stored device name is read once, on first render, so the
+  // field starts with it for a returning signed-out player.
+  const [storedName] = useState<string | null>(() => loadPlayerName())
+  const [playerName, setPlayerName] = useState<string>(() =>
+    resolvePlayerName(null, loadPlayerName()).name,
+  )
+  const nameEditedRef = useRef(false)
+  const playerNameRef = useRef(playerName)
+  // A signed-in account name takes precedence on every visit — but
+  // never overwrites a name the player has already typed on this
+  // screen.
+  useEffect(() => {
+    if (status === 'authenticated' && sessionName && !nameEditedRef.current) {
+      setPlayerName(sessionName)
+    }
+  }, [status, sessionName])
+  useEffect(() => { playerNameRef.current = playerName }, [playerName])
+  const nameSource = resolvePlayerName(sessionName, storedName).source
+  const introNameHint =
+    nameSource === 'account'
+      ? `Signed in as ${sessionName} — we'll show this name on the finish screen. Change it if you like.`
+      : nameSource === 'remembered'
+        ? 'We remembered your name from last time — change it if you like.'
+        : "Type your name once — we'll remember it on this device for next time."
+  function dismissIntro() {
+    const cleaned = cleanPlayerName(playerName)
+    if (cleaned) savePlayerName(cleaned)
+    setShowIntro(false)
+  }
+
   const handleComplete = useCallback((score: number, details?: ActivityCompletion) => {
-    onComplete(score, { ...details, elapsedSeconds: elapsedRef.current })
+    // QUIZ INTRO: the finish screen shows the player's name (the
+    // only place the name is used — never scoring or rules).
+    const name = cleanPlayerName(playerNameRef.current)
+    onComplete(score, {
+      ...details,
+      elapsedSeconds: elapsedRef.current,
+      playerName: name.length > 0 ? name : undefined,
+    })
   }, [onComplete])
+
+  if (showIntro) {
+    const rtl = isRTL(locale)
+    const questionCount = items.length
+    return (
+      <div dir={rtl ? 'rtl' : 'ltr'} style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto', color: 'var(--color-text-primary)' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          <div style={{ fontSize: '2.5rem', lineHeight: 1 }} aria-hidden="true">❓</div>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', margin: '0.5rem 0 0.25rem' }}>How to play Quiz</h2>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+            Answer the questions, beat your score.
+          </p>
+        </div>
+        <div style={{ display: 'grid', gap: '0.75rem', fontSize: '0.95rem', lineHeight: 1.5 }}>
+          <p><strong>How to play:</strong> each screen asks one question with four answers. Tap the answer you think is right.</p>
+          <p><strong>How scores are given:</strong> each correct answer earns {SCORE_PER_CORRECT} points. The game is scored out of {questionCount * SCORE_PER_CORRECT} ({questionCount} {questionCount === 1 ? 'question' : 'questions'}). Wrong answers and time-ups earn no points.</p>
+          <p><strong>Objective:</strong> answer every question — get as many right as you can.</p>
+          <p><strong>Controls:</strong> tap an answer on the screen. No keyboard needed.</p>
+          <p><strong>Timer:</strong> {TIMER_DEFAULT} seconds per question. The time at the top shows how long you have played.</p>
+          <p><strong>Rounds:</strong> one question at a time, in shuffled order.</p>
+          <p><strong>How you win and finish:</strong> finish all {questionCount} {questionCount === 1 ? 'question' : 'questions'}. The end screen shows your score and your time.</p>
+        </div>
+        <div style={{ marginTop: '1.25rem' }}>
+          <label htmlFor="quiz-player-name" style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: '1rem', marginBottom: '0.4rem' }}>
+            Your name
+          </label>
+          <input
+            id="quiz-player-name"
+            type="text"
+            value={playerName}
+            maxLength={20}
+            autoComplete="nickname"
+            onChange={(e) => { nameEditedRef.current = true; setPlayerName(e.target.value) }}
+            placeholder="Type your name"
+            style={{
+              width: '100%', padding: '0.75rem 1rem', borderRadius: 'var(--radius)',
+              border: '2px solid var(--color-border)', background: 'var(--color-surface)',
+              color: 'var(--color-text-primary)', fontSize: '1rem', fontFamily: 'var(--font-body)',
+              boxSizing: 'border-box',
+            }}
+          />
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '0.4rem' }}>
+            {introNameHint}
+          </p>
+        </div>
+        <button
+          onClick={dismissIntro}
+          style={{
+            marginTop: '1rem', width: '100%', padding: '0.9rem', borderRadius: 'var(--radius-lg)', border: 'none',
+            background: 'var(--color-primary)', color: '#fff', fontFamily: 'var(--font-display)',
+            fontSize: '1.05rem', cursor: 'pointer',
+          }}
+        >
+          Skip instructions — start playing
+        </button>
+      </div>
+    )
+  }
+
   return (
     <PlayShell title="Quiz" score={shellScore} finished={shellFinished} onElapsed={handleElapsed}>
       <QuizGame

@@ -140,6 +140,10 @@ function PlayPageInner() {
   // player did not report counts — then the finish screen is plain,
   // exactly as before).
   const [finalPercent, setFinalPercent] = useState<number | null>(null)
+  // QUIZ INTRO (2026-11-07, build-list item 5): the name the player
+  // typed (or had auto-filled) on the Quiz intro screen — shown on
+  // the finish screen only, never used for scoring or rules.
+  const [finalPlayerName, setFinalPlayerName] = useState<string | null>(null)
   // STREAK v1: the finish just recorded (null until a finish). The ref
   // guards one finish against a player calling onComplete twice for
   // the same completion; it resets only on Play Again, when a genuinely
@@ -220,6 +224,7 @@ function PlayPageInner() {
     }
     setFinalScore(score)
     setFinalPercent(completionPercent(details))
+    setFinalPlayerName(details?.playerName ?? null)
     // Shell-wrapped types: the shell's elapsed (0-based from play
     // start). Other types: details carry no elapsed, so fall back
     // to this page's own timer, exactly as before.
@@ -463,6 +468,11 @@ function PlayPageInner() {
               <h2 style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontSize: '1.5rem', marginBottom: '0.25rem' }}>
                 Activity Complete!
               </h2>
+              {finalPlayerName ? (
+                <p style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontSize: '1.1rem', marginBottom: '0.25rem' }}>
+                  Well done, {finalPlayerName}!
+                </p>
+              ) : null}
               {finalPercent !== null && finishCelebration(finalPercent) === 'fireworks' ? (
                 <p style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)', fontSize: '1.1rem', marginBottom: '0.25rem' }}>
                   Amazing! You did great! 🎆
@@ -487,7 +497,7 @@ function PlayPageInner() {
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <motion.button
                   whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                  onClick={() => { setFinalScore(null); setFinalElapsed(null); setFinalPercent(null); setElapsed(0); setStreakResult(null); streakRecordedRef.current = false }}
+                  onClick={() => { setFinalScore(null); setFinalElapsed(null); setFinalPercent(null); setFinalPlayerName(null); setElapsed(0); setStreakResult(null); streakRecordedRef.current = false }}
                   style={{
                     padding: '1rem 1.75rem', borderRadius: 'var(--radius)', minHeight: '56px',
                     border: 'none', background: 'var(--gradient-btn)',
