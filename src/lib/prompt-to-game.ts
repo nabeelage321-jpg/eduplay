@@ -16,7 +16,7 @@
  */
 import type { ActivityItem } from '@/types'
 
-export type PromptGameType = 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word'
+export type PromptGameType = 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word' | 'gameshow-quiz'
 
 /**
  * PENDING-DRAFT HANDOFF (separate prompt page, 2026-11-06) — the
@@ -37,6 +37,7 @@ export const PROMPT_GAME_TYPES: Array<{ id: PromptGameType; label: string }> = [
   { id: 'true-false', label: 'True False' },
   { id: 'fill-blank', label: 'Fill Blank' },
   { id: 'missing-word', label: 'Missing Word' },
+  { id: 'gameshow-quiz', label: 'Gameshow Quiz' },
 ]
 
 export interface PromptDraft {
@@ -98,7 +99,12 @@ export function convertDraftItems(
   items: ActivityItem[],
   type: PromptGameType
 ): ActivityItem[] {
-  if (type === 'quiz' || type === 'match-up') return items
+  // GAMESHOW-QUIZ (2026-11-07): identity, exactly like quiz. The
+  // player builds each round from a quiz-shaped item — prompt +
+  // answer, with its 3 wrong options borrowed from the OTHER items
+  // (GameshowQuizActivity) — so a gameshow-quiz draft item IS a quiz
+  // item: no rewording, no dropping, no new facts.
+  if (type === 'quiz' || type === 'match-up' || type === 'gameshow-quiz') return items
   if (type === 'true-false') return convertToTrueFalse(items)
   if (type === 'fill-blank') return convertToFillBlank(items)
   if (type === 'missing-word') return convertToMissingWord(items)
@@ -521,6 +527,11 @@ export function buildTableDraft(prompt: string, type: PromptGameType): PromptDra
       })
       continue
     }
+    // QUIZ + GAMESHOW-QUIZ (2026-11-07): the same branch, exactly.
+    // Gameshow Quiz plays quiz-shaped items (prompt + answer, the
+    // player borrows the wrong options), so it gets the same 10 rows,
+    // the same rotated options, and the same "What is 2 × 3?"
+    // prompts as quiz. Match-up only changes the prompt text.
     const candidates = [product - 2, product + 2, product - 1, product + 1, product + 10, product - 10, n * (i + 1), n * (i - 1)]
     const distractors: number[] = []
     for (const c of candidates) {

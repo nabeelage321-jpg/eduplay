@@ -12,7 +12,7 @@ import { buildGroqChapterDraft, buildGroqDraft, getGroqConfig } from '@/lib/groq
 import { getSyllabus, resolveCurriculumTag } from '@/lib/curricula'
 import type { ActivityItem } from '@/types'
 
-const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble', 'true-false', 'fill-blank', 'missing-word']
+const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble', 'true-false', 'fill-blank', 'missing-word', 'gameshow-quiz']
 
 /** A true/false draft needs at least 2 statements with at least one
  *  true and one false — otherwise the game has no choice in it.
@@ -63,7 +63,7 @@ interface OpenTdbQuestion {
 
 /**
  * POST /api/prompt-to-game — draft only, never a published game.
- * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word', chapterText? }
+ * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word' | 'gameshow-quiz', chapterText? }
  * - With chapterText: the draft is PARAPHRASED from the chapter via Groq —
  *   the same facts in new words, never the book's exact sentences.
  *   No verbatim fallback exists: if paraphrasing fails, or no Groq key
