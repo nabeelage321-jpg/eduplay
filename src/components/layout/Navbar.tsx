@@ -3,15 +3,23 @@
 import { useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
+import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { Menu, X, Globe, Palette } from 'lucide-react'
+import { Menu, X, Globe, Palette, Check } from 'lucide-react'
 import { useThemeStore } from '@/lib/store/theme-store'
 import type { Audience, SupportedLocale, KidsTheme } from '@/types'
 import { LOCALE_METADATA } from '@/types'
 import ThemeSwitcher from './ThemeSwitcher'
 import SignInModal from '@/components/auth/SignInModal'
 import ThemeIntroHost from '@/components/home/v0/ThemeIntroHost'
+
+// Language switcher — the 11 locales, in the same order as src/lib/i18n.ts
+// (the single source for the locale list). Metadata (flag + native name)
+// comes from LOCALE_METADATA in src/types.
+const LANGUAGE_OPTIONS: SupportedLocale[] = [
+  'en', 'ur', 'ar', 'hi', 'es', 'fr', 'bn', 'pt', 'ru', 'id', 'zh',
+]
 
 interface NavbarProps {
   locale: SupportedLocale
@@ -23,7 +31,27 @@ export default function Navbar({ locale }: NavbarProps) {
   const { audience, kidsTheme } = useThemeStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [themePanelOpen, setThemePanelOpen] = useState(false)
+  const [langOpen, setLangOpen] = useState(false)
   const [signInOpen, setSignInOpen] = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
+
+  // LANGUAGE SWITCHER (owner order 2026-11-07, launch day): the old
+  // language control was a dead button — flag + name, no dropdown, no
+  // click handler. Picking a language now navigates to the same page
+  // under the new locale (next-intl, localePrefix 'always': every
+  // route is /{locale}/...), so the choice sticks via the URL itself.
+  const switchLocale = (nextLocale: SupportedLocale) => {
+    setLangOpen(false)
+    if (nextLocale === locale) return
+    const segments = (pathname || '/').split('/')
+    if (segments[1] && (LANGUAGE_OPTIONS as string[]).includes(segments[1])) {
+      segments[1] = nextLocale
+      router.push(segments.join('/') || `/${nextLocale}`)
+    } else {
+      router.push(`/${nextLocale}${pathname === '/' ? '' : pathname}`)
+    }
+  }
 
   // UI polish — Navbar privacy: the full account email must NEVER render
   // in the site-wide Navbar. Show a name/avatar instead: the session's
@@ -120,26 +148,111 @@ export default function Navbar({ locale }: NavbarProps) {
 
         {/* Right actions */}
         <div className="flex items-center gap-2">
-          {/* Theme switcher toggle */}
+          {/* Theme switcher toggle — BIG + COLOURFUL (owner order
+              2026-11-07, launch day): the old button was a tiny ghost
+              circle a kid had no curiosity to click, and themes are
+              the thing no rival has. Rainbow gradient + white palette
+              icon + "Theme" label, 48px tall like the other actions,
+              nowrap + flexShrink 0 so the desktop row stays one line.
+              Same destination as before — it still opens the
+              ThemeSwitcher panel below. */}
           <button
-            onClick={() => setThemePanelOpen(!themePanelOpen)}
-            className="btn-ghost p-2 rounded-full"
+            onClick={() => { setLangOpen(false); setThemePanelOpen(!themePanelOpen) }}
+            className="rounded-full font-bold"
             aria-label="Change theme"
+            aria-expanded={themePanelOpen}
             title="Change theme"
+            style={{
+              minHeight: '48px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.375rem',
+              padding: '0.5rem 0.875rem',
+              fontSize: '1rem',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              color: '#fff',
+              background: 'linear-gradient(90deg, #ef4444, #f59e0b, #22c55e, #3b82f6, #a855f7)',
+              border: '2px solid rgba(255, 255, 255, 0.65)',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.18)',
+              cursor: 'pointer',
+            }}
           >
-            <Palette size={18} />
+            <Palette size={22} />
+            <span className="hidden sm:inline">Theme</span>
           </button>
 
-          {/* Language */}
-          <button
-            className="btn-ghost p-2 rounded-full text-sm flex items-center gap-1"
-            aria-label="Change language"
-          >
-            <Globe size={16} />
-            <span className="hidden sm:inline">
-              {LOCALE_METADATA[locale]?.flag} {LOCALE_METADATA[locale]?.nativeName}
-            </span>
-          </button>
+          {/* Language switcher — REAL dropdown (owner order 2026-11-07,
+              launch day): the old control was a dead button with no
+              dropdown and no click handler. Now it lists all 11
+              languages, marks the current one with a check, and
+              switches locale on pick (same page, new locale prefix).
+              The panel is positioned under the button inside a
+              relative wrapper, so it never pushes the nav row. */}
+          <div className="relative" style={{ flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => { setThemePanelOpen(false); setLangOpen(!langOpen) }}
+              onKeyDown={(e) => { if (e.key === 'Escape') setLangOpen(false) }}
+              className="btn-ghost p-2 rounded-full text-sm flex items-center gap-1"
+              aria-label="Change language"
+              aria-haspopup="true"
+              aria-expanded={langOpen}
+              style={{ minHeight: '48px', whiteSpace: 'nowrap', flexShrink: 0 }}
+            >
+              <Globe size={16} />
+              <span className="hidden sm:inline">
+                {LOCALE_METADATA[locale]?.flag} {LOCALE_METADATA[locale]?.nativeName}
+              </span>
+            </button>
+            {langOpen && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Close language menu"
+                  tabIndex={-1}
+                  onClick={() => setLangOpen(false)}
+                  style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'transparent', border: 'none', cursor: 'default', padding: 0 }}
+                />
+                <div
+                  role="menu"
+                  aria-label="Choose language"
+                  className="absolute right-0 top-full mt-2 z-50 w-56 rounded-2xl shadow-lg overflow-hidden"
+                  style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+                >
+                  {LANGUAGE_OPTIONS.map((code) => {
+                    const meta = LOCALE_METADATA[code]
+                    const isCurrent = code === locale
+                    return (
+                      <button
+                        key={code}
+                        type="button"
+                        role="menuitem"
+                        aria-current={isCurrent ? 'true' : undefined}
+                        onClick={() => switchLocale(code)}
+                        className="w-full flex items-center gap-2 px-4 text-left text-sm"
+                        style={{
+                          minHeight: '44px',
+                          fontWeight: isCurrent ? 800 : 500,
+                          color: isCurrent ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                          background: isCurrent ? 'var(--color-surface-alt)' : 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span aria-hidden="true">{meta?.flag}</span>
+                        <span>{meta?.nativeName}</span>
+                        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8125rem' }}>
+                          {meta?.name}
+                        </span>
+                        {isCurrent && <Check size={16} aria-hidden="true" style={{ marginLeft: 'auto' }} />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Auth buttons — HOMEPAGE SIGN-IN batch: "Sign in" opens the
               SignInModal on the current page (primary path); the full
