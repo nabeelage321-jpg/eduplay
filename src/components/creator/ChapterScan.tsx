@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { PROMPT_GAME_TYPES, type PromptDraft, type PromptGameType } from '@/lib/prompt-to-game'
+import { FILTER_GRADES, FILTER_SUBJECTS } from '@/lib/filters'
 import { DraftEditor } from './PromptToGame'
 import { combineOcrPages, recognizeImages, type OcrProgress } from '@/lib/ocr'
 
@@ -38,7 +39,17 @@ const smallButtonStyle: React.CSSProperties = {
 }
 
 /**
- * Student chapter-scan → prompt-to-game.
+ * Student chapter-scan → chapter game.
+ *
+ * MINIMAL INPUT (owner order 2026-11-07): the kid or teacher uploads a
+ * chapter (paste, .txt file, or phone photos read on-device), then ONLY
+ * picks subject, grade and game type from dropdowns and presses Make —
+ * no typing of a prompt, a question, or an answer anywhere in this
+ * flow. The chapter text itself is the only free input. The game title
+ * is taken from the chapter's own first line (see deriveChapterTitle).
+ * This box is its own separate flow on the create page — it is NOT the
+ * prompt-to-game page (/en/prompt-to-game), which stays exactly as it
+ * is; the two are never merged and never share a form.
  *
  * What works in this batch:
  * - Paste chapter text, or upload a .txt/.md file (read in the browser).
@@ -59,13 +70,30 @@ const smallButtonStyle: React.CSSProperties = {
  * link is the game's play page + ready caption, never a watermark and
  * never a child's name or photo.
  */
+/**
+ * The game title comes from the chapter itself — its first non-empty
+ * line, cleaned up — so nobody has to type a prompt or a title.
+ * The title is only a label: the questions are paraphrased from the
+ * chapter's facts, never copied, and the creator can still rename the
+ * game in the creator before saving.
+ */
+export function deriveChapterTitle(chapterText: string): string {
+  const firstLine = chapterText
+    .split('\n')
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .find((line) => line.length > 0)
+  if (!firstLine) return 'My chapter game'
+  return firstLine.slice(0, 80)
+}
+
 export default function ChapterScan({
   onApprove,
 }: {
   onApprove: (draft: PromptDraft) => void
 }) {
   const [chapterText, setChapterText] = useState('')
-  const [prompt, setPrompt] = useState('')
+  const [subject, setSubject] = useState('')
+  const [grade, setGrade] = useState('')
   const [type, setType] = useState<PromptGameType>('quiz')
   const [fileName, setFileName] = useState('')
   const [pdfNote, setPdfNote] = useState(false)
@@ -154,8 +182,15 @@ export default function ChapterScan({
       setError('Add at least a few sentences of chapter text first (paste it, upload a .txt file, or scan photos and use their text).')
       return
     }
-    if (!prompt.trim()) {
-      setError('Give your chapter game a prompt, for example “chapter three”.')
+    // Minimal input: subject + grade are picks, never typed. The game
+    // title is taken from the chapter's own first line — no prompt is
+    // typed anywhere in this flow.
+    if (!subject) {
+      setError('Pick a subject for your chapter game.')
+      return
+    }
+    if (!grade) {
+      setError('Pick a grade for your chapter game.')
       return
     }
     setLoading(true)
@@ -165,7 +200,7 @@ export default function ChapterScan({
       const res = await fetch('/api/prompt-to-game', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt.trim(), type, chapterText }),
+        body: JSON.stringify({ prompt: deriveChapterTitle(chapterText), type, chapterText }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || 'Could not make a chapter game')
@@ -184,7 +219,10 @@ export default function ChapterScan({
       setError('Keep at least 2 complete questions to approve this draft.')
       return
     }
-    onApprove({ ...draft, items })
+    // The subject/grade picked here travel with the draft, so the
+    // creator saves them instead of leaving them blank (ActivityCreator
+    // already reads draft.subject / draft.grade on approval).
+    onApprove({ ...draft, items, subject: subject || undefined, grade: grade || undefined })
     setApproved(true)
   }
 
@@ -197,9 +235,9 @@ export default function ChapterScan({
         📖 I made the game of my chapter
       </h2>
       <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: '0 0 1rem' }}>
-        Add your chapter, give a prompt, get a game you can share with friends.
-        Your game stays private until you save it — and a teacher or parent should
-        check it before it goes public.
+        Add your chapter, pick the subject, grade and game type, press Make —
+        no typing needed. Your game stays private until you save it — and a
+        teacher or parent should check it before it goes public.
       </p>
 
       <label htmlFor="chapter-text" style={{ display: 'block', fontWeight: 700, marginBottom: '0.35rem' }}>
@@ -370,22 +408,54 @@ export default function ChapterScan({
       )}
       {ocrUsed && (
         <p role="status" style={{ color: 'var(--color-success)', fontSize: '0.9rem', margin: '0 0 0.75rem' }}>
-          ✅ Scanned text added — check it in the Chapter text box above, then give a
-          prompt and make your game.
+          ✅ Scanned text added — check it in the Chapter text box above, then pick
+          the subject, grade and game type below and make your game.
         </p>
       )}
 
-      <label htmlFor="chapter-prompt" style={{ display: 'block', fontWeight: 700, marginBottom: '0.35rem' }}>
-        Your prompt — what should this game be called?
-      </label>
-      <input
-        id="chapter-prompt"
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        placeholder="e.g. chapter three"
-        maxLength={200}
-        style={{ ...fieldStyle, marginBottom: '0.75rem' }}
-      />
+      {/* Minimal input: only picks from here on — subject, grade, game
+          type. No prompt is typed: the game title comes from the
+          chapter's own first line (shown below, read-only). */}
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+        <div style={{ flex: '1 1 200px' }}>
+          <label htmlFor="chapter-subject" style={{ display: 'block', fontWeight: 700, marginBottom: '0.35rem' }}>
+            Subject
+          </label>
+          <select
+            id="chapter-subject"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            style={fieldStyle}
+          >
+            <option value="">Pick a subject…</option>
+            {FILTER_SUBJECTS.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        </div>
+        <div style={{ flex: '1 1 200px' }}>
+          <label htmlFor="chapter-grade" style={{ display: 'block', fontWeight: 700, marginBottom: '0.35rem' }}>
+            Grade
+          </label>
+          <select
+            id="chapter-grade"
+            value={grade}
+            onChange={(e) => setGrade(e.target.value)}
+            style={fieldStyle}
+          >
+            <option value="">Pick a grade…</option>
+            {FILTER_GRADES.map((g) => (
+              <option key={g.value} value={g.value}>{g.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {chapterText.trim() && (
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: '0 0 0.75rem' }}>
+          Your game will be called: “{deriveChapterTitle(chapterText)}” — taken from
+          your chapter&apos;s first line. You can still rename it in the creator before saving.
+        </p>
+      )}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }} role="radiogroup" aria-label="Game type">
         {PROMPT_GAME_TYPES.map((t) => (
           <button
