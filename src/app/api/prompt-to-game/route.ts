@@ -5,6 +5,7 @@ import {
   decodeHtmlEntities,
   isHangmanItem,
   isMissingWordItem,
+  isWordSearchItem,
   sanitizePrompt,
   type PromptDraft,
   type PromptGameType,
@@ -13,7 +14,7 @@ import { buildGroqChapterDraft, buildGroqDraft, getGroqConfig } from '@/lib/groq
 import { getSyllabus, resolveCurriculumTag } from '@/lib/curricula'
 import type { ActivityItem } from '@/types'
 
-const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble', 'true-false', 'fill-blank', 'missing-word', 'gameshow-quiz', 'hangman']
+const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble', 'true-false', 'fill-blank', 'missing-word', 'gameshow-quiz', 'hangman', 'wordsearch']
 
 /** A true/false draft needs at least 2 statements with at least one
  *  true and one false — otherwise the game has no choice in it.
@@ -70,6 +71,21 @@ function hangmanUsable(items: ActivityItem[]): boolean {
 const HANGMAN_TOO_FEW =
   'Could not turn enough of these questions into single words with clean hints. Try a simpler topic, or make the game manually — no half-finished draft was kept.'
 
+/** A word-search draft needs at least 2 words, each one single word
+ *  of letters only (2–12, so it fits the player's 12×12 grid) with
+ *  a clue that never contains the word — otherwise the player has
+ *  nothing findable to hide in the grid. Conversion drops unclean
+ *  questions, so the check runs AFTER conversion, on every path
+ *  (chapter, Groq, OpenTDB, and tables, whose word-form rows can
+ *  drop below 2). */
+function wordSearchUsable(items: ActivityItem[]): boolean {
+  if (items.length < 2) return false
+  return items.every((i) => isWordSearchItem(i))
+}
+
+const WORD_SEARCH_TOO_FEW =
+  'Could not turn enough of these questions into single words with clean clues that fit the word grid. Try a simpler topic, or make the game manually — no half-finished draft was kept.'
+
 interface OpenTdbQuestion {
   question?: string
   correct_answer?: string
@@ -78,7 +94,7 @@ interface OpenTdbQuestion {
 
 /**
  * POST /api/prompt-to-game — draft only, never a published game.
- * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word' | 'gameshow-quiz' | 'hangman', chapterText? }
+ * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word' | 'gameshow-quiz' | 'hangman' | 'wordsearch', chapterText? }
  * - With chapterText: the draft is PARAPHRASED from the chapter via Groq —
  *   the same facts in new words, never the book's exact sentences.
  *   No verbatim fallback exists: if paraphrasing fails, or no Groq key
@@ -145,6 +161,9 @@ export async function POST(req: NextRequest) {
       if (type === 'hangman' && !hangmanUsable(chapterItems)) {
         return NextResponse.json({ error: HANGMAN_TOO_FEW }, { status: 502 })
       }
+      if (type === 'wordsearch' && !wordSearchUsable(chapterItems)) {
+        return NextResponse.json({ error: WORD_SEARCH_TOO_FEW }, { status: 502 })
+      }
       const draft: PromptDraft = {
         title: prompt,
         type,
@@ -165,11 +184,15 @@ export async function POST(req: NextRequest) {
       // have no single-word form (e.g. table of 19 keeps only 19) —
       // that is a plain error, never a one-row draft. A hangman
       // table drops the same way (table of 19 keeps only "nineteen").
+      // A word-search table drops the same way again.
       if (type === 'missing-word' && !missingWordUsable(tableDraft.items)) {
         return NextResponse.json({ error: MISSING_WORD_TOO_FEW }, { status: 502 })
       }
       if (type === 'hangman' && !hangmanUsable(tableDraft.items)) {
         return NextResponse.json({ error: HANGMAN_TOO_FEW }, { status: 502 })
+      }
+      if (type === 'wordsearch' && !wordSearchUsable(tableDraft.items)) {
+        return NextResponse.json({ error: WORD_SEARCH_TOO_FEW }, { status: 502 })
       }
       return NextResponse.json({ draft: tableDraft })
     }
@@ -181,8 +204,8 @@ export async function POST(req: NextRequest) {
     // it does NOT silently fall back to random trivia, or the
     // creator would see off-topic questions and think Groq worked.
     if (getGroqConfig()) {
-      const groqType: 'true-false' | 'fill-blank' | 'missing-word' | 'hangman' | undefined =
-        type === 'hangman' || type === 'missing-word' || type === 'fill-blank' || type === 'true-false' ? type : undefined
+      const groqType: 'true-false' | 'fill-blank' | 'missing-word' | 'hangman' | 'wordsearch' | undefined =
+        type === 'hangman' || type === 'wordsearch' || type === 'missing-word' || type === 'fill-blank' || type === 'true-false' ? type : undefined
       const groq = await buildGroqDraft(prompt, fetch, syllabusContext, groqType)
       if (groq.ok) {
         const groqItems = convertDraftItems(groq.items, type)
@@ -197,6 +220,9 @@ export async function POST(req: NextRequest) {
         }
         if (type === 'hangman' && !hangmanUsable(groqItems)) {
           return NextResponse.json({ error: HANGMAN_TOO_FEW }, { status: 502 })
+        }
+        if (type === 'wordsearch' && !wordSearchUsable(groqItems)) {
+          return NextResponse.json({ error: WORD_SEARCH_TOO_FEW }, { status: 502 })
         }
         const draft: PromptDraft = {
           title: prompt,
@@ -267,6 +293,9 @@ export async function POST(req: NextRequest) {
     }
     if (type === 'hangman' && !hangmanUsable(converted)) {
       return NextResponse.json({ error: HANGMAN_TOO_FEW }, { status: 502 })
+    }
+    if (type === 'wordsearch' && !wordSearchUsable(converted)) {
+      return NextResponse.json({ error: WORD_SEARCH_TOO_FEW }, { status: 502 })
     }
 
     const draft: PromptDraft = {

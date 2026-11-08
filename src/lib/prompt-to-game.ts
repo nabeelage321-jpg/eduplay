@@ -17,7 +17,7 @@
 import type { ActivityItem } from '@/types'
 import { clueContainsAnswer } from './crossword-clue'
 
-export type PromptGameType = 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word' | 'gameshow-quiz' | 'hangman'
+export type PromptGameType = 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word' | 'gameshow-quiz' | 'hangman' | 'wordsearch'
 
 /**
  * PENDING-DRAFT HANDOFF (separate prompt page, 2026-11-06) — the
@@ -40,6 +40,7 @@ export const PROMPT_GAME_TYPES: Array<{ id: PromptGameType; label: string }> = [
   { id: 'missing-word', label: 'Missing Word' },
   { id: 'gameshow-quiz', label: 'Gameshow Quiz' },
   { id: 'hangman', label: 'Hangman' },
+  { id: 'wordsearch', label: 'Word Search' },
 ]
 
 export interface PromptDraft {
@@ -111,6 +112,7 @@ export function convertDraftItems(
   if (type === 'fill-blank') return convertToFillBlank(items)
   if (type === 'missing-word') return convertToMissingWord(items)
   if (type === 'hangman') return convertToHangman(items)
+  if (type === 'wordsearch') return convertToWordSearch(items)
   // Unjumble: the player expects prompt = jumbled words, answer = correct phrase.
   return items.map((i) => ({
     prompt: jumbleWords(i.answer),
@@ -472,6 +474,54 @@ function convertToHangman(items: ActivityItem[]): ActivityItem[] {
   return out.slice(0, 10)
 }
 
+/**
+ * True when a draft item is a usable Word Search item: the answer is
+ * ONE single word of letters only (2–12 letters — the player builds
+ * a 12×12 grid, so a longer word cannot fit in it, and a digit, a
+ * phrase, or a word with punctuation would be unplaceable), and the
+ * prompt is a real clue that never contains the answer word as a
+ * whole word (the player shows the prompt as the label for the word
+ * to find, so naming the word there would give the hunt away).
+ * Used by the route as the after-conversion check, on every path.
+ */
+export function isWordSearchItem(item: ActivityItem): boolean {
+  const answer = cleanSentence(item.answer)
+  if (!answer || !/^[A-Za-z]{2,12}$/.test(answer)) return false
+  const prompt = cleanSentence(item.prompt)
+  if (!prompt) return false
+  if (clueContainsAnswer(prompt, answer)) return false
+  return true
+}
+
+/**
+ * Convert quiz-style items to Word Search items. The question is
+ * kept as the prompt — it IS the clue the player shows in the word
+ * list above the grid — and the answer is the word to find in the
+ * 12×12 grid. Items are DROPPED, never garbled: a multi-word
+ * answer, a digit or number answer, a word shorter than 2 or longer
+ * than 12 letters, or a question that contains the answer word all
+ * drop. Groq word-search items already arrive as { hint, word } and
+ * pass through the same validation, so no separate passthrough is
+ * needed. Capped at 10. Answers are deduped: two rounds with the
+ * same word would be the same hunt twice.
+ */
+function convertToWordSearch(items: ActivityItem[]): ActivityItem[] {
+  const out: ActivityItem[] = []
+  const seenAnswers = new Set<string>()
+  for (const item of items) {
+    if (out.length >= 10) break
+    const answer = cleanSentence(item.answer)
+    const prompt = cleanSentence(item.prompt)
+    if (!answer || !prompt) continue
+    if (!isWordSearchItem({ prompt, answer })) continue
+    const key = answer.toLowerCase()
+    if (seenAnswers.has(key)) continue
+    seenAnswers.add(key)
+    out.push({ prompt, answer })
+  }
+  return out.slice(0, 10)
+}
+
 function cleanSentence(s: string): string {
   return s.replace(/\s+/g, ' ').trim()
 }
@@ -586,6 +636,23 @@ export function buildTableDraft(prompt: string, type: PromptGameType): PromptDra
       // itself ("What is 2 × 3?") — it never contains the word
       // form. Rows whose product has no single-word form are
       // dropped, never invented.
+      const pWord = NUMBER_WORDS[product]
+      if (!pWord) continue
+      items.push({
+        prompt: `What is ${n} × ${i}?`,
+        answer: pWord,
+      })
+      continue
+    }
+    if (type === 'wordsearch') {
+      // Same word-form rows as hangman: the answer is the product
+      // in WORD form ("six", not "6") — the player places the word
+      // in a 12×12 grid of letters, so a digit answer would be
+      // unplaceable, and every number word here is 3–9 letters so
+      // it fits. The prompt is the question itself, shown as the
+      // clue in the word list — it never contains the word form.
+      // Rows whose product has no single-word form are dropped,
+      // never invented.
       const pWord = NUMBER_WORDS[product]
       if (!pWord) continue
       items.push({

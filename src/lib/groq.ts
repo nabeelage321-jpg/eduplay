@@ -620,6 +620,43 @@ export function parseGroqHangmanWords(raw: unknown, prompt: string): ActivityIte
 }
 
 /**
+ * Parse + validate a Groq WORD SEARCH draft: {"words": [{"word": "Mars", "hint": "The Red Planet"}]}.
+ * Same strictness as parseGroqHangmanWords — a word must be on-topic
+ * and deduplicated — but the length rule is 2–12 letters, not 3–12:
+ * the Word Search player places each word in a 12×12 grid, so a
+ * longer word cannot fit, while a 2-letter word still can. The hint
+ * is a real clue that never contains the word as a whole word (the
+ * player shows the hint as the label for the word to find, so
+ * naming the word there would give the hunt away). The caller
+ * rejects the draft if fewer than 2 survive.
+ */
+export function parseGroqWordSearchWords(raw: unknown, prompt: string): ActivityItem[] {
+  if (typeof raw !== 'object' || raw === null) return []
+  const words = (raw as { words?: unknown }).words
+  if (!Array.isArray(words)) return []
+  const keywords = topicKeywords(prompt)
+  const seen = new Set<string>()
+  const seenAnswers = new Set<string>()
+  const items: ActivityItem[] = []
+  for (const w of words) {
+    const r = w as { word?: unknown; hint?: unknown }
+    const word = asNonEmptyString(r.word, 12)
+    const hint = asNonEmptyString(r.hint, 300)
+    if (!word || !hint) continue
+    if (!/^[A-Za-z]{2,12}$/.test(word)) continue
+    if (clueContainsAnswer(hint, word)) continue
+    const key = hint.toLowerCase()
+    if (seen.has(key) || seenAnswers.has(word.toLowerCase())) continue
+    if (!isOnTopic(hint, word, keywords)) continue
+    seen.add(key)
+    seenAnswers.add(word.toLowerCase())
+    items.push({ prompt: hint, answer: word })
+    if (items.length >= 10) break
+  }
+  return items
+}
+
+/**
  * One Groq call for a topic-specific draft. `fetchImpl` exists only so
  * tests can inject a mock — the route always passes the real fetch.
  * Never throws for a provider failure: it returns a distinct result
@@ -660,12 +697,19 @@ export function parseGroqHangmanWords(raw: unknown, prompt: string): ActivityIte
  * each, parsed by parseGroqHangmanWords (the word is letters only,
  * 3–12 letters; the hint never contains the word), and the
  * question-framed self-check is skipped for the same reason.
+ *
+ * WORD SEARCH (2026-11-08): `gameType` may also be 'wordsearch' —
+ * same pattern again. Groq is asked for single words plus a hint
+ * for each, parsed by parseGroqWordSearchWords (the word is letters
+ * only, 2–12 letters, so it fits the player's 12×12 grid; the hint
+ * never contains the word), and the question-framed self-check is
+ * skipped for the same reason.
  */
 export async function buildGroqDraft(
   prompt: string,
   fetchImpl: typeof fetch = fetch,
   syllabusContext?: string,
-  gameType?: 'true-false' | 'fill-blank' | 'missing-word' | 'hangman'
+  gameType?: 'true-false' | 'fill-blank' | 'missing-word' | 'hangman' | 'wordsearch'
 ): Promise<GroqDraftResult> {
   const config = getGroqConfig()
   if (!config) {
@@ -675,6 +719,7 @@ export async function buildGroqDraft(
   const wantFillBlank = gameType === 'fill-blank'
   const wantMissingWord = gameType === 'missing-word'
   const wantHangman = gameType === 'hangman'
+  const wantWordSearch = gameType === 'wordsearch'
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS)
   try {
@@ -683,7 +728,18 @@ export async function buildGroqDraft(
       messages: [
         {
           role: 'system',
-          content: wantHangman
+          content: wantWordSearch
+            ? 'You write single words with hints ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
+              'Return ONLY a JSON object, no markdown, no extra text: {"words": [{"word": "Mars", "hint": "The Red Planet"}]}. ' +
+              'Up to 10 words. Each word must be ONE single word of letters only, 2 to 12 letters long — never a phrase, never a number, never a word with a hyphen or an apostrophe, and never longer than 12 letters, or it cannot fit the 12×12 letter grid it will be hidden in. ' +
+              'The hint must describe the word without naming it: it must never contain the word itself, or the player would not have to hunt for it. ' +
+              'Every word must be a word you are sure belongs to that topic — never invent facts; leave a word out instead. ' +
+              'Do not repeat the same word twice.' +
+              (syllabusContext
+                ? ` Write the words and hints in the style typical for ${syllabusContext} topics, at the level the prompt implies. ` +
+                  'This is style context only: you cannot fetch, verify, or reproduce that syllabus, and you must never claim a word is official syllabus material.'
+                : '')
+            : wantHangman
             ? 'You write single words with hints ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
               'Return ONLY a JSON object, no markdown, no extra text: {"words": [{"word": "Mars", "hint": "The Red Planet"}]}. ' +
               'Up to 10 words. Each word must be ONE single word of letters only, 3 to 12 letters long — never a phrase, never a number, never a word with a hyphen or an apostrophe. ' +
@@ -783,6 +839,15 @@ export async function buildGroqDraft(
     const parsed = extractJson(content)
     if (parsed === null) {
       return { ok: false, status: 502, error: 'Groq returned a draft that could not be read. Try again — no questions were invented.' }
+    }
+    if (wantWordSearch) {
+      // Words path: no question-framed self-check applies, and
+      // convertDraftItems passes word-search items through, validated.
+      const parsedItems = parseGroqWordSearchWords(parsed, prompt)
+      if (parsedItems.length < 2) {
+        return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic words, phrases, words too long for the grid, or hints that give the word away were kept.' }
+      }
+      return { ok: true, model: config.model, items: parsedItems }
     }
     if (wantHangman) {
       // Words path: no question-framed self-check applies, and
