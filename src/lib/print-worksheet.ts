@@ -142,6 +142,7 @@ export const NOT_PRINTABLE_WORKSHEET_REASONS: Record<string, string> = {
   'paddle-goal': 'This game needs its paddle, bouncing ball, and goal mouths, so it cannot be printed as a text worksheet yet.',
   'snooker-quiz': 'This game needs its green table, rolling cue ball, and colour pick, so it cannot be printed as a text worksheet yet.',
   'pattern-echo': 'This game needs its lighting pads, tones, and pattern playback, so it cannot be printed as a text worksheet yet.',
+  'bomb-maze': 'This game needs its maze, answer stars, golden goal, and sleepy bombs, so it cannot be printed as a text worksheet yet.',
 }
 
 export function isPrintableWorksheetType(slug: string | undefined | null): boolean {

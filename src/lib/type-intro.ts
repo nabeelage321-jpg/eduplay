@@ -94,6 +94,11 @@
  *     pattern-echo: 10 pts per pattern repeated exactly (one
  *     per round), no lives (a wrong tap just replays the
  *     pattern; the pattern grows 3, 4, 5, … up to 8 steps).
+ *     bomb-maze: 10 pts per reached goal (one per round), 3
+ *     lives (a wrong star pops but costs no life; a sleepy
+ *     bomb bounces the explorer back to the start and costs no
+ *     life; only running out of time costs one life and ends
+ *     the round).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -575,6 +580,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Tap (or click) a pad, or press 1, 2, 3, or 4 for the first, second, third, or fourth pad.',
     timer: 'No timer — take your time to watch the pattern and tap it back.',
     lives: 'There are no lives to lose in this game — a wrong tap just replays the pattern, with no points lost.',
+  }),
+  'bomb-maze': rules({
+    howTo: 'Steer your explorer through the maze to the golden goal at the far end. Gold stars in the maze show answers — read the question, for example, “2+6 = ?”, and collect the star with 8. That opens the golden goal, and then you run to the big gold star to win the maze. Sleepy bombs sit in the maze too — tiptoe around them, because touching one bounces you gently back to the start.',
+    scoring: 'Reaching the open golden goal earns 10 points — one goal per round, so 10 points a round at most and the game is scored out of 100. Wrong stars and sleepy bombs earn no points — and cost no lives either.',
+    objective: 'Collect the right star in every round, reach the golden goal, and keep your lives — all while tiptoeing around the sleepy bombs.',
+    controls: 'Arrow keys or WASD on a keyboard, or the on-screen arrow pad below the maze on a phone or tablet. Dark squares are walls — you cannot walk through them, and bumping one costs nothing. The golden goal stays locked until you collect the right star.',
+    timer: '45 seconds per maze — you hear one warning when 5 seconds are left. The timer pauses when you pause the game or re-read these instructions.',
+    lives: 'You have 3 lives — a wrong star just pops with a gentle “oops” and costs no life, and a sleepy bomb just bounces you back to the start with no life lost. Only running out of time costs 1 life and ends the round.',
   }),
 }
 

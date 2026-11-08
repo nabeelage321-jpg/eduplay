@@ -833,6 +833,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Pattern Echo',
     description_en: 'Watch the pads light up in a pattern, then tap them back in the same order',
   },
+  {
+    slug: 'bomb-maze',
+    icon: '💣',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Bomb Maze',
+    name_ur: 'Bomb Maze',
+    name_ar: 'Bomb Maze',
+    name_hi: 'Bomb Maze',
+    name_es: 'Bomb Maze',
+    name_fr: 'Bomb Maze',
+    description_en: 'Find the right star, open the golden goal, and dodge the sleepy bombs',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

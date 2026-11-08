@@ -112,6 +112,7 @@ export const DB_TYPE_BY_SLUG: Record<string, string> = {
   'paddle-goal': 'paddle-goal',
   'snooker-quiz': 'snooker-quiz',
   'pattern-echo': 'pattern-echo',
+  'bomb-maze': 'bomb-maze',
 }
 
 export interface ProgrammaticActivity {

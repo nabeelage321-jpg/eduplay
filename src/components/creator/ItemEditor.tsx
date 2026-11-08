@@ -72,6 +72,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'paddle-goal': { prompt: 'Question for this goal', answer: 'Correct answer goal' },
   'snooker-quiz': { prompt: 'Question for this pot', answer: 'Correct answer ball' },
   'pattern-echo': { prompt: 'Question for this pattern', answer: 'Correct answer pad' },
+  'bomb-maze': { prompt: 'Question for this maze', answer: 'Correct answer star' },
 }
 
 const fieldStyle: React.CSSProperties = {

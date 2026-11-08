@@ -42,6 +42,7 @@ import { buildCreatureCatchRound } from '@/lib/creature-catch'
 import { buildPaddleGoalRound } from '@/lib/paddle-goal'
 import { buildSnookerQuizRound } from '@/lib/snooker-quiz'
 import { buildPatternEchoRound } from '@/lib/pattern-echo'
+import { buildBombMazeRoundForConvert } from '@/lib/bomb-maze'
 
 export interface ConvertTarget {
   slug: string
@@ -112,6 +113,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'paddle-goal',      icon: '⚽', name: 'Paddle Goal' },
   { slug: 'snooker-quiz',     icon: '🎱', name: 'Snooker Quiz' },
   { slug: 'pattern-echo',     icon: '🎵', name: 'Pattern Echo' },
+  { slug: 'bomb-maze',       icon: '💣', name: 'Bomb Maze' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -813,6 +815,25 @@ export function canConvertTo(
             ok: false,
             reason:
               'Creature Catch needs at least two different answers to borrow as wrong creatures in every round — one of these questions has no other answers to borrow from.',
+          }
+
+    // Bomb Maze (type 64): the maze is generated from the
+    // game's own items, one round per question, so any
+    // question list where every item has at least two
+    // different answers to borrow as wrong stars plays.
+    case 'bomb-maze':
+      return items.every((item) =>
+        buildBombMazeRoundForConvert(
+          item.prompt,
+          item.answer,
+          items.map((i) => i.answer),
+        ),
+      )
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Bomb Maze needs at least two different answers to borrow as wrong stars in every round — one of these questions has no other answers to borrow from.',
           }
 
     default:

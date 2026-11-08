@@ -72,4 +72,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'paddle-goal',      icon: '⚽', name: 'Paddle Goal',      desc: 'Slide the paddle, bounce the ball, and score in the goal with the right answer' },
   { slug: 'snooker-quiz',     icon: '🎱', name: 'Snooker Quiz',     desc: 'Pot the ball with the right answer, then pick a colour ball for bonus points' },
   { slug: 'pattern-echo',     icon: '🎵', name: 'Pattern Echo',     desc: 'Watch the pads light up in a pattern, then tap them back in the same order' },
+  { slug: 'bomb-maze',       icon: '💣', name: 'Bomb Maze',       desc: 'Find the right star, open the golden goal, and dodge the sleepy bombs' },
 ]
