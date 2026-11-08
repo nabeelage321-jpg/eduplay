@@ -9,6 +9,8 @@ import {
   rememberGuestNickname,
   saveGroupName,
 } from '@/lib/guests'
+import { clearLiveRoom, countPlayed, loadLiveRoom, saveLiveRoom } from '@/lib/live-room'
+import SessionReport from '@/components/game/SessionReport'
 
 /**
  * Batch 3 — INTERIM live room (teacher-host + student-join, polling).
@@ -36,6 +38,10 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
   const [playerId, setPlayerId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // LIVE RECORDS 2026-11-08: true while a remembered room is being
+  // validated after a reload. The choice UI stays hidden during
+  // this window so the page does not flash back to host/join.
+  const [restoring, setRestoring] = useState(false)
 
   // TEACHER-ID / LIVE-PICK BATCH 2026-11-02. The teacher's own saved
   // games, from the same session-scoped source as the Dashboard list
@@ -67,6 +73,56 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
   const [reportScore, setReportScore] = useState('')
 
   const { session, players, error } = useLiveSessionPolling(sessionId, 3000)
+
+  // LIVE RECORDS 2026-11-08: restore an open room after a reload
+  // (or coming back from the play page). The stored record only
+  // re-opens a room that still exists — the validation effect below
+  // forgets ended or missing rooms instead of resurrecting them,
+  // and restore never creates a session or a player row.
+  useEffect(() => {
+    const stored = loadLiveRoom()
+    if (!stored) return
+    setSessionId(stored.sessionId)
+    if (stored.playerId) setPlayerId(stored.playerId)
+    if (stored.nickname) setNickname(stored.nickname)
+    setRestoring(true)
+  }, [])
+
+  // LIVE RECORDS 2026-11-08: validate a restored room once the
+  // polling hook answers. While restoring, a transient poll error
+  // is NOT fatal — the next poll retries; only a "not found" answer
+  // forgets the room. An ended room is forgotten (choice screen on
+  // the next visit), and a player whose player row is gone re-joins
+  // manually instead of silently landing on the host controls.
+  useEffect(() => {
+    if (!restoring) return
+    if (error && /not found/i.test(error)) {
+      clearLiveRoom()
+      setSessionId(null)
+      setPlayerId(null)
+      setRestoring(false)
+      setMessage('That room is no longer available.')
+      return
+    }
+    if (!session) return
+    if (session.status === 'ended') {
+      clearLiveRoom()
+      setSessionId(null)
+      setPlayerId(null)
+      setRestoring(false)
+      return
+    }
+    const stored = loadLiveRoom()
+    if (stored?.role === 'player' && stored.playerId && !players.some((p) => p.id === stored.playerId)) {
+      clearLiveRoom()
+      setSessionId(null)
+      setPlayerId(null)
+      setRestoring(false)
+      setMessage('Your player spot in that room is gone — join again with the room code.')
+      return
+    }
+    setRestoring(false)
+  }, [restoring, session, players, error])
 
   // GUESTS/GROUPS v1 (device-local only, see src/lib/guests.ts):
   // optional group name on the host side, stored on this device
@@ -116,6 +172,9 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
       setDisplayGroup(group)
     }
     setSessionId(data.sessionId)
+    // LIVE RECORDS 2026-11-08: remember the room on this device so
+    // a reload restores it (validation above still applies).
+    saveLiveRoom({ sessionId: data.sessionId, roomCode: data.roomCode, role: 'host' })
     setMessage(`Session created. Share room code: ${data.roomCode}`)
   }
 
@@ -134,6 +193,9 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
     setDisplayGroup(loadGroupName({ sessionId: id, roomCode: code }))
     setSessionId(id)
     setPlayerId(data.playerId)
+    // LIVE RECORDS 2026-11-08: remember the room on this device so
+    // a reload (or coming back from the play page) restores it.
+    saveLiveRoom({ sessionId: id, roomCode: code, role: 'player', playerId: data.playerId, nickname: nickname.trim() })
     setMessage(`Joined as ${data.nickname}.`)
   }
 
@@ -143,7 +205,15 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
     const { ok, data } = await postJson(`/api/live-sessions/${sessionId}/action`, { action })
     setBusy(false)
     if (!ok) setMessage(data.error ?? `Could not ${action} session.`)
-    else setMessage(action === 'start' ? 'Session started.' : 'Session ended.')
+    else {
+      setMessage(action === 'start' ? 'Session started.' : 'Session ended.')
+      // LIVE RECORDS 2026-11-08: ending forgets the room on this
+      // device — the next reload shows the choice screen, never a
+      // resurrected ended room. The room view itself stays put until
+      // the teacher leaves it, so the final leaderboard + report
+      // remain visible (and stay in the Dashboard rooms list).
+      if (action === 'end') clearLiveRoom()
+    }
   }
 
   async function reportMyScore() {
@@ -179,6 +249,10 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
         Teacher controls start/end; students report scores. Question-by-question
         sync is not in this interim.
       </p>
+
+      {restoring && (
+        <p style={{ color: 'var(--color-text-secondary)', marginTop: '1rem' }}>Restoring your room…</p>
+      )}
 
       {!sessionId && (
         <>
@@ -305,6 +379,11 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
             <p style={{ fontWeight: 700, marginTop: '1.5rem', marginBottom: 0 }}>👥 Group: {displayGroup}</p>
           ) : null}
           <h3 style={{ fontFamily: 'var(--font-display)', marginTop: displayGroup ? '0.5rem' : '1.5rem' }}>🏆 Live leaderboard</h3>
+          {/* LIVE RECORDS 2026-11-08: the host sees how many students
+              actually played, not just who joined. */}
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: '0.25rem 0 0' }}>
+            🎓 {countPlayed(players)} student{countPlayed(players) === 1 ? '' : 's'} played
+          </p>
           {players.length === 0 ? (
             <p style={{ color: 'var(--color-text-muted)' }}>No players yet. Share the room code to invite students.</p>
           ) : (
@@ -320,6 +399,14 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
           <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '1rem' }}>
             Leaderboard refreshes automatically every 3 seconds while this page is open.
           </p>
+          {/* LIVE RECORDS 2026-11-08: the same report the Dashboard
+              rooms list shows — printable, and gone 3 days after the
+              room was created (free plan). */}
+          <SessionReport
+            roomCode={session.room_code}
+            createdAt={session.created_at}
+            players={players}
+          />
         </div>
       )}
 

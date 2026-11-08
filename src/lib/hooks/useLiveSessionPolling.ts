@@ -20,6 +20,9 @@ export interface LiveSession {
   room_code: string
   status: 'waiting' | 'active' | 'ended'
   current_question: number
+  // LIVE RECORDS 2026-11-08: creation date drives the free-plan
+  // 3-day report expiry (GET returns select('*'), so it is there).
+  created_at: string
 }
 
 export interface LivePlayer {

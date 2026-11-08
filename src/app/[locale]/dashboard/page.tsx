@@ -9,6 +9,7 @@ import RoleSetup from '@/components/dashboard/RoleSetup'
 import ParentInviteCard from '@/components/dashboard/ParentInviteCard'
 import ParentKidGames from '@/components/dashboard/ParentKidGames'
 import SavedGamesSection from '@/components/dashboard/SavedGamesSection'
+import MyLiveRooms from '@/components/dashboard/MyLiveRooms'
 import type { SupportedLocale } from '@/types'
 
 interface Props {
@@ -96,6 +97,104 @@ export default async function DashboardPage({ params }: Props) {
       }
     } else {
       listUnavailable = true
+    }
+  }
+
+  // LIVE RECORDS 2026-11-08: the teacher's past hosted rooms, for
+  // the "My live rooms" section below. Server-fetched like the
+  // activities list (same teacher_id ownership). Needs migration
+  // 013 (live_sessions.teacher_id + live_players.finished_at):
+  // until it runs, the teacher_id query errors and the section says
+  // so plainly instead of pretending there are no rooms. A missing
+  // finished_at column falls back to the 003 columns, so old rooms
+  // still list (their "played" count then uses score > 0).
+  interface MyLiveRoomPlayer {
+    nickname: string
+    score: number
+    correct_answers: number | null
+    finished_at: string | null
+  }
+  interface MyLiveRoom {
+    id: string
+    room_code: string
+    activity_id: string
+    activity_title: string | null
+    status: string
+    created_at: string | null
+    players: MyLiveRoomPlayer[]
+  }
+  let liveRooms: MyLiveRoom[] = []
+  let liveRoomsUnavailable = false
+  if (sessionUser.userId) {
+    const supabase = createServerClient()
+    const roomsRes = await supabase
+      .from('live_sessions')
+      .select('id, room_code, activity_id, status, created_at')
+      .eq('teacher_id', sessionUser.userId)
+      .order('created_at', { ascending: false })
+      .range(0, 49)
+    if (roomsRes.error) {
+      liveRoomsUnavailable = true
+    } else {
+      const rows = (roomsRes.data ?? []) as Array<{
+        id: string
+        room_code: string
+        activity_id: string
+        status: string
+        created_at: string | null
+      }>
+      const activityTitles = new Map<string, string>()
+      const activityIds = [...new Set(rows.map((r) => r.activity_id))]
+      if (activityIds.length > 0) {
+        const acts = await supabase.from('activities').select('id, title').in('id', activityIds)
+        for (const a of (acts.data ?? []) as Array<{ id: string; title: string }>) {
+          activityTitles.set(a.id, a.title)
+        }
+      }
+      const sessionIds = rows.map((r) => r.id)
+      const playersBySession = new Map<string, MyLiveRoomPlayer[]>()
+      if (sessionIds.length > 0) {
+        const withFinished = await supabase
+          .from('live_players')
+          .select('session_id, nickname, score, correct_answers, finished_at')
+          .in('session_id', sessionIds)
+          .order('score', { ascending: false })
+        const playersRes =
+          withFinished.error && /finished_at/i.test(withFinished.error.message ?? '')
+            ? await supabase
+                .from('live_players')
+                .select('session_id, nickname, score, correct_answers')
+                .in('session_id', sessionIds)
+                .order('score', { ascending: false })
+            : withFinished
+        if (!playersRes.error) {
+          for (const p of (playersRes.data ?? []) as Array<{
+            session_id: string
+            nickname: string
+            score: number
+            correct_answers: number | null
+            finished_at?: string | null
+          }>) {
+            const list = playersBySession.get(p.session_id) ?? []
+            list.push({
+              nickname: p.nickname,
+              score: p.score,
+              correct_answers: p.correct_answers,
+              finished_at: p.finished_at ?? null,
+            })
+            playersBySession.set(p.session_id, list)
+          }
+        }
+      }
+      liveRooms = rows.map((r) => ({
+        id: r.id,
+        room_code: r.room_code,
+        activity_id: r.activity_id,
+        activity_title: activityTitles.get(r.activity_id) ?? null,
+        status: r.status,
+        created_at: r.created_at,
+        players: playersBySession.get(r.id) ?? [],
+      }))
     }
   }
 
@@ -209,6 +308,12 @@ export default async function DashboardPage({ params }: Props) {
             ))}
           </ul>
         )}
+
+        {/* LIVE RECORDS 2026-11-08: the teacher's past hosted rooms
+            (room code, game, date, how many played, each student's
+            marks) with each room's printable report. On-platform
+            only — no downloads, no outside tool. */}
+        <MyLiveRooms locale={locale} rooms={liveRooms} unavailable={liveRoomsUnavailable} />
       </div>
     </div>
   )

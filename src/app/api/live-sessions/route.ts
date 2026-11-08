@@ -90,11 +90,29 @@ export async function POST(request: NextRequest) {
     if (!isActivityOwner((game as { teacher_id?: string | null }).teacher_id, sessionUserId)) {
       return ownerError
     }
-    const { data, error } = await supabase
+    // LIVE RECORDS 2026-11-08: link the room to the hosting teacher
+    // so their Dashboard can list past rooms afterwards. The
+    // teacher_id column comes from migration 013 — until the owner
+    // runs it, the insert errors on the unknown column and we retry
+    // without it, so hosting never breaks on the migration.
+    const insertRow: Record<string, unknown> = {
+      activity_id: activityId,
+      teacher_name: teacherName,
+      mode,
+      room_code: roomCode(),
+      status: 'waiting',
+      teacher_id: sessionUserId,
+    }
+    let { data, error } = await supabase
       .from('live_sessions')
-      .insert([{ activity_id: activityId, teacher_name: teacherName, mode, room_code: roomCode(), status: 'waiting' }])
+      .insert([insertRow])
       .select()
       .single()
+    if (error && /teacher_id/i.test(error.message ?? '')) {
+      const legacyRow = { ...insertRow }
+      delete legacyRow.teacher_id
+      ;({ data, error } = await supabase.from('live_sessions').insert([legacyRow]).select().single())
+    }
     if (error || !data) return dbError(error?.message ?? 'insert failed')
     return NextResponse.json(
       { sessionId: data.id, roomCode: data.room_code, status: data.status, activityId: data.activity_id },

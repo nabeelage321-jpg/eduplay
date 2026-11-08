@@ -77,6 +77,22 @@ export async function POST(
       if (error || !data) {
         return NextResponse.json({ error: 'Could not update score', detail: error?.message }, { status: 503 })
       }
+      // LIVE RECORDS 2026-11-08: mark the finish so the host can
+      // count "how many students PLAYED" (finished) as opposed to
+      // merely joined. Best-effort only: until migration 013 is run
+      // the finished_at column does not exist and this update
+      // errors — that must never break the score, which already
+      // landed above. A 0-point finish still counts as played,
+      // because the timestamp is set on the report, not the value.
+      try {
+        await supabase
+          .from('live_players')
+          .update({ finished_at: new Date().toISOString() })
+          .eq('id', playerId)
+          .eq('session_id', params.id)
+      } catch {
+        /* column missing pre-013: played falls back to score > 0 */
+      }
       return NextResponse.json({ playerId: data.id, score: data.score, correct_answers: data.correct_answers })
     }
 

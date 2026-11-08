@@ -192,6 +192,9 @@ function PlayPageInner() {
   // new finish begins. It never touches the game's own score.
   const [streakResult, setStreakResult] = useState<FinishResult | null>(null)
   const streakRecordedRef = useRef(false)
+  // LIVE SCORE FIX 2026-11-08: a session player's finish must reach
+  // the host's Live leaderboard. Guarded to one report per finish.
+  const liveScoreReportedRef = useRef(false)
   const [elapsed, setElapsed] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const playRecorded = useRef(false)
@@ -291,6 +294,31 @@ function PlayPageInner() {
     }
     setFinalScore(score)
     setFinalPercent(percent)
+    // LIVE SCORE FIX 2026-11-08: until this line, a session
+    // player's finish only recorded the device-local streak + Top
+    // 10 — the score never reached the live session, so the host's
+    // leaderboard stayed empty even after a perfect 100. A player
+    // who arrived with ?session=&player= now reports the finish to
+    // that session (highest score wins server-side; a report after
+    // the host ended the room is refused and ignored here). A
+    // non-session player is untouched — nothing is sent.
+    if (isSessionPlayer && !liveScoreReportedRef.current) {
+      liveScoreReportedRef.current = true
+      const sessionId = searchParams.get('session')
+      const playerId = searchParams.get('player')
+      if (sessionId && playerId) {
+        fetch(`/api/live-sessions/${sessionId}/action`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'score',
+            playerId,
+            score,
+            correctAnswers: details?.correctCount ?? 0,
+          }),
+        }).catch(() => {})
+      }
+    }
     setFinalMaxScore(details?.totalCount != null ? details.totalCount * SCORE_PER_CORRECT : null)
     // BATCH 1 (item 4): the name comes from the shared intro (this
     // page owns it now); a player-reported name is the fallback.
