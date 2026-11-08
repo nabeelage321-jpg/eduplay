@@ -107,6 +107,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'bounce-up', label: 'Bounce Up' },
   { value: 'creature-catch', label: 'Creature Catch' },
   { value: 'paddle-goal', label: 'Paddle Goal' },
+  { value: 'snooker-quiz', label: 'Snooker Quiz' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

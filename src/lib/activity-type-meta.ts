@@ -70,4 +70,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'bounce-up',         icon: '⬆️', name: 'Bounce Up',         desc: 'Bounce up the platforms with the right answer — and don’t fall' },
   { slug: 'creature-catch',   icon: '🐾', name: 'Creature Catch',   desc: 'Throw a catch ball at the creature holding the right answer — and grow your collection' },
   { slug: 'paddle-goal',      icon: '⚽', name: 'Paddle Goal',      desc: 'Slide the paddle, bounce the ball, and score in the goal with the right answer' },
+  { slug: 'snooker-quiz',     icon: '🎱', name: 'Snooker Quiz',     desc: 'Pot the ball with the right answer, then pick a colour ball for bonus points' },
 ]

@@ -70,6 +70,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'bounce-up': { prompt: 'Question for this climb', answer: 'Correct answer platform' },
   'creature-catch': { prompt: 'Question for this catch', answer: 'Correct answer creature' },
   'paddle-goal': { prompt: 'Question for this goal', answer: 'Correct answer goal' },
+  'snooker-quiz': { prompt: 'Question for this pot', answer: 'Correct answer ball' },
 }
 
 const fieldStyle: React.CSSProperties = {

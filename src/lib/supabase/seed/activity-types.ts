@@ -807,6 +807,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Paddle Goal',
     description_en: 'Slide the paddle, bounce the ball, and score in the goal with the right answer',
   },
+  {
+    slug: 'snooker-quiz',
+    icon: '🎱',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Snooker Quiz',
+    name_ur: 'Snooker Quiz',
+    name_ar: 'Snooker Quiz',
+    name_hi: 'Snooker Quiz',
+    name_es: 'Snooker Quiz',
+    name_fr: 'Snooker Quiz',
+    description_en: 'Pot the ball with the right answer, then pick a colour ball for bonus points',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

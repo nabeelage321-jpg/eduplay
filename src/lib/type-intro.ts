@@ -87,6 +87,10 @@
  *     creature-catch: 10 pts per correct catch (one per round),
  *     3 lives (a wrong creature breaks free, costs one life,
  *     and ends the round; one throw per round).
+ *     snooker-quiz: 10 pts per red potted (one per round) + 2-7
+ *     for the colour ball picked after a red, 3 lives (a wrong
+ *     ball is a miss, costs one life, and ends the round; one
+ *     pot per round).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -552,6 +556,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Move your mouse or drag your finger across the field to slide the paddle — or use the left/right arrow keys (A and D work too). Press Space, tap the field, or press the LAUNCH button to send the ball up. The ◀ ▶ buttons slide the paddle too.',
     timer: 'No timer — take your time to aim the ball at the right goal.',
     lives: 'You have 3 lives — a ball that falls past the paddle is lost, but costs no life; spending all 3 balls in a round without scoring the right goal costs one life and ends the round.',
+  }),
+  'snooker-quiz': rules({
+    howTo: 'Four balls sit on the green snooker table, and each one holds an answer. Read the question — for example, “2+6 = ?” — and pot the ball holding 8. Tap (or click) the ball, or press 1, 2, 3, or 4. The white cue ball rolls to the ball you tapped.',
+    scoring: 'Potting the ball with the right answer is a red and earns 10 points. Then you pick any colour ball for bonus points — yellow 2, green 3, brown 4, blue 5, pink 6, black 7 — so 17 points a round at most and the game is scored out of 170. The colour pick is a reward, never a test: it can only add points.',
+    objective: 'Pot the right ball in every round — and pick the black ball (worth 7) whenever you can for the biggest bonus!',
+    controls: 'Tap (or click) a ball to pot it, or press 1, 2, 3, or 4 for the first, second, third, or fourth ball. After a red, tap a colour ball — or press 1 to 6 — to pot it for bonus points. You get one pot per round — choose carefully!',
+    timer: 'No timer — take your time to pick the ball holding the right answer.',
+    lives: 'You have 3 lives — potting a wrong ball is a miss: it costs 1 life and ends the round.',
   }),
 }
 
