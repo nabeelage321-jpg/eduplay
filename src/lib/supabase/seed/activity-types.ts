@@ -820,6 +820,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Snooker Quiz',
     description_en: 'Pot the ball with the right answer, then pick a colour ball for bonus points',
   },
+  {
+    slug: 'pattern-echo',
+    icon: '🎵',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Pattern Echo',
+    name_ur: 'Pattern Echo',
+    name_ar: 'Pattern Echo',
+    name_hi: 'Pattern Echo',
+    name_es: 'Pattern Echo',
+    name_fr: 'Pattern Echo',
+    description_en: 'Watch the pads light up in a pattern, then tap them back in the same order',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

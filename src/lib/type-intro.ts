@@ -91,6 +91,9 @@
  *     for the colour ball picked after a red, 3 lives (a wrong
  *     ball is a miss, costs one life, and ends the round; one
  *     pot per round).
+ *     pattern-echo: 10 pts per pattern repeated exactly (one
+ *     per round), no lives (a wrong tap just replays the
+ *     pattern; the pattern grows 3, 4, 5, … up to 8 steps).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -564,6 +567,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Tap (or click) a ball to pot it, or press 1, 2, 3, or 4 for the first, second, third, or fourth ball. After a red, tap a colour ball — or press 1 to 6 — to pot it for bonus points. You get one pot per round — choose carefully!',
     timer: 'No timer — take your time to pick the ball holding the right answer.',
     lives: 'You have 3 lives — potting a wrong ball is a miss: it costs 1 life and ends the round.',
+  }),
+  'pattern-echo': rules({
+    howTo: 'First, read the question — for example, “2+6 = ?” — and tap the pad holding the right answer (8). Answering correctly reveals the pattern: the four pads light up one by one, each with its own sound — Ruby is low, Sunny a little higher, Leafy higher still, and Sky the highest. Watch and listen, then tap the pads back in the same order.',
+    scoring: 'Repeating a round’s pattern exactly earns 10 points — one pattern per round, so 10 points a round at most and the game is scored out of 100.',
+    objective: 'Echo every pattern, exactly as it played — and listen as the patterns grow longer!',
+    controls: 'Tap (or click) a pad, or press 1, 2, 3, or 4 for the first, second, third, or fourth pad.',
+    timer: 'No timer — take your time to watch the pattern and tap it back.',
+    lives: 'There are no lives to lose in this game — a wrong tap just replays the pattern, with no points lost.',
   }),
 }
 

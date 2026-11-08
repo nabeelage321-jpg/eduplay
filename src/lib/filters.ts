@@ -108,6 +108,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'creature-catch', label: 'Creature Catch' },
   { value: 'paddle-goal', label: 'Paddle Goal' },
   { value: 'snooker-quiz', label: 'Snooker Quiz' },
+  { value: 'pattern-echo', label: 'Pattern Echo' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

@@ -75,6 +75,7 @@ const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
   'creature-catch':      lazy(() => import('./CreatureCatchActivity')),
   'paddle-goal':         lazy(() => import('./PaddleGoalActivity')),
   'snooker-quiz':        lazy(() => import('./SnookerQuizActivity')),
+  'pattern-echo':        lazy(() => import('./PatternEchoActivity')),
 }
 
 interface ActivityPlayerProps {

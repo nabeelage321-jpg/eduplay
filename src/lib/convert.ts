@@ -41,6 +41,7 @@ import { buildBounceUpRound } from '@/lib/bounce-up'
 import { buildCreatureCatchRound } from '@/lib/creature-catch'
 import { buildPaddleGoalRound } from '@/lib/paddle-goal'
 import { buildSnookerQuizRound } from '@/lib/snooker-quiz'
+import { buildPatternEchoRound } from '@/lib/pattern-echo'
 
 export interface ConvertTarget {
   slug: string
@@ -110,6 +111,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'creature-catch',   icon: '🐾', name: 'Creature Catch' },
   { slug: 'paddle-goal',      icon: '⚽', name: 'Paddle Goal' },
   { slug: 'snooker-quiz',     icon: '🎱', name: 'Snooker Quiz' },
+  { slug: 'pattern-echo',     icon: '🎵', name: 'Pattern Echo' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -772,6 +774,26 @@ export function canConvertTo(
             ok: false,
             reason:
               'Snooker Quiz needs at least three different answers to borrow as wrong balls in every round — one of these questions has no other answers to borrow from.',
+          }
+
+    // Pattern Echo (type 61): the pattern is generated from
+    // the game's own items, one round per question, so any
+    // question list where every item has at least three
+    // different answers to borrow as wrong pads plays.
+    case 'pattern-echo':
+      return items.every((item, i) =>
+        buildPatternEchoRound(
+          item.prompt,
+          item.answer,
+          items.map((x) => x.answer),
+          i,
+        ),
+      )
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Pattern Echo needs at least three different answers to borrow as wrong pads in every round — one of these questions has no other answers to borrow from.',
           }
 
     // Creature Catch (type 59): the meadow is generated from
