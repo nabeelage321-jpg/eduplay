@@ -78,6 +78,34 @@ export function pickNextAnchor(
   return pool[Math.floor(random() * pool.length)]
 }
 
+// The helper panel ("What we have") opens when a visitor clicks
+// Twinkle — owner order 2026-11-08. The wheel's Twinkle picture is a
+// separate small image, not this component, so it asks for the panel
+// with a window event instead of shared state.
+export const HELPER_OPEN_EVENT = 'eduplay:open-helper'
+
+// The 10 important features the panel lists. Every href was verified
+// against src/app/[locale]/... (2026-11-08): each target has a real
+// page.tsx. The wheel is a homepage section, so it links to its anchor
+// (id="spin-the-wheel" on the SpinWheel section); the chapter box lives
+// at the top of /create, so it links there. Paths are locale-relative;
+// the panel prefixes `/${locale}`. The only number anywhere is 65 —
+// the real game-type count (ACTIVITY_TYPE_META has 65 slugs).
+export type HelperFeature = { title: string; line: string; path: string }
+
+export const HELPER_FEATURES: readonly HelperFeature[] = [
+  { title: 'Play Games', line: '65 game types to play — pick one and play!', path: '/play-games' },
+  { title: 'Spin the Wheel and Play', line: 'Spin the wheel, land on a game, and play it!', path: '/#spin-the-wheel' },
+  { title: 'Live Game Rooms', line: 'Play together — host a game or join with a room code.', path: '/live' },
+  { title: 'Make a game with a prompt', line: 'Type a topic and AI makes a game for you.', path: '/prompt-to-game' },
+  { title: 'Create a game', line: 'Build your own game, step by step.', path: '/create' },
+  { title: 'Make a game from a chapter', line: 'Upload a chapter and turn it into a game.', path: '/create' },
+  { title: 'Make a game from a video', line: 'Your video becomes a game to play.', path: '/video-to-game' },
+  { title: 'Browse games', line: 'Find games by subject and grade.', path: '/browse' },
+  { title: 'Join a game', line: "Enter a teacher's room code — no account needed.", path: '/join' },
+  { title: 'Dashboard', line: 'Your saved games and room reports live here.', path: '/dashboard' },
+]
+
 // True on the play pages (/en/activity/<id>/play and legacy /en/play/<id>).
 export function isPlayPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { playEduSound, readSoundOn, storeSoundOn } from '@/lib/game-sound'
+import { HELPER_OPEN_EVENT } from '@/lib/mascot'
 import {
   WHEEL_SEGMENTS,
   randomSegmentIndex,
@@ -113,7 +114,7 @@ export default function SpinWheel({ locale }: { locale: string }) {
   const seg = segmentAngle()
 
   return (
-    <section aria-labelledby="spin-wheel-title" style={{ margin: '0 auto', maxWidth: '80rem', padding: '3rem 1rem 4rem', textAlign: 'center' }}>
+    <section id="spin-the-wheel" aria-labelledby="spin-wheel-title" style={{ margin: '0 auto', maxWidth: '80rem', padding: '3rem 1rem 4rem', textAlign: 'center' }}>
       <p style={{ fontSize: '0.875rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-primary)' }}>
         Can&apos;t decide?
       </p>
@@ -246,13 +247,23 @@ export default function SpinWheel({ locale }: { locale: string }) {
       <div style={{ marginTop: '1rem', minHeight: '5.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {phase === 'idle' && (
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '0.75rem' }}>
-            <Image
-              src="/eduplay-mascot.png"
-              alt="Twinkle, EduPlay's helper star"
-              width={128}
-              height={128}
-              style={{ width: '4rem', height: '4rem', objectFit: 'contain', flexShrink: 0 }}
-            />
+            {/* Twinkle here is a picture, not the roaming mascot
+                button — tapping her asks the real mascot to open its
+                "What we have" panel (owner order 2026-11-08). */}
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event(HELPER_OPEN_EVENT))}
+              aria-label="Ask Twinkle what EduPlay has"
+              style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', flexShrink: 0 }}
+            >
+              <Image
+                src="/eduplay-mascot.png"
+                alt="Twinkle, EduPlay's helper star"
+                width={128}
+                height={128}
+                style={{ width: '4rem', height: '4rem', objectFit: 'contain', display: 'block' }}
+              />
+            </button>
             <div style={{ position: 'relative', borderRadius: '1.25rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '0.75rem 1rem', boxShadow: '0 4px 0 0 var(--color-border)', textAlign: 'left' }}>
               <p style={{ margin: 0, fontSize: '1.125rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>
                 Try Spin and Play! 🎡

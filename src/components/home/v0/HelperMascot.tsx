@@ -5,8 +5,10 @@ import type { CSSProperties } from 'react'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, CircleHelp, Search, Sparkles, X } from 'lucide-react'
+import { ArrowRight, X } from 'lucide-react'
 import {
+  HELPER_FEATURES,
+  HELPER_OPEN_EVENT,
   MASCOT_NAME,
   MASCOT_ANCHORS,
   MASCOT_PLAY_ANCHORS,
@@ -60,6 +62,18 @@ export default function HelperMascot({ locale }: { locale: string }) {
     }
   }, [])
 
+  // The wheel's Twinkle picture is a separate small image, not this
+  // button — it asks for the panel with a window event (owner order:
+  // clicking Twinkle opens "What we have" wherever she appears).
+  useEffect(() => {
+    const openFromElsewhere = () => {
+      dismissGreeting()
+      setOpen(true)
+    }
+    window.addEventListener(HELPER_OPEN_EVENT, openFromElsewhere)
+    return () => window.removeEventListener(HELPER_OPEN_EVENT, openFromElsewhere)
+  }, [])
+
   // Wander: drift to a new spot every so often. Never while the helper
   // panel is open — the panel must not drift away from the reader.
   useEffect(() => {
@@ -86,12 +100,6 @@ export default function HelperMascot({ locale }: { locale: string }) {
       // Ignore unavailable storage; the bubble simply returns next visit.
     }
   }
-
-  const actions = [
-    { label: 'Find a game', href: '#popular', Icon: Search },
-    { label: 'Make a game from a prompt', href: `/${locale}/create`, Icon: Sparkles },
-    { label: 'How does EduPlay work?', href: '#how-it-works', Icon: CircleHelp },
-  ] as const
 
   // Where the helper panel / greeting opens: above the button, growing
   // inward from the button's edge (right side opens to the left, so it
@@ -125,42 +133,57 @@ export default function HelperMascot({ locale }: { locale: string }) {
       }}
     >
       {open && (
-        <div
-          role="dialog"
-          aria-label={`${MASCOT_NAME} — EduPlay's helper`}
-          style={{ ...popupPos, width: 'min(20rem, calc(100vw - 2rem))', borderRadius: '1.5rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '1rem', boxShadow: '0 8px 0 0 var(--color-border)', color: 'var(--color-text-primary)', pointerEvents: 'auto' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
-            <p style={{ fontSize: '1.125rem', fontWeight: 600 }}>{MASCOT_NAME}</p>
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false)
-                triggerRef.current?.focus()
-              }}
-              aria-label="Close helper"
-              style={{ display: 'inline-flex', minWidth: '48px', minHeight: '48px', alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', color: 'var(--color-text-secondary)', cursor: 'pointer', background: 'transparent', border: 'none' }}
-            >
-              <X style={{ width: '1.25rem', height: '1.25rem' }} aria-hidden="true" />
-            </button>
+        <>
+          {/* Tap-outside close: a transparent layer over the whole
+              screen, behind the panel. It exists only while the panel
+              is open, so it never blocks the page otherwise. */}
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-hidden="true"
+            onClick={() => setOpen(false)}
+            style={{ position: 'fixed', inset: 0, background: 'transparent', border: 'none', padding: 0, cursor: 'default', pointerEvents: 'auto' }}
+          />
+          <div
+            role="dialog"
+            aria-label={`${MASCOT_NAME} — EduPlay's helper`}
+            style={{ ...popupPos, width: 'min(20rem, calc(100vw - 2rem))', maxHeight: 'min(70dvh, 32rem)', overflowY: 'auto', borderRadius: '1.5rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '1rem', boxShadow: '0 8px 0 0 var(--color-border)', color: 'var(--color-text-primary)', pointerEvents: 'auto' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
+              <p style={{ fontSize: '1.125rem', fontWeight: 600 }}>{MASCOT_NAME}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false)
+                  triggerRef.current?.focus()
+                }}
+                aria-label="Close helper"
+                style={{ display: 'inline-flex', minWidth: '48px', minHeight: '48px', alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', color: 'var(--color-text-secondary)', cursor: 'pointer', background: 'transparent', border: 'none' }}
+              >
+                <X style={{ width: '1.25rem', height: '1.25rem' }} aria-hidden="true" />
+              </button>
+            </div>
+            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>I am EduPlay&apos;s helper, not a human.</p>
+            <p style={{ marginTop: '0.75rem', fontSize: '1rem', fontWeight: 800 }}>What we have</p>
+            <ul style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', listStyle: 'none', padding: 0 }}>
+              {HELPER_FEATURES.map(({ title, line, path }) => (
+                <li key={title}>
+                  <Link
+                    href={path.startsWith('/#') ? `/${locale}${path.slice(1)}` : `/${locale}${path}`}
+                    onClick={() => setOpen(false)}
+                    style={{ display: 'flex', minHeight: '48px', alignItems: 'center', gap: '0.75rem', borderRadius: '1rem', border: '2px solid var(--color-border)', background: 'var(--color-background)', padding: '0.5rem 1rem', color: 'var(--color-text-primary)' }}
+                  >
+                    <span style={{ flex: 1 }}>
+                      <span style={{ display: 'block', fontSize: '1rem', fontWeight: 700 }}>{title}</span>
+                      <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 400, color: 'var(--color-text-secondary)' }}>{line}</span>
+                    </span>
+                    <ArrowRight style={{ width: '1rem', height: '1rem', color: 'var(--color-text-secondary)', flexShrink: 0 }} aria-hidden="true" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
-          <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>I am EduPlay&apos;s helper, not a human.</p>
-          <ul style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', listStyle: 'none', padding: 0 }}>
-            {actions.map(({ label, href, Icon }) => (
-              <li key={label}>
-                <Link
-                  href={href}
-                  onClick={() => setOpen(false)}
-                  style={{ display: 'flex', minHeight: '48px', alignItems: 'center', gap: '0.75rem', borderRadius: '1rem', border: '2px solid var(--color-border)', background: 'var(--color-background)', padding: '0 1rem', fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-primary)' }}
-                >
-                  <Icon style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }} aria-hidden="true" />
-                  <span style={{ flex: 1 }}>{label}</span>
-                  <ArrowRight style={{ width: '1rem', height: '1rem', color: 'var(--color-text-secondary)' }} aria-hidden="true" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        </>
       )}
       {showGreeting && !open && (
         <div
