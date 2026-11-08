@@ -794,6 +794,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Creature Catch',
     description_en: 'Throw a catch ball at the creature holding the right answer — and grow your collection',
   },
+  {
+    slug: 'paddle-goal',
+    icon: '⚽',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Paddle Goal',
+    name_ur: 'Paddle Goal',
+    name_ar: 'Paddle Goal',
+    name_hi: 'Paddle Goal',
+    name_es: 'Paddle Goal',
+    name_fr: 'Paddle Goal',
+    description_en: 'Slide the paddle, bounce the ball, and score in the goal with the right answer',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

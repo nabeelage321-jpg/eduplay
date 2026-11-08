@@ -69,4 +69,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'number-merge',      icon: '🔢', name: 'Number Merge',      desc: 'Slide the numbered tiles and merge equal pairs — make 8, then 16, then 32, all the way to 4096' },
   { slug: 'bounce-up',         icon: '⬆️', name: 'Bounce Up',         desc: 'Bounce up the platforms with the right answer — and don’t fall' },
   { slug: 'creature-catch',   icon: '🐾', name: 'Creature Catch',   desc: 'Throw a catch ball at the creature holding the right answer — and grow your collection' },
+  { slug: 'paddle-goal',      icon: '⚽', name: 'Paddle Goal',      desc: 'Slide the paddle, bounce the ball, and score in the goal with the right answer' },
 ]

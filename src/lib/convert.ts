@@ -39,6 +39,7 @@ import { buildBeatTapRound } from '@/lib/beat-tap'
 import { buildMineLogicRound } from '@/lib/mine-logic'
 import { buildBounceUpRound } from '@/lib/bounce-up'
 import { buildCreatureCatchRound } from '@/lib/creature-catch'
+import { buildPaddleGoalRound } from '@/lib/paddle-goal'
 
 export interface ConvertTarget {
   slug: string
@@ -106,6 +107,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'number-merge',      icon: '🔢', name: 'Number Merge' },
   { slug: 'bounce-up',         icon: '⬆️', name: 'Bounce Up' },
   { slug: 'creature-catch',   icon: '🐾', name: 'Creature Catch' },
+  { slug: 'paddle-goal',      icon: '⚽', name: 'Paddle Goal' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -728,6 +730,27 @@ export function canConvertTo(
             ok: false,
             reason:
               'Bounce Up needs at least two different answers to borrow as wrong platforms in every round — one of these questions has no other answers to borrow from.',
+          }
+
+    // Paddle Goal (type 60): the top wall is generated from
+    // the game's own items — one set of goal mouths per question,
+    // the correct answer on one goal and wrong answers borrowed
+    // from the other items on the other two. A round needs at
+    // least two different answers to borrow, or the top has no
+    // choice in it.
+    case 'paddle-goal':
+      return items.every((item) =>
+        buildPaddleGoalRound(
+          item.prompt,
+          item.answer,
+          items.map((i) => i.answer),
+        ),
+      )
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Paddle Goal needs at least two different answers to borrow as wrong goals in every round — one of these questions has no other answers to borrow from.',
           }
 
     // Creature Catch (type 59): the meadow is generated from

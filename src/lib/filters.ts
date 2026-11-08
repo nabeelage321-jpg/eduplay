@@ -106,6 +106,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'number-merge', label: 'Number Merge' },
   { value: 'bounce-up', label: 'Bounce Up' },
   { value: 'creature-catch', label: 'Creature Catch' },
+  { value: 'paddle-goal', label: 'Paddle Goal' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

@@ -69,6 +69,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'number-merge': { prompt: 'Question for this merge board', answer: 'Correct answer tile' },
   'bounce-up': { prompt: 'Question for this climb', answer: 'Correct answer platform' },
   'creature-catch': { prompt: 'Question for this catch', answer: 'Correct answer creature' },
+  'paddle-goal': { prompt: 'Question for this goal', answer: 'Correct answer goal' },
 }
 
 const fieldStyle: React.CSSProperties = {

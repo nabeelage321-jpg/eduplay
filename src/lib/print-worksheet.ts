@@ -139,6 +139,7 @@ export const NOT_PRINTABLE_WORKSHEET_REASONS: Record<string, string> = {
   'number-merge': 'This game needs its sliding tiles and merging, so it cannot be printed as a text worksheet yet.',
   'bounce-up': 'This game needs its bouncing, steering, and breaking platforms, so it cannot be printed as a text worksheet yet.',
   'creature-catch': 'This game needs its wild creatures, thrown catch ball, and breaking free, so it cannot be printed as a text worksheet yet.',
+  'paddle-goal': 'This game needs its paddle, bouncing ball, and goal mouths, so it cannot be printed as a text worksheet yet.',
 }
 
 export function isPrintableWorksheetType(slug: string | undefined | null): boolean {

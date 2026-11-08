@@ -73,6 +73,7 @@ const ACTIVITY_COMPONENTS: Record<string, PlayerComponent> = {
   'number-merge':        lazy(() => import('./NumberMergeActivity')),
   'bounce-up':           lazy(() => import('./BounceUpActivity')),
   'creature-catch':      lazy(() => import('./CreatureCatchActivity')),
+  'paddle-goal':         lazy(() => import('./PaddleGoalActivity')),
 }
 
 interface ActivityPlayerProps {

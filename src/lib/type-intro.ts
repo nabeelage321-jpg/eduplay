@@ -545,6 +545,14 @@ const RULES: Record<string, TypeIntroRules> = {
     timer: 'No timer — take your time to pick the creature holding the right answer.',
     lives: 'You have 3 lives — a creature that breaks free costs 1 life and ends the round.',
   }),
+  'paddle-goal': rules({
+    howTo: 'Three goal mouths open across the top of the field, and every goal has an answer on it. Read the question — for example, “10−3 = ?” — then bounce the ball up into the goal that says the right answer, 7. Slide the paddle along the bottom to keep the ball up. A ball that reaches the top between the goals bounces back down off the wall, so you keep rallying until the ball finds a mouth.',
+    scoring: 'Scoring in the goal with the right answer earns 10 points — one goal per round, so 10 points a round at most and the game is scored out of 100.',
+    objective: 'Score in the right-answer goal in every round without running out of lives.',
+    controls: 'Move your mouse or drag your finger across the field to slide the paddle — or use the left/right arrow keys (A and D work too). Press Space, tap the field, or press the LAUNCH button to send the ball up. The ◀ ▶ buttons slide the paddle too.',
+    timer: 'No timer — take your time to aim the ball at the right goal.',
+    lives: 'You have 3 lives — a ball that falls past the paddle is lost, but costs no life; spending all 3 balls in a round without scoring the right goal costs one life and ends the round.',
+  }),
 }
 
 export interface TypeIntro {

@@ -109,6 +109,7 @@ export const DB_TYPE_BY_SLUG: Record<string, string> = {
   'number-merge': 'number-merge',
   'bounce-up': 'bounce-up',
   'creature-catch': 'creature-catch',
+  'paddle-goal': 'paddle-goal',
 }
 
 export interface ProgrammaticActivity {
