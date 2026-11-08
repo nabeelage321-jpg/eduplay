@@ -3,6 +3,7 @@ import {
   buildTableDraft,
   convertDraftItems,
   decodeHtmlEntities,
+  isCategorizeDraftUsable,
   isHangmanItem,
   isMissingWordItem,
   isWordSearchItem,
@@ -14,7 +15,7 @@ import { buildGroqChapterDraft, buildGroqDraft, getGroqConfig } from '@/lib/groq
 import { getSyllabus, resolveCurriculumTag } from '@/lib/curricula'
 import type { ActivityItem } from '@/types'
 
-const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble', 'true-false', 'fill-blank', 'missing-word', 'gameshow-quiz', 'hangman', 'wordsearch']
+const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble', 'true-false', 'fill-blank', 'missing-word', 'gameshow-quiz', 'hangman', 'wordsearch', 'categorize']
 
 /** A true/false draft needs at least 2 statements with at least one
  *  true and one false — otherwise the game has no choice in it.
@@ -85,6 +86,18 @@ function wordSearchUsable(items: ActivityItem[]): boolean {
 
 const WORD_SEARCH_TOO_FEW =
   'Could not turn enough of these questions into single words with clean clues that fit the word grid. Try a simpler topic, or make the game manually — no half-finished draft was kept.'
+/** A categorize draft needs at least 2 categories with at least 2
+ *  items each — otherwise a basket has nothing to sort, or there
+ *  is no choice in the game at all. Conversion passes items
+ *  through unchanged, so the check runs AFTER conversion, on every
+ *  path (chapter, Groq, OpenTDB, and tables, whose quiz-shaped
+ *  rows each form their own one-item category). */
+function categorizeUsable(items: ActivityItem[]): boolean {
+  return isCategorizeDraftUsable(items)
+}
+
+const CATEGORIZE_TOO_FEW =
+  'Could not turn this topic into groups with at least 2 items each. Try a topic that sorts into clear groups (for example, animals into farm, wild, and sea animals), or make the game manually — no half-finished draft was kept.'
 
 interface OpenTdbQuestion {
   question?: string
@@ -94,7 +107,7 @@ interface OpenTdbQuestion {
 
 /**
  * POST /api/prompt-to-game — draft only, never a published game.
- * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word' | 'gameshow-quiz' | 'hangman' | 'wordsearch', chapterText? }
+ * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word' | 'gameshow-quiz' | 'hangman' | 'wordsearch' | 'categorize', chapterText? }
  * - With chapterText: the draft is PARAPHRASED from the chapter via Groq —
  *   the same facts in new words, never the book's exact sentences.
  *   No verbatim fallback exists: if paraphrasing fails, or no Groq key
@@ -164,6 +177,9 @@ export async function POST(req: NextRequest) {
       if (type === 'wordsearch' && !wordSearchUsable(chapterItems)) {
         return NextResponse.json({ error: WORD_SEARCH_TOO_FEW }, { status: 502 })
       }
+      if (type === 'categorize' && !categorizeUsable(chapterItems)) {
+        return NextResponse.json({ error: CATEGORIZE_TOO_FEW }, { status: 502 })
+      }
       const draft: PromptDraft = {
         title: prompt,
         type,
@@ -194,6 +210,9 @@ export async function POST(req: NextRequest) {
       if (type === 'wordsearch' && !wordSearchUsable(tableDraft.items)) {
         return NextResponse.json({ error: WORD_SEARCH_TOO_FEW }, { status: 502 })
       }
+      if (type === 'categorize' && !categorizeUsable(tableDraft.items)) {
+        return NextResponse.json({ error: CATEGORIZE_TOO_FEW }, { status: 502 })
+      }
       return NextResponse.json({ draft: tableDraft })
     }
 
@@ -204,8 +223,8 @@ export async function POST(req: NextRequest) {
     // it does NOT silently fall back to random trivia, or the
     // creator would see off-topic questions and think Groq worked.
     if (getGroqConfig()) {
-      const groqType: 'true-false' | 'fill-blank' | 'missing-word' | 'hangman' | 'wordsearch' | undefined =
-        type === 'hangman' || type === 'wordsearch' || type === 'missing-word' || type === 'fill-blank' || type === 'true-false' ? type : undefined
+      const groqType: 'true-false' | 'fill-blank' | 'missing-word' | 'hangman' | 'wordsearch' | 'categorize' | undefined =
+        type === 'hangman' || type === 'wordsearch' || type === 'missing-word' || type === 'fill-blank' || type === 'true-false' || type === 'categorize' ? type : undefined
       const groq = await buildGroqDraft(prompt, fetch, syllabusContext, groqType)
       if (groq.ok) {
         const groqItems = convertDraftItems(groq.items, type)
@@ -223,6 +242,9 @@ export async function POST(req: NextRequest) {
         }
         if (type === 'wordsearch' && !wordSearchUsable(groqItems)) {
           return NextResponse.json({ error: WORD_SEARCH_TOO_FEW }, { status: 502 })
+        }
+        if (type === 'categorize' && !categorizeUsable(groqItems)) {
+          return NextResponse.json({ error: CATEGORIZE_TOO_FEW }, { status: 502 })
         }
         const draft: PromptDraft = {
           title: prompt,
@@ -296,6 +318,9 @@ export async function POST(req: NextRequest) {
     }
     if (type === 'wordsearch' && !wordSearchUsable(converted)) {
       return NextResponse.json({ error: WORD_SEARCH_TOO_FEW }, { status: 502 })
+    }
+    if (type === 'categorize' && !categorizeUsable(converted)) {
+      return NextResponse.json({ error: CATEGORIZE_TOO_FEW }, { status: 502 })
     }
 
     const draft: PromptDraft = {

@@ -17,7 +17,7 @@
 import type { ActivityItem } from '@/types'
 import { clueContainsAnswer } from './crossword-clue'
 
-export type PromptGameType = 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word' | 'gameshow-quiz' | 'hangman' | 'wordsearch'
+export type PromptGameType = 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word' | 'gameshow-quiz' | 'hangman' | 'wordsearch' | 'categorize'
 
 /**
  * PENDING-DRAFT HANDOFF (separate prompt page, 2026-11-06) — the
@@ -41,6 +41,7 @@ export const PROMPT_GAME_TYPES: Array<{ id: PromptGameType; label: string }> = [
   { id: 'gameshow-quiz', label: 'Gameshow Quiz' },
   { id: 'hangman', label: 'Hangman' },
   { id: 'wordsearch', label: 'Word Search' },
+  { id: 'categorize', label: 'Categorize' },
 ]
 
 export interface PromptDraft {
@@ -107,7 +108,13 @@ export function convertDraftItems(
   // answer, with its 3 wrong options borrowed from the OTHER items
   // (GameshowQuizActivity) — so a gameshow-quiz draft item IS a quiz
   // item: no rewording, no dropping, no new facts.
-  if (type === 'quiz' || type === 'match-up' || type === 'gameshow-quiz') return items
+  // CATEGORIZE (2026-11-08): identity, exactly like quiz. The
+  // player builds one basket per distinct answer (the category)
+  // and one ball per item label (the prompt) — so a categorize
+  // draft item IS a { prompt: label, answer: category } item, and
+  // the route's isCategorizeDraftUsable check decides whether the
+  // set is sortable. No rewording, no dropping, no new facts.
+  if (type === 'quiz' || type === 'match-up' || type === 'gameshow-quiz' || type === 'categorize') return items
   if (type === 'true-false') return convertToTrueFalse(items)
   if (type === 'fill-blank') return convertToFillBlank(items)
   if (type === 'missing-word') return convertToMissingWord(items)
@@ -520,6 +527,42 @@ function convertToWordSearch(items: ActivityItem[]): ActivityItem[] {
     out.push({ prompt, answer })
   }
   return out.slice(0, 10)
+}
+
+/**
+ * True when a draft is a usable Categorize game. The player builds
+ * one basket per distinct answer (the category name) and one ball
+ * per item (the prompt label), so the check is on the whole SET,
+ * not on single items: at least 2 categories, each with at least 2
+ * items (a one-item basket has nothing to sort, and a single
+ * category has no choice in it), every label and category short
+ * enough to fit on a ball / basket rim (40 chars — the Groq
+ * parser caps them the same way), and no label that just repeats
+ * its own category. Used by the route as the after-conversion
+ * check, on every path. Quiz-shaped items converted by identity
+ * (a question as the label, its answer as the category) almost
+ * never pass — each answer is its own one-item category — so the
+ * chapter / OpenTDB / table paths honestly error for categorize
+ * instead of shipping an unsortable draft; only the Groq
+ * category-grouped path produces a passing set.
+ */
+export function isCategorizeDraftUsable(items: ActivityItem[]): boolean {
+  if (items.length < 4) return false
+  const byCategory = new Map<string, number>()
+  for (const item of items) {
+    const label = cleanSentence(item.prompt)
+    const category = cleanSentence(item.answer)
+    if (!label || !category) return false
+    if (label.length > 40 || category.length > 40) return false
+    if (label.toLowerCase() === category.toLowerCase()) return false
+    const key = category.toLowerCase()
+    byCategory.set(key, (byCategory.get(key) ?? 0) + 1)
+  }
+  if (byCategory.size < 2) return false
+  for (const count of byCategory.values()) {
+    if (count < 2) return false
+  }
+  return true
 }
 
 function cleanSentence(s: string): string {

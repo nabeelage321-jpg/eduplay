@@ -657,6 +657,63 @@ export function parseGroqWordSearchWords(raw: unknown, prompt: string): Activity
 }
 
 /**
+ * Parse + validate a Groq CATEGORIZE draft: {"categories": [{"name": "Farm Animals", "items": ["Dog", "Cow", "Pig"]}]}.
+ * Same strictness as parseGroqQuestions — an item must be on-topic
+ * (the shared topic filter: the item label OR its category name
+ * must mention a topic keyword — so a category name that carries
+ * the topic word, e.g. "Farm Animals" for an animals prompt, keeps
+ * its items) and deduplicated — but the shape is grouped, not flat:
+ * each category carries its own items. Rules: category name and
+ * item label each a short word or short phrase (max 40 chars, so
+ * they fit on a basket rim / ball), an item never repeats its own
+ * category, an item in two categories is kept only under the first
+ * (the same ball cannot belong in two baskets), a category keeps
+ * at most 4 items, at most 4 categories are kept, and the draft is
+ * capped at 12 items. A category with fewer than 2 surviving items
+ * is dropped whole, and fewer than 2 surviving categories yields
+ * an empty result — the caller rejects the draft, never a
+ * one-basket or one-item-per-basket game.
+ */
+export function parseGroqCategorizeGroups(raw: unknown, prompt: string): ActivityItem[] {
+  if (typeof raw !== 'object' || raw === null) return []
+  const categories = (raw as { categories?: unknown }).categories
+  if (!Array.isArray(categories)) return []
+  const keywords = topicKeywords(prompt)
+  const seenItems = new Set<string>()
+  const items: ActivityItem[] = []
+  let keptCategories = 0
+  for (const c of categories) {
+    const r = c as { name?: unknown; items?: unknown }
+    const name = asNonEmptyString(r.name, 40)
+    if (!name) continue
+    if (!Array.isArray(r.items)) continue
+    const kept: string[] = []
+    for (const it of r.items) {
+      const label = asNonEmptyString(it, 40)
+      if (!label) continue
+      if (label.toLowerCase() === name.toLowerCase()) continue
+      const key = label.toLowerCase()
+      if (seenItems.has(key)) continue
+      if (!isOnTopic(label, name, keywords)) continue
+      seenItems.add(key)
+      kept.push(label)
+      if (kept.length >= 4) break
+    }
+    // A one-item basket has nothing to sort — drop the category.
+    if (kept.length < 2) continue
+    keptCategories++
+    for (const label of kept) {
+      items.push({ prompt: label, answer: name })
+      if (items.length >= 12) break
+    }
+    if (items.length >= 12) break
+    if (keptCategories >= 4) break
+  }
+  if (keptCategories < 2) return []
+  return items
+}
+
+/**
  * One Groq call for a topic-specific draft. `fetchImpl` exists only so
  * tests can inject a mock — the route always passes the real fetch.
  * Never throws for a provider failure: it returns a distinct result
@@ -704,12 +761,26 @@ export function parseGroqWordSearchWords(raw: unknown, prompt: string): Activity
  * only, 2–12 letters, so it fits the player's 12×12 grid; the hint
  * never contains the word), and the question-framed self-check is
  * skipped for the same reason.
+ * CATEGORIZE (2026-11-08): `gameType` may also be 'categorize' —
+ * same pattern again, but the Groq call is CATEGORY-AWARE: Groq is
+ * asked for named groups ({"categories": [{"name": "...", "items":
+ * ["...", ...]}]}) instead of flat questions, parsed by
+ * parseGroqCategorizeGroups (3–4 categories, each 3–4 items, capped
+ * at 12; a category keeps only items that pass the shared on-topic
+ * filter — the item label or its category name must mention a topic
+ * keyword — and categories with fewer than 2 surviving items are
+ * dropped whole). The question-framed self-check is skipped for
+ * the same reason: there is no question to check an answer against.
+ * The draft items match the Categorize player exactly: prompt =
+ * the item label (the ball), answer = the category name (the
+ * basket). Category names are asked to carry the topic word, so
+ * the on-topic filter keeps the items.
  */
 export async function buildGroqDraft(
   prompt: string,
   fetchImpl: typeof fetch = fetch,
   syllabusContext?: string,
-  gameType?: 'true-false' | 'fill-blank' | 'missing-word' | 'hangman' | 'wordsearch'
+  gameType?: 'true-false' | 'fill-blank' | 'missing-word' | 'hangman' | 'wordsearch' | 'categorize'
 ): Promise<GroqDraftResult> {
   const config = getGroqConfig()
   if (!config) {
@@ -720,6 +791,7 @@ export async function buildGroqDraft(
   const wantMissingWord = gameType === 'missing-word'
   const wantHangman = gameType === 'hangman'
   const wantWordSearch = gameType === 'wordsearch'
+  const wantCategorize = gameType === 'categorize'
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS)
   try {
@@ -738,6 +810,18 @@ export async function buildGroqDraft(
               (syllabusContext
                 ? ` Write the words and hints in the style typical for ${syllabusContext} topics, at the level the prompt implies. ` +
                   'This is style context only: you cannot fetch, verify, or reproduce that syllabus, and you must never claim a word is official syllabus material.'
+                : '')
+            : wantCategorize
+            ? 'You sort items into groups ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
+              'Return ONLY a JSON object, no markdown, no extra text: {"categories": [{"name": "Farm Animals", "items": ["Dog", "Cow", "Pig"]}]}. ' +
+              'Give 3 or 4 categories, each with 3 or 4 items. Every item belongs in exactly ONE category — never put the same item in two categories. ' +
+              'Name each category so it mentions the topic word from the prompt (for example, for a prompt about animals, name them "Farm Animals", "Wild Animals", "Sea Animals" — never bare names like "Farm", "Wild", "Sea"), because an item is only kept when its item or its category mentions the topic. ' +
+              'Each item must be a short word or short phrase (a few words at most) that a child can sort at a glance — never a sentence, never a question. ' +
+              'Every item must be one you are sure belongs in its category — never invent facts; leave an item out instead. ' +
+              'Do not repeat the same item twice.' +
+              (syllabusContext
+                ? ` Write the category names and items in the style typical for ${syllabusContext} topics, at the level the prompt implies. ` +
+                  'This is style context only: you cannot fetch, verify, or reproduce that syllabus, and you must never claim a category is official syllabus material.'
                 : '')
             : wantHangman
             ? 'You write single words with hints ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
@@ -846,6 +930,15 @@ export async function buildGroqDraft(
       const parsedItems = parseGroqWordSearchWords(parsed, prompt)
       if (parsedItems.length < 2) {
         return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic words, phrases, words too long for the grid, or hints that give the word away were kept.' }
+      }
+      return { ok: true, model: config.model, items: parsedItems }
+    }
+    if (wantCategorize) {
+      // Groups path: no question-framed self-check applies, and
+      // convertDraftItems passes categorize items through, validated.
+      const parsedItems = parseGroqCategorizeGroups(parsed, prompt)
+      if (parsedItems.length < 4) {
+        return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic items, one-item groups, or items that belong in two groups were kept.' }
       }
       return { ok: true, model: config.model, items: parsedItems }
     }
