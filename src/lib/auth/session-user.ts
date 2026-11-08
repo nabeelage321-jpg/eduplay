@@ -19,9 +19,10 @@
 //
 // APPROVAL BATCH 2026-10-30: also resolves the recorded role and Creator
 // badge (migration 007: users.role, users.creator_badge). If migration 007
-// has not been run yet, the select falls back to id-only so sign-in and
-// creating do NOT break — role is then null and the gate treats the user
-// as a non-student (see src/lib/approval.ts).
+// has not been run yet, the select falls back to id+role (008 already adds
+// users.role) and then id-only, so sign-in and creating do NOT break —
+// role is then null only if the role column itself is missing, and the
+// gate treats the user as a non-student (see src/lib/approval.ts).
 
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth-options'
@@ -53,6 +54,29 @@ export async function resolveSessionUser(): Promise<SessionUser | null> {
       userId: user.id ?? null,
       role: (user as { role?: string | null }).role ?? null,
       creatorBadge: (user as { creator_badge?: boolean | null }).creator_badge === true,
+    }
+  }
+
+  // ROLE-SAVE FIX 2026-11-08. Migration 007 adds users.creator_badge,
+  // but 008 (already run) adds users.role WITHOUT creator_badge, and 007
+  // was never run — so the select above fails on the missing column and
+  // the old fallback threw the role away with it. A saved role therefore
+  // never showed: the dashboard kept offering role setup with "Student"
+  // selected even after Teacher was saved. Retry with id+role first, so
+  // the recorded role still resolves; creator_badge just reads false
+  // until 007 is run (the badge display is computed live anyway).
+  const { data: withRole, error: roleError } = await supabase
+    .from('users')
+    .select('id, role')
+    .eq('email', session.user.email)
+    .single()
+
+  if (!roleError && withRole) {
+    return {
+      email: session.user.email,
+      userId: withRole.id ?? null,
+      role: (withRole as { role?: string | null }).role ?? null,
+      creatorBadge: false,
     }
   }
 
