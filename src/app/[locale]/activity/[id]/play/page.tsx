@@ -61,6 +61,14 @@ function PlayPageInner() {
   const locale = (params?.locale as SupportedLocale) ?? 'en'
   const id = params?.id as string
 
+  // LIVE-JOIN FIX 2026-11-08: a player who joined a live room arrives
+  // with ?session=<sessionId>&player=<playerId> (the Play link in the
+  // room). Used only to pick the session-scoped load path below — and
+  // to hide the approval notice, which is for the creator, never for
+  // a guest player.
+  const isSessionPlayer =
+    !!searchParams.get('session') && !!searchParams.get('player')
+
   const [activity, setActivity] = useState<Activity | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -194,7 +202,19 @@ function PlayPageInner() {
   useEffect(() => {
     async function fetchActivity() {
       try {
-        const res = await fetch(`/api/activities/${id}`)
+        // LIVE-JOIN FIX 2026-11-08: a hosted PRIVATE game 404s on the
+        // general route for anyone but its owner, so a session player
+        // loads it through the session-scoped endpoint instead — it
+        // serves the game only to a joined player of that session
+        // (or the owner). Everyone else uses the general route
+        // exactly as before.
+        const sessionParam = searchParams.get('session')
+        const playerParam = searchParams.get('player')
+        const url =
+          sessionParam && playerParam
+            ? `/api/live-sessions/${sessionParam}/activity?playerId=${encodeURIComponent(playerParam)}`
+            : `/api/activities/${id}`
+        const res = await fetch(url)
         if (!res.ok) throw new Error('Activity not found')
         const { activity } = await res.json()
         setActivity(activity)
@@ -210,7 +230,7 @@ function PlayPageInner() {
       }
     }
     fetchActivity()
-  }, [id])
+  }, [id, searchParams])
 
   // TIMER FIX 2026-11-03 — one elapsed timer, not two. This page
   // used to run its OWN timer from the moment the activity loaded:
@@ -443,8 +463,11 @@ function PlayPageInner() {
         )}
       </div>
 
-      {/* Approval notice: pending games show this instead of a share prompt. */}
+      {/* Approval notice: pending games show this instead of a share prompt.
+          A session player never sees it — they are a guest player, never
+          an approver (LIVE-JOIN FIX 2026-11-08). */}
       {isPending || isRejected ? (
+        !isSessionPlayer ? (
         <div style={{
           maxWidth: '700px', margin: '1rem auto 0', padding: '1rem',
           background: 'var(--color-surface)', border: '1px solid var(--color-border)',
@@ -479,6 +502,7 @@ function PlayPageInner() {
             </p>
           ) : null}
         </div>
+        ) : null
       ) : approvalMessage ? (
         <div style={{ maxWidth: '700px', margin: '1rem auto 0', padding: '1rem' }}>
           <p style={{ color: 'var(--color-text-secondary)', margin: 0 }}>{approvalMessage}</p>

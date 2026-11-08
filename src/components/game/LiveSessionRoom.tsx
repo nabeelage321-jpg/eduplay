@@ -278,7 +278,18 @@ export default function LiveSessionRoom({ locale }: { locale: string }) {
           )}
           {playerId && (
             <div style={{ margin: '1rem 0', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <a href={`/${locale}/play/${session.activity_id}`} style={{ ...bigBtn, display: 'block', textAlign: 'center', textDecoration: 'none', lineHeight: '2.2' }}>
+              {/* LIVE-JOIN FIX 2026-11-08: the Play link carries the
+                  session + player proof (?session=&player=). A hosted
+                  PRIVATE game 404s on the general play route for
+                  anyone but its owner, so without these params the
+                  joiner lands on "Activity Not Found". The play page
+                  uses them to load the game through the session-scoped
+                  endpoint (GET /api/live-sessions/[id]/activity),
+                  which serves it only to a joined player of this
+                  session (or the owner). The legacy /play/[id] link
+                  308-redirects to /activity/[id]/play and Next.js
+                  preserves the query string. */}
+              <a href={`/${locale}/play/${session.activity_id}?session=${sessionId}&player=${playerId}`} style={{ ...bigBtn, display: 'block', textAlign: 'center', textDecoration: 'none', lineHeight: '2.2' }}>
                 Play this activity →
               </a>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
