@@ -44,6 +44,7 @@ import { buildSnookerQuizRound } from '@/lib/snooker-quiz'
 import { buildPatternEchoRound } from '@/lib/pattern-echo'
 import { buildBombMazeRoundForConvert } from '@/lib/bomb-maze'
 import { buildHiddenHuntRound } from '@/lib/hidden-hunt'
+import { buildFlipperBallRound } from '@/lib/flipper-ball'
 
 export interface ConvertTarget {
   slug: string
@@ -116,6 +117,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'pattern-echo',     icon: '🎵', name: 'Pattern Echo' },
   { slug: 'bomb-maze',       icon: '💣', name: 'Bomb Maze' },
   { slug: 'hidden-hunt',     icon: '🔍', name: 'Hidden Hunt' },
+  { slug: 'flipper-ball',     icon: '🎱', name: 'Flipper Ball' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -842,6 +844,10 @@ export function canConvertTo(
     // the game's own items, one round per question, so any
     // question list where every item has at least five
     // different answers to borrow as wrong hiding places plays.
+    // Hidden Hunt (type 62): the clearing is generated from
+    // the game's own items, one round per question, so any
+    // question list where every item has at least five
+    // different answers to borrow as wrong hiding places plays.
     case 'hidden-hunt':
       return items.every((item) =>
         buildHiddenHuntRound(
@@ -855,6 +861,25 @@ export function canConvertTo(
             ok: false,
             reason:
               'Hidden Hunt needs at least five different answers to borrow as wrong hiding places in every round — one of these questions has no other answers to borrow from.',
+          }
+
+    // Flipper Ball (type 63): the table is generated from
+    // the game's own items, one round per question, so any
+    // question list where every item has at least two
+    // different answers to borrow as wrong targets plays.
+    case 'flipper-ball':
+      return items.every((item) =>
+        buildFlipperBallRound(
+          item.prompt,
+          item.answer,
+          items.map((i) => i.answer),
+        ),
+      )
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Flipper Ball needs at least two different answers to borrow as wrong targets in every round — one of these questions has no other answers to borrow from.',
           }
 
     default:

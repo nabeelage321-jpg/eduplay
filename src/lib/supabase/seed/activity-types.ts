@@ -859,6 +859,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Hidden Hunt',
     description_en: 'Hunt through the park and peek behind the right hiding place to find the hidden answer',
   },
+  {
+    slug: 'flipper-ball',
+    icon: '🎱',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Flipper Ball',
+    name_ur: 'Flipper Ball',
+    name_ar: 'Flipper Ball',
+    name_hi: 'Flipper Ball',
+    name_es: 'Flipper Ball',
+    name_fr: 'Flipper Ball',
+    description_en: 'Work the flippers and bat the ball into the target with the right answer',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

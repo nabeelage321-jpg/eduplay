@@ -85,6 +85,9 @@
  *     wrong platform breaks but costs no life; falling off the
  *     bottom of the screen costs one life and ends the round).
  *     creature-catch: 10 pts per correct catch (one per round),
+ *     flipper-ball: 10 pts per correct target hit (one per round),
+ *     3 lives (a wrong target costs the ball; the first drain
+ *     in a round is saved for free; all balls spent costs a life).
  *     3 lives (a wrong creature breaks free, costs one life,
  *     and ends the round; one throw per round).
  *     snooker-quiz: 10 pts per red potted (one per round) + 2-7
@@ -600,6 +603,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Tap (or click) a hiding place to peek behind it, or press 1 to 6 for the first to sixth hiding place. You can peek as many times as you like in a round — but every wrong peek costs a life, so look carefully first!',
     timer: 'No timer — take your time to look before you peek.',
     lives: 'You have 3 lives — a wrong peek costs 1 life, but the round goes on so you keep hunting. After 2 wrong peeks in a round, a gentle hint tells you which side of the clearing to look on.',
+  }),
+  'flipper-ball': rules({
+    howTo: 'A ball drops in from the top of the table. Work the two flippers at the bottom to keep it bouncing among the bumpers and the three answer targets. Read the question — for example, “2+6 = ?” — and bat the ball into the target that says 8. The star bumpers in the middle just bounce the ball around for fun — they never score.',
+    scoring: 'Hitting the target with the right answer earns 10 points and wins the round — one correct target per round, so 10 points a round at most and the game is scored out of 100.',
+    objective: 'Light up the right target in every round without running out of balls or lives.',
+    controls: 'Left arrow or A bats the left flipper, Right arrow or D bats the right flipper, or tap the left or right half of the table — the ◀ ▶ buttons under the table work too. Space drops the ball in, and flips both flippers while a ball is in play.',
+    timer: 'No timer — take your time to line up the right target.',
+    lives: 'You have 3 lives — spending all 3 balls in a round without hitting the right target costs 1 life and ends the round. The first drain in every round is saved for free.',
   }),
 }
 

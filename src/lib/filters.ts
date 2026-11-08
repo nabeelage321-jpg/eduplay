@@ -111,6 +111,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'pattern-echo', label: 'Pattern Echo' },
   { value: 'bomb-maze', label: 'Bomb Maze' },
   { value: 'hidden-hunt', label: 'Hidden Hunt' },
+  { value: 'flipper-ball', label: 'Flipper Ball' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

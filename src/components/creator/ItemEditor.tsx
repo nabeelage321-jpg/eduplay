@@ -74,6 +74,7 @@ const ITEM_HINTS: Record<string, { prompt: string; answer: string }> = {
   'pattern-echo': { prompt: 'Question for this pattern', answer: 'Correct answer pad' },
   'bomb-maze': { prompt: 'Question for this maze', answer: 'Correct answer star' },
   'hidden-hunt': { prompt: 'Question for this hunt', answer: 'Hidden answer to find' },
+  'flipper-ball': { prompt: 'Question for this table', answer: 'Correct answer target' },
 }
 
 const fieldStyle: React.CSSProperties = {
