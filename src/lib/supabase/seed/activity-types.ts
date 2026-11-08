@@ -846,6 +846,19 @@ export const ACTIVITY_TYPES_SEED: ActivityTypeSeed[] = [
     name_fr: 'Bomb Maze',
     description_en: 'Find the right star, open the golden goal, and dodge the sleepy bombs',
   },
+  {
+    slug: 'hidden-hunt',
+    icon: '🔍',
+    supports_live: true,
+    supports_print: false,
+    name_en: 'Hidden Hunt',
+    name_ur: 'Hidden Hunt',
+    name_ar: 'Hidden Hunt',
+    name_hi: 'Hidden Hunt',
+    name_es: 'Hidden Hunt',
+    name_fr: 'Hidden Hunt',
+    description_en: 'Hunt through the park and peek behind the right hiding place to find the hidden answer',
+  },
 ]
 
 export const ACTIVITY_TYPE_SLUGS = ACTIVITY_TYPES_SEED.map((t) => t.slug)

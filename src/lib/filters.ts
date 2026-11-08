@@ -110,6 +110,7 @@ export const FILTER_TYPES: FilterOption[] = [
   { value: 'snooker-quiz', label: 'Snooker Quiz' },
   { value: 'pattern-echo', label: 'Pattern Echo' },
   { value: 'bomb-maze', label: 'Bomb Maze' },
+  { value: 'hidden-hunt', label: 'Hidden Hunt' },
 ]
 
 export const FILTER_GRADES: FilterOption[] = [

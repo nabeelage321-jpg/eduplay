@@ -99,6 +99,10 @@
  *     bomb bounces the explorer back to the start and costs no
  *     life; only running out of time costs one life and ends
  *     the round).
+ *     hidden-hunt: 10 pts per hidden thing found (one per
+ *     round), 3 lives (a wrong peek costs one life but the
+ *     round goes on — keep hunting; 0 lives ends the game;
+ *     a gentle side hint appears after 2 wrong peeks).
  *     aster-quiz:
  *     5 lives. hangman: 10 pts per word, more points the fewer
  *     wrong guesses (MAX_WRONG - wrongCount, min 1x). flashcards:
@@ -588,6 +592,14 @@ const RULES: Record<string, TypeIntroRules> = {
     controls: 'Arrow keys or WASD on a keyboard, or the on-screen arrow pad below the maze on a phone or tablet. Dark squares are walls — you cannot walk through them, and bumping one costs nothing. The golden goal stays locked until you collect the right star.',
     timer: '45 seconds per maze — you hear one warning when 5 seconds are left. The timer pauses when you pause the game or re-read these instructions.',
     lives: 'You have 3 lives — a wrong star just pops with a gentle “oops” and costs no life, and a sleepy bomb just bounces you back to the start with no life lost. Only running out of time costs 1 life and ends the round.',
+  }),
+  'hidden-hunt': rules({
+    howTo: 'Six hiding places wait in the park clearing — the big tree, the grey rock, the green bush, the red mushroom, the sunny flower, and the picnic basket — and each one hides an answer. Read the question — for example, “Find the 8” or “2+6 = ?” — and peek behind the hiding place with the right answer. Tap (or click) the hiding place, or press 1 to 6. The place lifts for a moment and shows what is behind it.',
+    scoring: 'Finding the hidden thing earns 10 points — one find per round, so 10 points a round at most and the game is scored out of 100.',
+    objective: 'Find the hidden thing in every round — and keep your streak of finds in a row with no wrong peek in between going!',
+    controls: 'Tap (or click) a hiding place to peek behind it, or press 1 to 6 for the first to sixth hiding place. You can peek as many times as you like in a round — but every wrong peek costs a life, so look carefully first!',
+    timer: 'No timer — take your time to look before you peek.',
+    lives: 'You have 3 lives — a wrong peek costs 1 life, but the round goes on so you keep hunting. After 2 wrong peeks in a round, a gentle hint tells you which side of the clearing to look on.',
   }),
 }
 

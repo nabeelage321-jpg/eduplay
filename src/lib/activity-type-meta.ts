@@ -73,4 +73,5 @@ export const ACTIVITY_TYPE_META = [
   { slug: 'snooker-quiz',     icon: '🎱', name: 'Snooker Quiz',     desc: 'Pot the ball with the right answer, then pick a colour ball for bonus points' },
   { slug: 'pattern-echo',     icon: '🎵', name: 'Pattern Echo',     desc: 'Watch the pads light up in a pattern, then tap them back in the same order' },
   { slug: 'bomb-maze',       icon: '💣', name: 'Bomb Maze',       desc: 'Find the right star, open the golden goal, and dodge the sleepy bombs' },
+  { slug: 'hidden-hunt',     icon: '🔍', name: 'Hidden Hunt',     desc: 'Hunt through the park and peek behind the right hiding place to find the hidden answer' },
 ]

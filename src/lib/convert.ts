@@ -43,6 +43,7 @@ import { buildPaddleGoalRound } from '@/lib/paddle-goal'
 import { buildSnookerQuizRound } from '@/lib/snooker-quiz'
 import { buildPatternEchoRound } from '@/lib/pattern-echo'
 import { buildBombMazeRoundForConvert } from '@/lib/bomb-maze'
+import { buildHiddenHuntRound } from '@/lib/hidden-hunt'
 
 export interface ConvertTarget {
   slug: string
@@ -114,6 +115,7 @@ export const CONVERT_TARGETS: ConvertTarget[] = [
   { slug: 'snooker-quiz',     icon: '🎱', name: 'Snooker Quiz' },
   { slug: 'pattern-echo',     icon: '🎵', name: 'Pattern Echo' },
   { slug: 'bomb-maze',       icon: '💣', name: 'Bomb Maze' },
+  { slug: 'hidden-hunt',     icon: '🔍', name: 'Hidden Hunt' },
 ]
 
 /** DB slug -> the key ActivityPlayer's component map uses. */
@@ -834,6 +836,25 @@ export function canConvertTo(
             ok: false,
             reason:
               'Bomb Maze needs at least two different answers to borrow as wrong stars in every round — one of these questions has no other answers to borrow from.',
+          }
+
+    // Hidden Hunt (type 62): the clearing is generated from
+    // the game's own items, one round per question, so any
+    // question list where every item has at least five
+    // different answers to borrow as wrong hiding places plays.
+    case 'hidden-hunt':
+      return items.every((item) =>
+        buildHiddenHuntRound(
+          item.prompt,
+          item.answer,
+          items.map((i) => i.answer),
+        ),
+      )
+        ? { ok: true, reason: '' }
+        : {
+            ok: false,
+            reason:
+              'Hidden Hunt needs at least five different answers to borrow as wrong hiding places in every round — one of these questions has no other answers to borrow from.',
           }
 
     default:
