@@ -82,7 +82,9 @@ export function DraftEditor({
             }}
           >
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.25rem' }}>
-              {draft.type === 'hangman' || draft.type === 'wordsearch'
+              {draft.type === 'crossword'
+                ? `Clue ${i + 1} — it must never contain the word`
+                : draft.type === 'hangman' || draft.type === 'wordsearch'
                 ? `Hint / clue ${i + 1} — it must never contain the word`
                 : draft.type === 'categorize'
                 ? `Item ${i + 1} — the ball the kid sorts into a group`
@@ -97,7 +99,9 @@ export function DraftEditor({
               onChange={(e) => editItem(i, 'prompt', e.target.value)}
               style={{ ...fieldStyle, marginBottom: '0.5rem' }}
               aria-label={
-                draft.type === 'hangman' || draft.type === 'wordsearch'
+                draft.type === 'crossword'
+                  ? `Draft clue ${i + 1}`
+                  : draft.type === 'hangman' || draft.type === 'wordsearch'
                   ? `Draft hint ${i + 1}`
                   : draft.type === 'categorize'
                   ? `Draft item ${i + 1}`
@@ -109,7 +113,7 @@ export function DraftEditor({
               }
             />
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.25rem' }}>
-              {draft.type === 'hangman' ? 'Word to guess' : draft.type === 'wordsearch' ? 'Word to find' : draft.type === 'categorize' ? 'Category (the group it belongs in)' : draft.type === 'fill-blank' || draft.type === 'missing-word' ? 'Missing word' : 'Answer'}
+              {draft.type === 'crossword' ? 'Word in the grid' : draft.type === 'hangman' ? 'Word to guess' : draft.type === 'wordsearch' ? 'Word to find' : draft.type === 'categorize' ? 'Category (the group it belongs in)' : draft.type === 'fill-blank' || draft.type === 'missing-word' ? 'Missing word' : 'Answer'}
             </label>
             {draft.type === 'true-false' ? (
               // TRUE/FALSE (2026-11-07): the answer is a True/False
@@ -130,7 +134,7 @@ export function DraftEditor({
                 value={item.answer}
                 onChange={(e) => editItem(i, 'answer', e.target.value)}
                 style={fieldStyle}
-                aria-label={draft.type === 'hangman' ? `Draft word to guess ${i + 1}` : draft.type === 'wordsearch' ? `Draft word to find ${i + 1}` : draft.type === 'categorize' ? `Draft category ${i + 1}` : `Draft answer ${i + 1}`}
+                aria-label={draft.type === 'crossword' ? `Draft crossword word ${i + 1}` : draft.type === 'hangman' ? `Draft word to guess ${i + 1}` : draft.type === 'wordsearch' ? `Draft word to find ${i + 1}` : draft.type === 'categorize' ? `Draft category ${i + 1}` : `Draft answer ${i + 1}`}
               />
             )}
             <button

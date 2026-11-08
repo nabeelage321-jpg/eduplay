@@ -714,6 +714,44 @@ export function parseGroqCategorizeGroups(raw: unknown, prompt: string): Activit
 }
 
 /**
+ * Parse + validate a Groq CROSSWORD draft: {"words": [{"word": "Mars", "clue": "The Red Planet"}]}.
+ * Same strictness as parseGroqHangmanWords — a word must be on-topic
+ * and deduplicated — but the clue is a crossword clue: it must
+ * describe the word without naming it (otherwise the kid just
+ * copies it from the clue list instead of solving). Rules: the word
+ * is ONE single word of letters only (3–12 letters, so it fits the
+ * 13-wide grid), the clue never contains the word as a whole word,
+ * answers deduped. The caller rejects the draft if fewer than 2
+ * survive — and the route then checks the survivors actually
+ * interlock into a grid, so this parser alone never promises one.
+ */
+export function parseGroqCrosswordWords(raw: unknown, prompt: string): ActivityItem[] {
+  if (typeof raw !== 'object' || raw === null) return []
+  const words = (raw as { words?: unknown }).words
+  if (!Array.isArray(words)) return []
+  const keywords = topicKeywords(prompt)
+  const seen = new Set<string>()
+  const seenAnswers = new Set<string>()
+  const items: ActivityItem[] = []
+  for (const w of words) {
+    const r = w as { word?: unknown; clue?: unknown }
+    const word = asNonEmptyString(r.word, 12)
+    const clue = asNonEmptyString(r.clue, 300)
+    if (!word || !clue) continue
+    if (!/^[A-Za-z]{3,12}$/.test(word)) continue
+    if (clueContainsAnswer(clue, word)) continue
+    const key = clue.toLowerCase()
+    if (seen.has(key) || seenAnswers.has(word.toLowerCase())) continue
+    if (!isOnTopic(clue, word, keywords)) continue
+    seen.add(key)
+    seenAnswers.add(word.toLowerCase())
+    items.push({ prompt: clue, answer: word })
+    if (items.length >= 10) break
+  }
+  return items
+}
+
+/**
  * One Groq call for a topic-specific draft. `fetchImpl` exists only so
  * tests can inject a mock — the route always passes the real fetch.
  * Never throws for a provider failure: it returns a distinct result
@@ -775,12 +813,21 @@ export function parseGroqCategorizeGroups(raw: unknown, prompt: string): Activit
  * the item label (the ball), answer = the category name (the
  * basket). Category names are asked to carry the topic word, so
  * the on-topic filter keeps the items.
+ *
+ * CROSSWORD (2026-11-08): `gameType` may also be 'crossword' — same
+ * pattern again. Groq is asked for single words plus a clue for
+ * each, parsed by parseGroqCrosswordWords (the word is letters only,
+ * 3–12 letters; the clue never contains the word), and the
+ * question-framed self-check is skipped for the same reason. The
+ * system prompt also asks for words that share letters with each
+ * other, so they can cross in a grid — the route still verifies the
+ * grid placement itself, so a flat list is an error, never a draft.
  */
 export async function buildGroqDraft(
   prompt: string,
   fetchImpl: typeof fetch = fetch,
   syllabusContext?: string,
-  gameType?: 'true-false' | 'fill-blank' | 'missing-word' | 'hangman' | 'wordsearch' | 'categorize'
+  gameType?: 'true-false' | 'fill-blank' | 'missing-word' | 'hangman' | 'wordsearch' | 'categorize' | 'crossword'
 ): Promise<GroqDraftResult> {
   const config = getGroqConfig()
   if (!config) {
@@ -792,6 +839,7 @@ export async function buildGroqDraft(
   const wantHangman = gameType === 'hangman'
   const wantWordSearch = gameType === 'wordsearch'
   const wantCategorize = gameType === 'categorize'
+  const wantCrossword = gameType === 'crossword'
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS)
   try {
@@ -822,6 +870,19 @@ export async function buildGroqDraft(
               (syllabusContext
                 ? ` Write the category names and items in the style typical for ${syllabusContext} topics, at the level the prompt implies. ` +
                   'This is style context only: you cannot fetch, verify, or reproduce that syllabus, and you must never claim a category is official syllabus material.'
+                : '')
+            : wantCrossword
+            ? 'You write single words with crossword clues ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
+              'Return ONLY a JSON object, no markdown, no extra text: {"words": [{"word": "Mars", "clue": "The Red Planet"}]}. ' +
+              'Up to 10 words. Each word must be ONE single word of letters only, 3 to 12 letters long — never a phrase, never a number, never a word with a hyphen or an apostrophe. ' +
+              'The clue must describe the word without naming it: it must never contain the word itself, or the player would not have to solve anything. ' +
+              'Each clue should name the topic it belongs to, so the clue is clearly about that topic and nothing else. ' +
+              'Pick words that share letters with each other, so they can cross in a crossword grid — words with no letter in common cannot cross. ' +
+              'Every word must be a word you are sure belongs to that topic — never invent facts; leave a word out instead. ' +
+              'Do not repeat the same word twice.' +
+              (syllabusContext
+                ? ` Write the words and clues in the style typical for ${syllabusContext} topics, at the level the prompt implies. ` +
+                  'This is style context only: you cannot fetch, verify, or reproduce that syllabus, and you must never claim a word is official syllabus material.'
                 : '')
             : wantHangman
             ? 'You write single words with hints ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
@@ -939,6 +1000,16 @@ export async function buildGroqDraft(
       const parsedItems = parseGroqCategorizeGroups(parsed, prompt)
       if (parsedItems.length < 4) {
         return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic items, one-item groups, or items that belong in two groups were kept.' }
+      }
+      return { ok: true, model: config.model, items: parsedItems }
+    }
+    if (wantCrossword) {
+      // Words path: no question-framed self-check applies, and
+      // convertDraftItems passes crossword items through, validated.
+      // The route then checks the survivors interlock into a grid.
+      const parsedItems = parseGroqCrosswordWords(parsed, prompt)
+      if (parsedItems.length < 2) {
+        return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic words, phrases, or clues that give the word away were kept.' }
       }
       return { ok: true, model: config.model, items: parsedItems }
     }

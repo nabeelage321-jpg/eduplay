@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   buildTableDraft,
   convertDraftItems,
+  crosswordPlacedCount,
+  CROSSWORD_MIN_PLACED_WORDS,
   decodeHtmlEntities,
   isCategorizeDraftUsable,
+  isCrosswordItem,
   isHangmanItem,
   isMissingWordItem,
   isWordSearchItem,
@@ -15,7 +18,7 @@ import { buildGroqChapterDraft, buildGroqDraft, getGroqConfig } from '@/lib/groq
 import { getSyllabus, resolveCurriculumTag } from '@/lib/curricula'
 import type { ActivityItem } from '@/types'
 
-const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble', 'true-false', 'fill-blank', 'missing-word', 'gameshow-quiz', 'hangman', 'wordsearch', 'categorize']
+const ALLOWED_TYPES: PromptGameType[] = ['quiz', 'match-up', 'unjumble', 'true-false', 'fill-blank', 'missing-word', 'gameshow-quiz', 'hangman', 'wordsearch', 'categorize', 'crossword']
 
 /** A true/false draft needs at least 2 statements with at least one
  *  true and one false — otherwise the game has no choice in it.
@@ -99,6 +102,23 @@ function categorizeUsable(items: ActivityItem[]): boolean {
 const CATEGORIZE_TOO_FEW =
   'Could not turn this topic into groups with at least 2 items each. Try a topic that sorts into clear groups (for example, animals into farm, wild, and sea animals), or make the game manually — no half-finished draft was kept.'
 
+/** A crossword draft needs at least 2 words, each one single word of
+ *  letters only (3–12) with a clue that never contains the word —
+ *  AND at least 3 of them must actually interlock on the player's
+ *  grid (the anchor plus two crossing words). A flat list of words
+ *  that share no letters is not a crossword: the player would show
+ *  one lonely across word. Conversion drops unclean questions, so
+ *  the check runs AFTER conversion, on every path (chapter, Groq,
+ *  OpenTDB, and tables, whose word-form rows can drop below the bar). */
+function crosswordUsable(items: ActivityItem[]): boolean {
+  if (items.length < 2) return false
+  if (!items.every((i) => isCrosswordItem(i))) return false
+  return crosswordPlacedCount(items) >= CROSSWORD_MIN_PLACED_WORDS
+}
+
+const CROSSWORD_TOO_FEW =
+  'Could not turn enough of these questions into words with clean clues that cross each other in a grid. Try a simpler topic with words that share letters, or make the game manually — no half-finished draft was kept.'
+
 interface OpenTdbQuestion {
   question?: string
   correct_answer?: string
@@ -107,7 +127,7 @@ interface OpenTdbQuestion {
 
 /**
  * POST /api/prompt-to-game — draft only, never a published game.
- * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word' | 'gameshow-quiz' | 'hangman' | 'wordsearch' | 'categorize', chapterText? }
+ * Body: { prompt, type: 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word' | 'gameshow-quiz' | 'hangman' | 'wordsearch' | 'categorize' | 'crossword', chapterText? }
  * - With chapterText: the draft is PARAPHRASED from the chapter via Groq —
  *   the same facts in new words, never the book's exact sentences.
  *   No verbatim fallback exists: if paraphrasing fails, or no Groq key
@@ -180,6 +200,9 @@ export async function POST(req: NextRequest) {
       if (type === 'categorize' && !categorizeUsable(chapterItems)) {
         return NextResponse.json({ error: CATEGORIZE_TOO_FEW }, { status: 502 })
       }
+      if (type === 'crossword' && !crosswordUsable(chapterItems)) {
+        return NextResponse.json({ error: CROSSWORD_TOO_FEW }, { status: 502 })
+      }
       const draft: PromptDraft = {
         title: prompt,
         type,
@@ -213,6 +236,9 @@ export async function POST(req: NextRequest) {
       if (type === 'categorize' && !categorizeUsable(tableDraft.items)) {
         return NextResponse.json({ error: CATEGORIZE_TOO_FEW }, { status: 502 })
       }
+      if (type === 'crossword' && !crosswordUsable(tableDraft.items)) {
+        return NextResponse.json({ error: CROSSWORD_TOO_FEW }, { status: 502 })
+      }
       return NextResponse.json({ draft: tableDraft })
     }
 
@@ -223,8 +249,8 @@ export async function POST(req: NextRequest) {
     // it does NOT silently fall back to random trivia, or the
     // creator would see off-topic questions and think Groq worked.
     if (getGroqConfig()) {
-      const groqType: 'true-false' | 'fill-blank' | 'missing-word' | 'hangman' | 'wordsearch' | 'categorize' | undefined =
-        type === 'hangman' || type === 'wordsearch' || type === 'missing-word' || type === 'fill-blank' || type === 'true-false' || type === 'categorize' ? type : undefined
+      const groqType: 'true-false' | 'fill-blank' | 'missing-word' | 'hangman' | 'wordsearch' | 'categorize' | 'crossword' | undefined =
+        type === 'crossword' || type === 'categorize' || type === 'hangman' || type === 'wordsearch' || type === 'missing-word' || type === 'fill-blank' || type === 'true-false' ? type : undefined
       const groq = await buildGroqDraft(prompt, fetch, syllabusContext, groqType)
       if (groq.ok) {
         const groqItems = convertDraftItems(groq.items, type)
@@ -245,6 +271,9 @@ export async function POST(req: NextRequest) {
         }
         if (type === 'categorize' && !categorizeUsable(groqItems)) {
           return NextResponse.json({ error: CATEGORIZE_TOO_FEW }, { status: 502 })
+        }
+        if (type === 'crossword' && !crosswordUsable(groqItems)) {
+          return NextResponse.json({ error: CROSSWORD_TOO_FEW }, { status: 502 })
         }
         const draft: PromptDraft = {
           title: prompt,
@@ -321,6 +350,9 @@ export async function POST(req: NextRequest) {
     }
     if (type === 'categorize' && !categorizeUsable(converted)) {
       return NextResponse.json({ error: CATEGORIZE_TOO_FEW }, { status: 502 })
+    }
+    if (type === 'crossword' && !crosswordUsable(converted)) {
+      return NextResponse.json({ error: CROSSWORD_TOO_FEW }, { status: 502 })
     }
 
     const draft: PromptDraft = {

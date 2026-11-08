@@ -16,8 +16,9 @@
  */
 import type { ActivityItem } from '@/types'
 import { clueContainsAnswer } from './crossword-clue'
+import { countPlacedCrosswordWords, CROSSWORD_MIN_PLACED_WORDS } from './crossword-grid'
 
-export type PromptGameType = 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word' | 'gameshow-quiz' | 'hangman' | 'wordsearch' | 'categorize'
+export type PromptGameType = 'quiz' | 'match-up' | 'unjumble' | 'true-false' | 'fill-blank' | 'missing-word' | 'gameshow-quiz' | 'hangman' | 'wordsearch' | 'categorize' | 'crossword'
 
 /**
  * PENDING-DRAFT HANDOFF (separate prompt page, 2026-11-06) — the
@@ -42,6 +43,7 @@ export const PROMPT_GAME_TYPES: Array<{ id: PromptGameType; label: string }> = [
   { id: 'hangman', label: 'Hangman' },
   { id: 'wordsearch', label: 'Word Search' },
   { id: 'categorize', label: 'Categorize' },
+  { id: 'crossword', label: 'Crossword' },
 ]
 
 export interface PromptDraft {
@@ -120,6 +122,7 @@ export function convertDraftItems(
   if (type === 'missing-word') return convertToMissingWord(items)
   if (type === 'hangman') return convertToHangman(items)
   if (type === 'wordsearch') return convertToWordSearch(items)
+  if (type === 'crossword') return convertToCrossword(items)
   // Unjumble: the player expects prompt = jumbled words, answer = correct phrase.
   return items.map((i) => ({
     prompt: jumbleWords(i.answer),
@@ -501,6 +504,27 @@ export function isWordSearchItem(item: ActivityItem): boolean {
 }
 
 /**
+ * True when a draft item is a usable Crossword item: the answer is
+ * ONE single word of letters only (3–12 letters — the grid is
+ * 13 wide, and a digit, a phrase, or a word with punctuation
+ * would be unplayable), and the prompt is a real clue that never
+ * contains the answer word as a whole word (the player shows the
+ * prompt as the clue, so naming the word there would give the
+ * game away — the player itself rewrites answer-naming prompts,
+ * but a draft must not rely on that). Used by the route as the
+ * after-conversion check, on every path, alongside the grid
+ * placement check below.
+ */
+export function isCrosswordItem(item: ActivityItem): boolean {
+  const answer = cleanSentence(item.answer)
+  if (!answer || !/^[A-Za-z]{3,12}$/.test(answer)) return false
+  const prompt = cleanSentence(item.prompt)
+  if (!prompt) return false
+  if (clueContainsAnswer(prompt, answer)) return false
+  return true
+}
+
+/**
  * Convert quiz-style items to Word Search items. The question is
  * kept as the prompt — it IS the clue the player shows in the word
  * list above the grid — and the answer is the word to find in the
@@ -564,6 +588,53 @@ export function isCategorizeDraftUsable(items: ActivityItem[]): boolean {
   }
   return true
 }
+
+/**
+ * Convert quiz-style items to Crossword items. The question is kept
+ * as the prompt — it IS the clue the player shows in the clue list
+ * — and the answer is the word in the grid. Items are DROPPED,
+ * never garbled: a multi-word answer, a digit or number answer, a
+ * word shorter than 3 or longer than 12 letters, or a question that
+ * contains the answer word all drop. Groq crossword items already
+ * arrive as { clue, word } and pass through the same validation,
+ * so no separate passthrough is needed. Capped at 10. Answers are
+ * deduped: two grid entries with the same word would be the same
+ * word twice.
+ *
+ * NOTE: conversion alone cannot promise a grid — words that share
+ * no letters cannot cross. The route checks crosswordPlacedCount
+ * AFTER conversion, so a list that cannot interlock is an error,
+ * never a draft.
+ */
+function convertToCrossword(items: ActivityItem[]): ActivityItem[] {
+  const out: ActivityItem[] = []
+  const seenAnswers = new Set<string>()
+  for (const item of items) {
+    if (out.length >= 10) break
+    const answer = cleanSentence(item.answer)
+    const prompt = cleanSentence(item.prompt)
+    if (!answer || !prompt) continue
+    if (!isCrosswordItem({ prompt, answer })) continue
+    const key = answer.toLowerCase()
+    if (seenAnswers.has(key)) continue
+    seenAnswers.add(key)
+    out.push({ prompt, answer })
+  }
+  return out.slice(0, 10)
+}
+
+/**
+ * How many of these draft items the Crossword player would actually
+ * place on its grid (same placement rules — see crossword-grid.ts).
+ * The route requires at least CROSSWORD_MIN_PLACED_WORDS, so a
+ * draft is only ever a real interlocking grid, never a flat list
+ * that plays as one lonely across word.
+ */
+export function crosswordPlacedCount(items: ActivityItem[]): number {
+  return countPlacedCrosswordWords(items.map((i) => i.answer))
+}
+
+export { CROSSWORD_MIN_PLACED_WORDS }
 
 function cleanSentence(s: string): string {
   return s.replace(/\s+/g, ' ').trim()
@@ -696,6 +767,21 @@ export function buildTableDraft(prompt: string, type: PromptGameType): PromptDra
       // clue in the word list — it never contains the word form.
       // Rows whose product has no single-word form are dropped,
       // never invented.
+      const pWord = NUMBER_WORDS[product]
+      if (!pWord) continue
+      items.push({
+        prompt: `What is ${n} × ${i}?`,
+        answer: pWord,
+      })
+      continue
+    }
+    if (type === 'crossword') {
+      // Same word-form rows as hangman ("six", not "6"): the grid
+      // only takes letters. The question is the clue — it never
+      // contains the word form. Rows whose product has no
+      // single-word form are dropped, never invented; the route
+      // then checks the survivors actually interlock (table of 3
+      // places 5, table of 19 keeps only "nineteen" and errors).
       const pWord = NUMBER_WORDS[product]
       if (!pWord) continue
       items.push({
