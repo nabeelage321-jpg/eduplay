@@ -2,16 +2,18 @@
  * Spin the Wheel and Play — pure helpers (2026-11-08, owner order).
  *
  * The homepage wheel has one segment per game type (ACTIVITY_TYPE_META
- * is the single source of truth — 65 types). The wheel is the visual:
- * a spin picks ONE specific real public game first (random offset into
- * the public /api/activities list, so every public game has an equal
- * chance), then the wheel is rotated so it lands on that game's type
- * segment. The pointer sits at the top of the wheel (270 degrees in
- * SVG coordinates: x right, y down, angles clockwise from 3 o'clock).
+ * is the single source of truth — 65 types). A spin picks ONLY a game
+ * type — one of the 65 segments, uniform random. It NEVER picks a
+ * specific subject/grade game: the subject/grade is the kid's own
+ * choice (owner correction 2026-11-08 11:30 PKT). Play takes the kid
+ * to that type's hub page (/{locale}/activities/{slug}), where he
+ * picks his own game himself. The pointer sits at the top of the
+ * wheel (270 degrees in SVG coordinates: x right, y down, angles
+ * clockwise from 3 o'clock).
  *
  * One button, two states (owner correction 2026-11-08 11:16 PKT):
- * "Spin and Play" spins the wheel; once a game has landed the SAME
- * button becomes the Play button and opens that exact game. No
+ * "Spin and Play" spins the wheel; once a type has landed the SAME
+ * button becomes the Play button and opens that type's hub page. No
  * separate Play button, no Spin Again button.
  */
 import { ACTIVITY_TYPE_META } from '@/lib/activity-type-meta'
@@ -71,19 +73,16 @@ export function rotationForSegment(index: number, from: number): number {
   return r
 }
 
-/** A uniform random offset into a list of `total` public games. */
-export function randomOffset(total: number): number {
-  if (total <= 0) return 0
-  return Math.floor(Math.random() * total)
+/** A uniform random segment index — the spin picks a TYPE only. */
+export function randomSegmentIndex(): number {
+  return Math.floor(Math.random() * WHEEL_SEGMENTS.length)
 }
 
-/** 'grade-6' -> 'Grade 6', 'pre-k' -> 'Pre-K', 'kg' -> 'KG'. */
-export function humanizeGrade(grade: string): string {
-  if (grade === 'pre-k') return 'Pre-K'
-  if (grade === 'kg') return 'KG'
-  const m = /^grade-(\d+)$/.exec(grade)
-  if (m) return `Grade ${m[1]}`
-  return grade
-    .replace(/-/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
+/**
+ * Play destination for a landed type: that type's hub page, where the
+ * kid picks his own subject/grade game. Uses the meta slug (the hub
+ * route's slug space — every one of the 65 meta slugs has a hub).
+ */
+export function typeHubHref(locale: string, slug: string): string {
+  return `/${locale}/activities/${slug}`
 }

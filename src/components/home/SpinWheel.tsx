@@ -6,38 +6,31 @@ import Image from 'next/image'
 import { playEduSound, readSoundOn, storeSoundOn } from '@/lib/game-sound'
 import {
   WHEEL_SEGMENTS,
-  humanizeGrade,
-  randomOffset,
+  randomSegmentIndex,
   rotationForSegment,
   segmentAngle,
-  segmentIndexForDbType,
+  typeHubHref,
+  type WheelSegment,
 } from '@/lib/spin-wheel'
 
 /**
  * Spin the Wheel and Play — homepage, right under the hero (2026-11-08,
  * owner order). One button, two states (owner correction 2026-11-08
- * 11:16 PKT): "Spin and Play" spins the wheel; once a game has landed
- * the SAME button becomes "Play this game" and opens that exact game.
- * No separate Play button, no Spin Again button.
+ * 11:16 PKT): "Spin and Play" spins the wheel; once a type has landed
+ * the SAME button becomes "Play {type}" and opens that type's hub
+ * page. No separate Play button, no Spin Again button.
  *
- * The wheel has one segment per game type (65). A spin picks ONE
- * specific real public game first — random offset into the public
- * /api/activities list, so every public game has an equal chance —
- * then the wheel rotates to land on that game's type segment. No
- * sign-in needed. If the API fails or returns nothing, a plain
- * "try again" message shows — never a fake game, never an invented
- * title or count. English wording for every locale (no translations
+ * The wheel has one segment per game type (65). A spin picks ONLY a
+ * game type — one of the 65 segments, uniform random. It NEVER picks
+ * a specific subject/grade game: the subject/grade is the kid's own
+ * choice (owner correction 2026-11-08 11:30 PKT — the wheel had
+ * landed on "Islamiyat Grade 3 Typing Race" and he does not want
+ * that). Play goes to /{locale}/activities/{type-slug}, the type's
+ * hub page, where the kid picks his own game himself. No sign-in
+ * needed. English wording for every locale (no translations
  * invented), like the other homepage sections.
  */
-interface LandedGame {
-  id: string
-  title: string
-  type: string
-  subject: string
-  grade: string
-}
-
-type Phase = 'idle' | 'spinning' | 'landed' | 'error'
+type Phase = 'idle' | 'spinning' | 'landed'
 
 const SPIN_MS = 4500
 const WHEEL_R = 200
@@ -52,11 +45,11 @@ export default function SpinWheel({ locale }: { locale: string }) {
   const router = useRouter()
   const [phase, setPhase] = useState<Phase>('idle')
   const [rotation, setRotation] = useState(0)
-  const [game, setGame] = useState<LandedGame | null>(null)
+  const [landed, setLanded] = useState<WheelSegment | null>(null)
   const [soundOn, setSoundOn] = useState(true)
   const tickTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const landTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const pendingGame = useRef<LandedGame | null>(null)
+  const pendingSegment = useRef<WheelSegment | null>(null)
   const landedRef = useRef(false)
 
   useEffect(() => {
@@ -82,62 +75,42 @@ export default function SpinWheel({ locale }: { locale: string }) {
       clearTimeout(landTimer.current)
       landTimer.current = null
     }
-    const g = pendingGame.current
-    pendingGame.current = null
-    if (g) {
-      setGame(g)
+    const s = pendingSegment.current
+    pendingSegment.current = null
+    if (s) {
+      setLanded(s)
       setPhase('landed')
       playEduSound('win', readSoundOn())
     } else {
-      setPhase('error')
+      setPhase('idle')
     }
   }
 
-  async function spin() {
+  function spin() {
     if (phase === 'spinning') return
     playEduSound('click', readSoundOn())
     setPhase('spinning')
-    setGame(null)
+    setLanded(null)
     landedRef.current = false
-    try {
-      // Total first: a random offset into the public list gives every
-      // public game an equal chance (not one chance per type).
-      const totalRes = await fetch('/api/activities?limit=1')
-      if (!totalRes.ok) throw new Error('total fetch failed')
-      const totalJson = (await totalRes.json()) as { pagination?: { total?: number } }
-      const total = totalJson.pagination?.total ?? 0
-      if (total <= 0) throw new Error('no public games')
-      const offset = randomOffset(total)
-      const gameRes = await fetch(`/api/activities?offset=${offset}&limit=1`)
-      if (!gameRes.ok) throw new Error('game fetch failed')
-      const gameJson = (await gameRes.json()) as { activities?: LandedGame[] }
-      const picked = gameJson.activities?.[0]
-      if (!picked?.id || !picked.title) throw new Error('empty game')
-      // Wheel lands on the picked game's type segment.
-      let idx = segmentIndexForDbType(picked.type)
-      if (idx < 0) idx = Math.floor(Math.random() * WHEEL_SEGMENTS.length)
-      pendingGame.current = picked
-      setRotation((prev) => rotationForSegment(idx, prev))
-      tickTimer.current = setInterval(() => playEduSound('tick', readSoundOn()), 140)
-      // Fallback if the transition-end event never fires.
-      landTimer.current = setTimeout(land, SPIN_MS + 600)
-    } catch {
-      stopTicks()
-      setPhase('error')
-    }
+    // Type only — uniform random segment, no game pick, no fetch.
+    const idx = randomSegmentIndex()
+    pendingSegment.current = WHEEL_SEGMENTS[idx] ?? null
+    setRotation((prev) => rotationForSegment(idx, prev))
+    tickTimer.current = setInterval(() => playEduSound('tick', readSoundOn()), 140)
+    // Fallback if the transition-end event never fires.
+    landTimer.current = setTimeout(land, SPIN_MS + 600)
   }
 
   function handleButton() {
-    if (phase === 'landed' && game) {
+    if (phase === 'landed' && landed) {
       playEduSound('click', readSoundOn())
-      router.push(`/${locale}/activity/${game.id}/play`)
+      router.push(typeHubHref(locale, landed.slug))
       return
     }
-    if (phase === 'idle' || phase === 'error') void spin()
+    if (phase === 'idle') spin()
   }
 
   const seg = segmentAngle()
-  const landedSegment = game ? WHEEL_SEGMENTS[segmentIndexForDbType(game.type)] ?? null : null
 
   return (
     <section aria-labelledby="spin-wheel-title" style={{ margin: '0 auto', maxWidth: '80rem', padding: '3rem 1rem 4rem', textAlign: 'center' }}>
@@ -148,7 +121,7 @@ export default function SpinWheel({ locale }: { locale: string }) {
         🎡 Spin the Wheel and Play
       </h2>
       <p style={{ margin: '0.75rem auto 0', maxWidth: '36rem', fontSize: '1.125rem', fontWeight: 600, lineHeight: 1.6, color: 'var(--color-text-secondary)' }}>
-        Tap the button — the wheel can land on any game in the library. Then tap Play and that game opens!
+        Tap the button — the wheel can land on any of the 65 games. Then tap Play and pick your own game of that type!
       </p>
 
       {/* Sound toggle — same device setting as the games, default ON. */}
@@ -179,14 +152,14 @@ export default function SpinWheel({ locale }: { locale: string }) {
           role="img"
           aria-label="Game wheel — one segment per game type"
           onClick={() => {
-            if (phase === 'idle' || phase === 'error') void spin()
+            if (phase === 'idle') spin()
           }}
           onTransitionEnd={land}
           style={{
             display: 'block',
             width: '100%',
             height: 'auto',
-            cursor: phase === 'idle' || phase === 'error' ? 'pointer' : 'default',
+            cursor: phase === 'idle' ? 'pointer' : 'default',
             transform: `rotate(${rotation}deg)`,
             transition: phase === 'spinning' ? `transform ${SPIN_MS}ms cubic-bezier(0.12, 0.8, 0.08, 1)` : 'none',
             borderRadius: '50%',
@@ -238,31 +211,27 @@ export default function SpinWheel({ locale }: { locale: string }) {
         </div>
       </div>
 
-      {/* Result — only real games, never invented. */}
+      {/* Result — the TYPE only, never a specific game. */}
       <div aria-live="polite" style={{ marginTop: '2rem', minHeight: '5.5rem' }}>
-        {phase === 'landed' && game ? (
+        {phase === 'landed' && landed ? (
           <div style={{ maxWidth: '36rem', margin: '0 auto', borderRadius: '1.5rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '1.25rem' }}>
             <p style={{ fontSize: '0.875rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-primary)' }}>
               The wheel landed on…
             </p>
             <p style={{ marginTop: '0.5rem', fontSize: '1.5rem', fontWeight: 700, lineHeight: 1.3, color: 'var(--color-text-primary)' }}>
-              {game.title}
+              {landed.icon} {landed.name}
             </p>
             <p style={{ marginTop: '0.5rem', fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-              {landedSegment ? `${landedSegment.icon} ${landedSegment.name}` : game.type} · {game.subject} · {humanizeGrade(game.grade)}
+              Pick your subject and grade, then play!
             </p>
           </div>
-        ) : phase === 'error' ? (
-          <p style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-            Couldn&apos;t load a game — tap the button to try again.
-          </p>
         ) : phase === 'spinning' ? (
           <p style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
             Spinning… where will it land? 🎲
           </p>
         ) : (
           <p style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-            One tap, one surprise game — no account needed.
+            One tap, one surprise game type — you pick the game!
           </p>
         )}
       </div>
@@ -270,12 +239,12 @@ export default function SpinWheel({ locale }: { locale: string }) {
       {/* TWINKLE'S INVITE (2026-11-08, owner order): when a visitor
           lands on the homepage, Twinkle says one line — "Try Spin and
           Play!" — in a speech bubble next to her, tail pointing down
-          at the Spin button. Shown while the wheel is idle (and on a
-          failed spin, inviting a retry); hidden once the wheel is
-          spinning or a game has landed. The wrapper keeps its height
-          so the button never jumps when the bubble hides. */}
+          at the Spin button. Shown while the wheel is idle; hidden
+          once the wheel is spinning or a type has landed. The wrapper
+          keeps its height so the button never jumps when the bubble
+          hides. */}
       <div style={{ marginTop: '1rem', minHeight: '5.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {(phase === 'idle' || phase === 'error') && (
+        {phase === 'idle' && (
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '0.75rem' }}>
             <Image
               src="/eduplay-mascot.png"
@@ -320,7 +289,7 @@ export default function SpinWheel({ locale }: { locale: string }) {
           boxShadow: '0 6px 0 0 rgba(0,0,0,0.2)',
         }}
       >
-        {phase === 'landed' ? '▶ Play this game' : phase === 'spinning' ? 'Spinning…' : '🎡 Spin and Play'}
+        {phase === 'landed' && landed ? `▶ Play ${landed.name}` : phase === 'spinning' ? 'Spinning…' : '🎡 Spin and Play'}
       </button>
     </section>
   )

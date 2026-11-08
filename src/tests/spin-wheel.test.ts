@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest'
 import {
   WHEEL_SEGMENTS,
   dbTypeToMetaSlug,
-  humanizeGrade,
   metaSlugToDbType,
-  randomOffset,
+  randomSegmentIndex,
   rotationForSegment,
   segmentAngle,
   segmentIndexForDbType,
+  typeHubHref,
 } from '@/lib/spin-wheel'
 import { ACTIVITY_TYPE_META } from '@/lib/activity-type-meta'
 
@@ -58,20 +58,25 @@ describe('spin wheel helpers', () => {
     expect(landed).toBeCloseTo(270, 10)
   })
 
-  it('random offset stays inside the list', () => {
+  it('random segment index stays inside the wheel (type-only pick)', () => {
     for (let i = 0; i < 200; i++) {
-      const off = randomOffset(13932)
-      expect(off).toBeGreaterThanOrEqual(0)
-      expect(off).toBeLessThan(13932)
+      const idx = randomSegmentIndex()
+      expect(idx).toBeGreaterThanOrEqual(0)
+      expect(idx).toBeLessThan(WHEEL_SEGMENTS.length)
+      expect(Number.isInteger(idx)).toBe(true)
     }
-    expect(randomOffset(0)).toBe(0)
-    expect(randomOffset(1)).toBe(0)
   })
 
-  it('humanizes grades', () => {
-    expect(humanizeGrade('pre-k')).toBe('Pre-K')
-    expect(humanizeGrade('kg')).toBe('KG')
-    expect(humanizeGrade('grade-6')).toBe('Grade 6')
-    expect(humanizeGrade('grade-12')).toBe('Grade 12')
+  it('Play goes to the type hub page, where the kid picks his own game', () => {
+    // Owner correction 2026-11-08 11:30 PKT: the wheel shows ONLY the
+    // 65 types — never a specific subject/grade game. Play opens the
+    // type's hub, not /activity/<id>/play.
+    expect(typeHubHref('en', 'typing-race')).toBe('/en/activities/typing-race')
+    expect(typeHubHref('en', 'wordsearch')).toBe('/en/activities/wordsearch')
+    expect(typeHubHref('ur', 'quiz')).toBe('/ur/activities/quiz')
+    for (const s of WHEEL_SEGMENTS) {
+      expect(typeHubHref('en', s.slug)).toBe(`/en/activities/${s.slug}`)
+      expect(typeHubHref('en', s.slug)).not.toContain('/activity/')
+    }
   })
 })
