@@ -1,0 +1,43 @@
+import { describe, expect, it } from 'vitest'
+import {
+  liveHostHref,
+  liveJoinHref,
+  parseLiveCode,
+  parseLiveMode,
+} from '@/lib/live-rooms'
+
+describe('live rooms helpers', () => {
+  it('host href goes to the live page in host mode', () => {
+    expect(liveHostHref('en')).toBe('/en/live?mode=host')
+    expect(liveHostHref('ur')).toBe('/ur/live?mode=host')
+  })
+
+  it('join href prefills a valid 6-letter code, uppercased', () => {
+    expect(liveJoinHref('en', 'rqbXvd')).toBe('/en/live?mode=join&code=RQBXVD')
+    expect(liveJoinHref('en', '  abcdef ')).toBe('/en/live?mode=join&code=ABCDEF')
+  })
+
+  it('join href without a valid code still opens join mode, code-less', () => {
+    expect(liveJoinHref('en', '')).toBe('/en/live?mode=join')
+    expect(liveJoinHref('en', 'ABC')).toBe('/en/live?mode=join')
+    expect(liveJoinHref('en', 'ABCDEF1')).toBe('/en/live?mode=join')
+    expect(liveJoinHref('en', 'AB12EF')).toBe('/en/live?mode=join')
+  })
+
+  it('parseLiveMode accepts only host/join', () => {
+    expect(parseLiveMode('host')).toBe('host')
+    expect(parseLiveMode('JOIN')).toBe('join')
+    expect(parseLiveMode('play')).toBeNull()
+    expect(parseLiveMode(undefined)).toBeNull()
+    expect(parseLiveMode(['join'])).toBeNull()
+  })
+
+  it('parseLiveCode accepts only 6 letters, uppercased', () => {
+    expect(parseLiveCode('rqbXvd')).toBe('RQBXVD')
+    expect(parseLiveCode('RQBXVD')).toBe('RQBXVD')
+    expect(parseLiveCode('abc')).toBeNull()
+    expect(parseLiveCode('ABCDEF1')).toBeNull()
+    expect(parseLiveCode('AB12EF')).toBeNull()
+    expect(parseLiveCode(undefined)).toBeNull()
+  })
+})

@@ -28,11 +28,11 @@ import SessionReport from '@/components/game/SessionReport'
  * (see supabase/migrations/003_create_live_sessions.sql); without
  * those tables the API returns a clear error instead of fake data.
  */
-export default function LiveSessionRoom({ locale }: { locale: string }) {
-  const [mode, setMode] = useState<'host' | 'join'>('host')
+export default function LiveSessionRoom({ locale, initialMode, initialCode }: { locale: string; initialMode?: 'host' | 'join' | null; initialCode?: string | null }) {
+  const [mode, setMode] = useState<'host' | 'join'>(initialMode ?? 'host')
   const [activityId, setActivityId] = useState('')
   const [teacherName, setTeacherName] = useState('')
-  const [roomCodeInput, setRoomCodeInput] = useState('')
+  const [roomCodeInput, setRoomCodeInput] = useState(initialCode ?? '')
   const [nickname, setNickname] = useState('')
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [playerId, setPlayerId] = useState<string | null>(null)

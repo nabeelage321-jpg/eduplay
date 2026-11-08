@@ -22,6 +22,7 @@ import { getBaseUrl } from '@/lib/seo/base-url'
 import { DB_SUBJECT_BY_SLUG, DB_TYPE_BY_SLUG } from '@/lib/seo/programmatic'
 import V0Hero from '@/components/home/v0/V0Hero'
 import SpinWheel from '@/components/home/SpinWheel'
+import LiveRooms from '@/components/home/LiveRooms'
 import V0GameCard from '@/components/home/v0/V0GameCard'
 import V0MobilePlayBar from '@/components/home/v0/V0MobilePlayBar'
 import V0CreatorsSection from '@/components/home/v0/V0CreatorsSection'
@@ -211,6 +212,12 @@ export default async function HomePage({ params }: HomePageProps) {
             two states: Spin and Play spins the wheel to one real
             game, then the SAME button plays that exact game. */}
         <SpinWheel locale={locale} />
+
+        {/* LIVE GAME ROOMS (2026-11-08, owner order): the live-room
+            option belongs on the homepage, not only in the nav. Host
+            a game / join with a room code — wired into the existing
+            /live flow, nothing rebuilt here. */}
+        <LiveRooms locale={locale} />
 
         {/* Stats — V0 coloured tiles, real numbers only. */}
         <section aria-label="EduPlay in numbers" style={{ padding: '0 1rem' }}>

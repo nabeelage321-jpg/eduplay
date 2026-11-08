@@ -1,12 +1,17 @@
 import type { Metadata } from 'next'
 import LiveSessionRoom from '@/components/game/LiveSessionRoom'
+import { parseLiveCode, parseLiveMode } from '@/lib/live-rooms'
 
 export const metadata: Metadata = {
   title: 'Live Game | EduPlay',
   description: 'Host or join a live EduPlay game with a room code. Interim live flow: polling leaderboard, updated every 3 seconds.',
 }
 
-export default function LivePage({ params }: { params: { locale: string } }) {
+// LIVE ROOMS HOMEPAGE LINK (2026-11-08): the homepage section links
+// here with ?mode=host|join&code=XXXXXX. These are initial state
+// only — no params means exactly the old behaviour (host mode, empty
+// code). No session logic changes here.
+export default function LivePage({ params, searchParams }: { params: { locale: string }; searchParams?: { mode?: string | string[]; code?: string | string[] } }) {
   const isRTL = params.locale === 'ur' || params.locale === 'ar'
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{ minHeight: '100vh', background: 'var(--color-background)' }}>
@@ -18,7 +23,7 @@ export default function LivePage({ params }: { params: { locale: string } }) {
           Host a game or join with a room code
         </p>
       </div>
-      <LiveSessionRoom locale={params.locale} />
+      <LiveSessionRoom locale={params.locale} initialMode={parseLiveMode(searchParams?.mode)} initialCode={parseLiveCode(searchParams?.code)} />
     </div>
   )
 }
