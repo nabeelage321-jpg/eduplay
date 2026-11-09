@@ -17,11 +17,16 @@ describe('live rooms helpers', () => {
     expect(liveJoinHref('en', '  abcdef ')).toBe('/en/live?mode=join&code=ABCDEF')
   })
 
+  it('join href prefills a code with digits — real codes are base36', () => {
+    expect(liveJoinHref('en', 'x46ccv')).toBe('/en/live?mode=join&code=X46CCV')
+    expect(liveJoinHref('en', 'AB12EF')).toBe('/en/live?mode=join&code=AB12EF')
+  })
+
   it('join href without a valid code still opens join mode, code-less', () => {
     expect(liveJoinHref('en', '')).toBe('/en/live?mode=join')
     expect(liveJoinHref('en', 'ABC')).toBe('/en/live?mode=join')
     expect(liveJoinHref('en', 'ABCDEF1')).toBe('/en/live?mode=join')
-    expect(liveJoinHref('en', 'AB12EF')).toBe('/en/live?mode=join')
+    expect(liveJoinHref('en', 'AB!2EF')).toBe('/en/live?mode=join')
   })
 
   it('parseLiveMode accepts only host/join', () => {
@@ -37,7 +42,12 @@ describe('live rooms helpers', () => {
     expect(parseLiveCode('RQBXVD')).toBe('RQBXVD')
     expect(parseLiveCode('abc')).toBeNull()
     expect(parseLiveCode('ABCDEF1')).toBeNull()
-    expect(parseLiveCode('AB12EF')).toBeNull()
+    expect(parseLiveCode('AB!2EF')).toBeNull()
     expect(parseLiveCode(undefined)).toBeNull()
+  })
+
+  it('parseLiveCode accepts codes with digits — real codes are base36', () => {
+    expect(parseLiveCode('x46ccv')).toBe('X46CCV')
+    expect(parseLiveCode('AB12EF')).toBe('AB12EF')
   })
 })

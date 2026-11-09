@@ -15,7 +15,7 @@ import SessionReport from '@/components/game/SessionReport'
 /**
  * Batch 3 — INTERIM live room (teacher-host + student-join, polling).
  *
- * Teacher: enter an activity id, create a session, share the 6-letter
+ * Teacher: enter an activity id, create a session, share the 6-character
  * room code, Start / End the session. Students: enter the room code
  * and a nickname, join, then play the activity (link) and report
  * their score — the leaderboard refreshes for everyone every
@@ -310,7 +310,7 @@ export default function LiveSessionRoom({ locale, initialMode, initialCode }: { 
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <input value={roomCodeInput} onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())} placeholder="Room code (6 letters)" aria-label="Room code" maxLength={6} style={inputStyle} />
+              <input value={roomCodeInput} onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())} placeholder="Room code (6 characters)" aria-label="Room code" maxLength={6} style={inputStyle} />
               {previousNicknames.length > 0 ? (
                 <div>
                   <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: '0 0 0.5rem' }}>

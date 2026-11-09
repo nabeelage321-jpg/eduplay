@@ -80,7 +80,7 @@ export default function LiveRooms({ locale }: { locale: string }) {
           </button>
         </div>
 
-        {/* JOIN — kids join with a 6-letter room code, no account. */}
+        {/* JOIN — kids join with a 6-character room code, no account. */}
         <div style={{ ...cardStyle, background: '#D1FAE5' }}>
           <div style={{ fontSize: '2.5rem' }} aria-hidden>🔑</div>
           <h3 style={{ marginTop: '0.5rem', fontSize: '1.375rem', fontWeight: 800, color: '#26264A' }}>Join a game</h3>
@@ -90,7 +90,7 @@ export default function LiveRooms({ locale }: { locale: string }) {
           <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <input
               value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 6))}
+              onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
               placeholder="Room code"
               aria-label="Room code"
               maxLength={6}

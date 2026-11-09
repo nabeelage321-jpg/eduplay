@@ -12,6 +12,7 @@ import {
   rememberGuestNickname,
   saveGroupName,
 } from '@/lib/guests'
+import { sessionPlayHref } from '@/lib/live-rooms'
 
 interface JoinGameScreenProps {
   locale: string
@@ -156,9 +157,26 @@ export default function JoinGameScreen({ locale }: JoinGameScreenProps) {
       // never to activity 0. Remember this nickname on this device
       // so a returning guest can tap it next time instead of
       // retyping it; the join itself is unchanged.
+      // JOIN FIX 2026-11-09: the play URL must carry the session +
+      // player proof (?session=&player=) the join call just issued.
+      // The old ?roomCode= URL made the play page fall back to the
+      // general route, which 404s a hosted PRIVATE game for anyone
+      // but its owner — so a joiner landed on "Activity Not Found"
+      // (owner defect 2026-11-09, room X46CCV). With session+player
+      // the play page loads through the session-scoped endpoint,
+      // which serves the game only to a joined player of this
+      // session (or the owner). If the join answered without a
+      // player id, stay here with an error instead of navigating
+      // to a guaranteed 404.
+      const playHref = sessionPlayHref(locale, activityId, session.id, (joinData as { playerId?: unknown }).playerId)
+      if (!playHref) {
+        setError(t('joinFailed'))
+        setIsValidating(false)
+        return
+      }
       rememberGuestNickname(nickname.trim())
       joinGame(code, nickname.trim())
-      router.push(`/${locale}/activity/${activityId}/play?roomCode=${encodeURIComponent(code)}`)
+      router.push(playHref)
     } catch {
       setError(t('roomCheckFailed'))
       setIsValidating(false)

@@ -66,7 +66,7 @@ export default function ChallengeMaker({ activityId, locale, activityTitle }: Ch
   function createLink() {
     const cleanPin = cleanChallengePin(pin)
     if (!isValidChallengePin(cleanPin)) {
-      setError('Enter a 6-letter PIN in the room-code format (for example, use Generate PIN).')
+      setError('Enter a 6-character PIN in the room-code format (for example, use Generate PIN).')
       setLink(null)
       return
     }
