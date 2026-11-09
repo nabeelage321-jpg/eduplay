@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { HELPER_FEATURES, HELPER_OPEN_EVENT } from '@/lib/mascot'
+import { HELPER_FEATURES, HELPER_OPEN_EVENT, MASCOT_GREETING } from '@/lib/mascot'
 
 // Twinkle's "What we have" panel (owner order 2026-11-08): clicking
 // Twinkle lists the important features. Every href below was verified
@@ -61,5 +61,9 @@ describe('twinkle features panel', () => {
   it('the wheel Twinkle asks the roaming mascot to open the panel', () => {
     expect(HELPER_OPEN_EVENT.length).toBeGreaterThan(0)
     expect(HELPER_OPEN_EVENT.startsWith('eduplay:')).toBe(true)
+  })
+
+  it('the speech bubble invites visitors to ask what we have (owner order 2026-11-09)', () => {
+    expect(MASCOT_GREETING).toBe('Ask me what we have! 💭')
   })
 })

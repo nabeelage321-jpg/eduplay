@@ -6,6 +6,12 @@
 // and EduPlay is worldwide — Pakistan is only the wedge.
 export const MASCOT_NAME = 'Twinkle'
 
+// Twinkle's speech bubble (the greeting above the roaming mascot) —
+// owner order 2026-11-09: it must invite visitors to ask what EduPlay
+// has, so they know clicking Twinkle shows all the features. The wheel
+// section keeps its own separate "Try Spin and Play!" invite.
+export const MASCOT_GREETING = 'Ask me what we have! 💭'
+
 // Roaming anchors: the mascot gently wanders the WHOLE screen — top,
 // middle and bottom on both edges — so kids see it walking around
 // everywhere, not locked in one corner. left/top are explicit (never

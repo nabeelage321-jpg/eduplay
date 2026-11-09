@@ -9,6 +9,7 @@ import { ArrowRight, X } from 'lucide-react'
 import {
   HELPER_FEATURES,
   HELPER_OPEN_EVENT,
+  MASCOT_GREETING,
   MASCOT_NAME,
   MASCOT_ANCHORS,
   MASCOT_PLAY_ANCHORS,
@@ -191,7 +192,7 @@ export default function HelperMascot({ locale }: { locale: string }) {
           style={{ ...popupPos, width: 'min(16rem, calc(100vw - 2rem))', display: 'flex', alignItems: 'flex-start', gap: '0.25rem', borderRadius: '1.5rem', border: '2px solid var(--color-border)', background: 'var(--color-surface)', padding: '0.75rem 0.25rem 0.75rem 1rem', color: 'var(--color-text-primary)', boxShadow: '0 6px 0 0 var(--color-border)', pointerEvents: 'auto' }}
         >
           <p style={{ fontSize: '0.875rem', fontWeight: 600, lineHeight: 1.5 }}>
-            Hi! I&apos;m {MASCOT_NAME} — EduPlay&apos;s helper. I can help you find a game or make one from a prompt.
+            {MASCOT_GREETING}
           </p>
           <button
             type="button"
