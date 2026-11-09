@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { liveHostHref, liveJoinHref, parseLiveCode } from '@/lib/live-rooms'
+import { gameNumberHref, liveHostHref, liveJoinHref, parseGameNumber, parseLiveCode } from '@/lib/live-rooms'
 
 /**
  * Live Game Rooms — homepage section, right under Spin the Wheel
@@ -10,12 +10,15 @@ import { liveHostHref, liveJoinHref, parseLiveCode } from '@/lib/live-rooms'
  * homepage, not only in the nav). Kid-friendly, big and colourful,
  * same style as the Spin the Wheel section.
  *
- * Two actions, both wired into the EXISTING live flow — nothing is
- * rebuilt here, no session logic, no API calls:
+ * Three actions, all wired into EXISTING flows — nothing is rebuilt
+ * here, no session logic, no API calls:
  * - "Host a game" → /{locale}/live in host mode (hosting itself
  *   keeps its existing sign-in behaviour on the live page).
  * - "Join a game" → room-code input + Join button → /{locale}/live
  *   in join mode with the code prefilled.
+ * - "Play a game with number" → game-number input + Play button →
+ *   /{locale}/game-number?number=<digits> (the existing number
+ *   route the play-games page already uses).
  * No sign-in needed to SEE the section. English wording for every
  * locale (no translations invented), like the other homepage sections.
  */
@@ -23,10 +26,18 @@ export default function LiveRooms({ locale }: { locale: string }) {
   const router = useRouter()
   const [code, setCode] = useState('')
   const validCode = parseLiveCode(code) !== null
+  const [gameNumber, setGameNumber] = useState('')
+  const validGameNumber = parseGameNumber(gameNumber) !== null
 
   function join() {
     if (!validCode) return
     router.push(liveJoinHref(locale, code))
+  }
+
+  function playByNumber() {
+    const href = gameNumberHref(locale, gameNumber)
+    if (!href) return
+    router.push(href)
   }
 
   const cardStyle = {
@@ -124,6 +135,54 @@ export default function LiveRooms({ locale }: { locale: string }) {
               }}
             >
               Join →
+            </button>
+          </div>
+        </div>
+
+        {/* PLAY BY NUMBER — a kid types the game number a teacher
+            gave them and the game opens (existing /game-number route). */}
+        <div style={{ ...cardStyle, background: '#FEF3C7' }}>
+          <div style={{ fontSize: '2.5rem' }} aria-hidden>🔢</div>
+          <h3 style={{ marginTop: '0.5rem', fontSize: '1.375rem', fontWeight: 800, color: '#26264A' }}>Play a game with number</h3>
+          <p style={{ marginTop: '0.5rem', fontSize: '1rem', fontWeight: 600, lineHeight: 1.5, color: '#4A4A6A' }}>
+            Got a game number from your teacher? Type it to open that game.
+          </p>
+          <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <input
+              value={gameNumber}
+              onChange={(e) => setGameNumber(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="e.g. 100123"
+              aria-label="Game number"
+              inputMode="numeric"
+              maxLength={6}
+              autoComplete="off"
+              style={{
+                width: '11rem',
+                minHeight: '56px',
+                borderRadius: '9999px',
+                border: '2px solid var(--color-text-primary)',
+                background: 'white',
+                padding: '0 1.25rem',
+                fontSize: '1.25rem',
+                fontWeight: 800,
+                letterSpacing: '0.2em',
+                textAlign: 'center',
+                color: '#26264A',
+              }}
+            />
+            <button
+              type="button"
+              onClick={playByNumber}
+              disabled={!validGameNumber}
+              style={{
+                ...bigBtnStyle,
+                background: validGameNumber ? 'var(--color-primary)' : 'var(--color-border)',
+                color: 'white',
+                opacity: validGameNumber ? 1 : 0.6,
+                cursor: validGameNumber ? 'pointer' : 'not-allowed',
+              }}
+            >
+              Play →
             </button>
           </div>
         </div>

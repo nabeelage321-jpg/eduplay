@@ -46,6 +46,25 @@ export function parseLiveCode(value: string | string[] | undefined | null): stri
   return /^[A-Z0-9]{6}$/.test(code) ? code : null
 }
 
+/**
+ * Validate a game number: digits only, 1–6 digits (game numbers
+ * start at 100001 and grow — the play-games page keeps the same
+ * 6-digit cap). Returns the digits, or null when there are none.
+ * (2026-11-09: the homepage "Play a game with number" box uses
+ * this — a kid types the number a teacher gave them.)
+ */
+export function parseGameNumber(value: string | string[] | undefined | null): string | null {
+  if (typeof value !== 'string') return null
+  const digits = value.replace(/\D/g, '').slice(0, 6)
+  return digits ? digits : null
+}
+
+/** `/{locale}/game-number?number=<digits>` — the existing number route. */
+export function gameNumberHref(locale: string, value: string): string | null {
+  const digits = parseGameNumber(value)
+  return digits ? `/${locale}/game-number?number=${digits}` : null
+}
+
 // JOIN FIX 2026-11-09: the play URL a joined player navigates to
 // after joining by room code. It must carry the session + player
 // proof (?session=&player=) the join call issued — the play page

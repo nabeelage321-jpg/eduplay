@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  gameNumberHref,
   liveHostHref,
   liveJoinHref,
+  parseGameNumber,
   parseLiveCode,
   parseLiveMode,
 } from '@/lib/live-rooms'
@@ -49,5 +51,23 @@ describe('live rooms helpers', () => {
   it('parseLiveCode accepts codes with digits — real codes are base36', () => {
     expect(parseLiveCode('x46ccv')).toBe('X46CCV')
     expect(parseLiveCode('AB12EF')).toBe('AB12EF')
+  })
+
+  it('parseGameNumber keeps digits only, up to 6', () => {
+    expect(parseGameNumber('100083')).toBe('100083')
+    expect(parseGameNumber('100123')).toBe('100123')
+    expect(parseGameNumber('abc100083xyz')).toBe('100083')
+    expect(parseGameNumber('1000839')).toBe('100083')
+    expect(parseGameNumber('')).toBeNull()
+    expect(parseGameNumber('abc')).toBeNull()
+    expect(parseGameNumber(undefined)).toBeNull()
+  })
+
+  it('gameNumberHref goes to the existing game-number route', () => {
+    expect(gameNumberHref('en', '100083')).toBe('/en/game-number?number=100083')
+    expect(gameNumberHref('ur', '100123')).toBe('/ur/game-number?number=100123')
+    expect(gameNumberHref('en', 'abc100083')).toBe('/en/game-number?number=100083')
+    expect(gameNumberHref('en', '')).toBeNull()
+    expect(gameNumberHref('en', 'abc')).toBeNull()
   })
 })
