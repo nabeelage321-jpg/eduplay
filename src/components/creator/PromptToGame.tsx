@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { PROMPT_GAME_TYPES, type PromptDraft, type PromptGameType } from '@/lib/prompt-to-game'
+import { buildGuidedPrompt, PROMPT_GAME_TYPES, type PromptDraft, type PromptGameType } from '@/lib/prompt-to-game'
 import { FILTER_SUBJECTS, FILTER_GRADES, resolveInitialSubject } from '@/lib/filters'
 import {
   CURRICULUM_COUNTRIES,
@@ -240,6 +240,11 @@ export default function PromptToGame({
   const [subject, setSubject] = useState(() => resolveInitialSubject(initialSubject))
   const [grade, setGrade] = useState('')
   const [prompt, setPrompt] = useState('')
+  // GUIDED TAPS-ONLY (2026-11-09): the chip a kid tapped is a
+  // SELECTION, not just a fill — tapping a chip, a type, then Make
+  // draft must work with no typing at all. When the box is empty
+  // in Guided mode, the picked chip's prompt IS the prompt.
+  const [pickedChip, setPickedChip] = useState<string | null>(null)
   // WORLDWIDE CURRICULUM v1 (2026-11-04): country + syllabus are
   // OPTIONAL and default to General — the minimal-input rule survives:
   // a free prompt of a few words with no country/syllabus choice still
@@ -298,8 +303,21 @@ export default function PromptToGame({
     }))
   }
 
-  async function makeDraft() {
-    if (!prompt.trim()) return
+  /** Tapping a chip selects it AND fills the box. The pick survives
+   *  as the Guided fallback: clearing the box by hand un-picks it
+   *  (see the textareas' onChange), but a picked chip with an empty
+   *  box still makes a draft — taps only, no typing needed. */
+  function pickChip(c: { label: string; prompt: string }) {
+    setPrompt(c.prompt)
+    setPickedChip(c.prompt)
+  }
+
+  async function makeDraft(overridePrompt?: string) {
+    // GUIDED TAPS-ONLY (2026-11-09): an explicit retry prompt wins,
+    // then a typed prompt, then the picked chip in Guided mode.
+    const effectivePrompt =
+      overridePrompt?.trim() || buildGuidedPrompt(prompt, mode === 'guided' ? pickedChip : null)
+    if (!effectivePrompt) return
     setLoading(true)
     setError(null)
     setApproved(false)
@@ -311,7 +329,7 @@ export default function PromptToGame({
         // the seed and uses the syllabus NAME as Groq style context.
         // General (no pick) sends nothing — no claim, no context.
         body: JSON.stringify({
-          prompt: prompt.trim(),
+          prompt: effectivePrompt,
           type,
           ...(curriculumTag
             ? { countryCode: curriculumTag.countryCode, syllabusSlug: curriculumTag.syllabusSlug }
@@ -354,6 +372,20 @@ export default function PromptToGame({
   }
 
   const chips = currentChips()
+  // The prompt that will actually be sent: typed text, or the picked
+  // chip in Guided mode — the Make draft button enables on this, so
+  // a kid who only tapped never sees a dead button.
+  const effectivePrompt = buildGuidedPrompt(prompt, mode === 'guided' ? pickedChip : null)
+
+  /** ONE-TAP FIX (2026-11-09): a failed draft must guide, not
+   *  dead-end — fill the first recommended topic and retry at once. */
+  function retryWithRecommended() {
+    const recommended = chips[0]
+    if (!recommended) return
+    setPrompt(recommended.prompt)
+    setPickedChip(recommended.prompt)
+    void makeDraft(recommended.prompt)
+  }
 
   return (
     <div style={boxStyle}>
@@ -384,7 +416,7 @@ export default function PromptToGame({
               <button
                 key={c.label}
                 type="button"
-                onClick={() => setPrompt(c.prompt)}
+                onClick={() => pickChip(c)}
                 style={chipStyle(prompt === c.prompt)}
               >
                 {c.label}
@@ -548,7 +580,7 @@ export default function PromptToGame({
               <button
                 key={c.label}
                 type="button"
-                onClick={() => setPrompt(c.prompt)}
+                onClick={() => pickChip(c)}
                 style={chipStyle(prompt === c.prompt)}
               >
                 {c.label}
@@ -561,7 +593,7 @@ export default function PromptToGame({
           <textarea
             id="prompt-game-input"
             value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
+            onChange={(e) => { setPrompt(e.target.value); if (!e.target.value.trim()) setPickedChip(null) }}
             placeholder="Tap a recommendation above, or type your own"
             rows={2}
             maxLength={200}
@@ -576,7 +608,7 @@ export default function PromptToGame({
           <textarea
             id="prompt-game-input"
             value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
+            onChange={(e) => { setPrompt(e.target.value); if (!e.target.value.trim()) setPickedChip(null) }}
             placeholder="e.g. make game for a table of 2"
             rows={2}
             maxLength={200}
@@ -590,7 +622,7 @@ export default function PromptToGame({
               <button
                 key={c.label}
                 type="button"
-                onClick={() => setPrompt(c.prompt)}
+                onClick={() => pickChip(c)}
                 style={chipStyle(prompt === c.prompt)}
               >
                 {c.label}
@@ -622,23 +654,36 @@ export default function PromptToGame({
       </div>
       <button
         type="button"
-        onClick={makeDraft}
-        disabled={loading || !prompt.trim()}
+        onClick={() => void makeDraft()}
+        disabled={loading || !effectivePrompt}
         className="eduplay-primary-action"
         style={{
           width: '100%', border: 'none', borderRadius: 'var(--radius)',
-          background: loading || !prompt.trim() ? 'var(--color-text-muted)' : 'var(--gradient-btn)',
+          background: loading || !effectivePrompt ? 'var(--color-text-muted)' : 'var(--gradient-btn)',
           color: '#fff', fontFamily: 'var(--font-display)', fontSize: '1rem',
-          cursor: loading || !prompt.trim() ? 'not-allowed' : 'pointer',
+          cursor: loading || !effectivePrompt ? 'not-allowed' : 'pointer',
         }}
       >
         {loading ? '⏳ Making your draft…' : '✨ Make draft'}
       </button>
 
       {error && (
-        <p role="alert" style={{ color: 'var(--color-danger)', fontSize: '0.9rem', marginTop: '0.75rem' }}>
-          ⚠️ {error}
-        </p>
+        <div style={{ marginTop: '0.75rem' }}>
+          <p role="alert" style={{ color: 'var(--color-danger)', fontSize: '0.9rem', margin: '0 0 0.5rem' }}>
+            ⚠️ {error}
+          </p>
+          <button
+            type="button"
+            onClick={retryWithRecommended}
+            style={{
+              minHeight: '48px', padding: '0.5rem 1rem', borderRadius: 'var(--radius)',
+              border: '2px solid var(--color-primary)', background: 'var(--color-surface)',
+              color: 'var(--color-text-primary)', cursor: 'pointer', fontWeight: 700,
+            }}
+          >
+            🔁 Try a recommended topic instead
+          </button>
+        </div>
       )}
       {approved && (
         <p role="status" style={{ color: 'var(--color-success)', fontSize: '0.9rem', marginTop: '0.75rem' }}>

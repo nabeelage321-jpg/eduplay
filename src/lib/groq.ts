@@ -108,6 +108,44 @@ function isOnTopic(question: string, correct: string, keywords: string[]): boole
       if (words.has(v)) return true
     }
   }
+  // ARITHMETIC (owner case 2026-11-09): "What is 2 + 3?" IS about
+  // addition even though it never says the word "addition" — without
+  // this, every plain arithmetic reply fails the filter and the
+  // whole draft errors. A digit AND the matching operator (or
+  // operation word) are both required, so a digit alone never
+  // counts: "How many legs does a spider have? Eight" is not
+  // addition, and "What is 5 - 2?" is not addition either.
+  return isArithmeticOnTopic(`${question} ${correct}`, keywords)
+}
+
+/** Operation words for arithmetic topic words. */
+const ARITHMETIC_TOPIC_WORDS: Record<string, { operators: string[]; words: string[] }> = {
+  addition: { operators: ['+'], words: ['plus', 'add', 'sum', 'total'] },
+  subtraction: { operators: ['-'], words: ['minus', 'subtract', 'difference'] },
+  multiplication: { operators: ['×', '*'], words: ['times', 'multiply', 'product'] },
+  division: { operators: ['÷', '/'], words: ['divided', 'divide', 'quotient'] },
+  table: { operators: ['×', '*'], words: ['times', 'multiply'] },
+  tables: { operators: ['×', '*'], words: ['times', 'multiply'] },
+}
+
+/** True when the text is an arithmetic sum about one of the topic
+ *  words: a digit-operator-digit sum with that word's operator
+ *  ("2 + 3" for addition, "7 × 8" for multiplication), "2 x 3"
+ *  with x as its own word, or an operation word with a digit
+ *  ("two plus three" has no digits, so it needs the word "plus"
+ *  AND a digit — "2 plus 3"). The operator is matched per keyword,
+ *  so a subtraction sum never passes an addition topic. */
+function isArithmeticOnTopic(text: string, keywords: string[]): boolean {
+  const lower = text.toLowerCase()
+  const words = new Set(tokenize(lower))
+  for (const kw of keywords) {
+    const rule = ARITHMETIC_TOPIC_WORDS[kw]
+    if (!rule) continue
+    if (/\d/.test(lower) && rule.words.some((w) => words.has(w))) return true
+    const sum = lower.match(/\d\s*([+\-×÷*/])\s*\d/)
+    if (sum && rule.operators.includes(sum[1])) return true
+    if ((kw === 'multiplication' || kw === 'table' || kw === 'tables') && /\d\s+x\s+\d/.test(lower)) return true
+  }
   return false
 }
 
@@ -840,8 +878,17 @@ export async function buildGroqDraft(
   const wantWordSearch = gameType === 'wordsearch'
   const wantCategorize = gameType === 'categorize'
   const wantCrossword = gameType === 'crossword'
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS)
+  // TOPIC-WORD RULE (owner case 2026-11-09): the shared on-topic
+  // filter drops any item that never mentions a topic word — so a
+  // reply of good questions that never say the topic word fails the
+  // whole draft (the animals prompt passed on retry only because
+  // that reply happened to say "animal"). The rule goes into the
+  // user message, so the model writes the topic word into every
+  // item it returns.
+  const keywords = topicKeywords(prompt)
+  const topicRule = keywords.length > 0
+    ? `\n\nRULE: every item you return must mention at least one of these topic words: ${keywords.join(', ')}. An item that never mentions the topic word will be rejected, so write the topic word into each question, statement, sentence, hint, or category name.`
+    : ''
   try {
     const body: Record<string, unknown> = {
       model: config.model,
@@ -944,7 +991,7 @@ export async function buildGroqDraft(
                 'This is style context only: you cannot fetch, verify, or reproduce that syllabus, and you must never claim a question is official syllabus material.'
               : ''),
         },
-        { role: 'user', content: prompt },
+        { role: 'user', content: `${prompt}${topicRule}` },
       ],
       response_format: { type: 'json_object' },
       max_completion_tokens: GROQ_MAX_COMPLETION_TOKENS,
@@ -955,120 +1002,108 @@ export async function buildGroqDraft(
     if (config.model.startsWith('openai/gpt-oss')) {
       body.reasoning_effort = 'low'
     }
-    const res = await fetchImpl(GROQ_API_URL, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.apiKey}`,
-      },
-      body: JSON.stringify(body),
-    })
-    if (res.status === 429) {
-      return { ok: false, status: 502, error: 'Groq is rate-limited right now. Try again in a moment — no questions were invented.' }
-    }
-    if (res.status === 401 || res.status === 403) {
-      return { ok: false, status: 502, error: 'Groq did not accept the API key. Check the key in Vercel — no questions were invented.' }
-    }
-    if (res.status === 404) {
-      return { ok: false, status: 502, error: `Groq model ${config.model} is not available. Check GROQ_MODEL in Vercel — no questions were invented.` }
-    }
-    if (!res.ok) {
-      return { ok: false, status: 502, error: 'Groq did not answer. Try again in a moment — no questions were invented.' }
-    }
-    const data = (await res.json()) as { choices?: Array<{ message?: { content?: unknown } }> }
-    const content = data.choices?.[0]?.message?.content
-    if (typeof content !== 'string' || !content.trim()) {
-      return { ok: false, status: 502, error: 'Groq returned an empty draft. Try again — no questions were invented.' }
-    }
-    const parsed = extractJson(content)
-    if (parsed === null) {
-      return { ok: false, status: 502, error: 'Groq returned a draft that could not be read. Try again — no questions were invented.' }
-    }
-    if (wantWordSearch) {
-      // Words path: no question-framed self-check applies, and
-      // convertDraftItems passes word-search items through, validated.
-      const parsedItems = parseGroqWordSearchWords(parsed, prompt)
-      if (parsedItems.length < 2) {
-        return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic words, phrases, words too long for the grid, or hints that give the word away were kept.' }
+    // FLAKY-DRAFT RETRY (owner case 2026-11-09): Groq's reply varies
+    // run to run — the same animals prompt failed once and passed on
+    // retry — so a reply that parses to too few usable items gets ONE
+    // fresh attempt before the error is shown. Provider errors below
+    // (rate limit, bad key, bad model, empty, unreadable) return
+    // immediately and are never retried.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS)
+      try {
+        const res = await fetchImpl(GROQ_API_URL, {
+          method: 'POST',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${config.apiKey}`,
+          },
+          body: JSON.stringify(body),
+        })
+        if (res.status === 429) {
+          return { ok: false, status: 502, error: 'Groq is rate-limited right now. Try again in a moment — no questions were invented.' }
+        }
+        if (res.status === 401 || res.status === 403) {
+          return { ok: false, status: 502, error: 'Groq did not accept the API key. Check the key in Vercel — no questions were invented.' }
+        }
+        if (res.status === 404) {
+          return { ok: false, status: 502, error: `Groq model ${config.model} is not available. Check GROQ_MODEL in Vercel — no questions were invented.` }
+        }
+        if (!res.ok) {
+          return { ok: false, status: 502, error: 'Groq did not answer. Try again in a moment — no questions were invented.' }
+        }
+        const data = (await res.json()) as { choices?: Array<{ message?: { content?: unknown } }> }
+        const content = data.choices?.[0]?.message?.content
+        if (typeof content !== 'string' || !content.trim()) {
+          return { ok: false, status: 502, error: 'Groq returned an empty draft. Try again — no questions were invented.' }
+        }
+        const parsed = extractJson(content)
+        if (parsed === null) {
+          return { ok: false, status: 502, error: 'Groq returned a draft that could not be read. Try again — no questions were invented.' }
+        }
+        // One shared tail for every game type: parse, then the
+        // answer-consistency self-check on the quiz path only, then a
+        // single enough/not-enough decision. Previously each type had
+        // its own early error return, so a thin first reply could
+        // never be retried.
+        let parsedItems: ActivityItem[] = []
+        let tooFewError = ''
+        if (wantWordSearch) {
+          parsedItems = parseGroqWordSearchWords(parsed, prompt)
+          tooFewError = 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic words, phrases, words too long for the grid, or hints that give the word away were kept.'
+        } else if (wantCategorize) {
+          parsedItems = parseGroqCategorizeGroups(parsed, prompt)
+          tooFewError = 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic items, one-item groups, or items that belong in two groups were kept.'
+        } else if (wantCrossword) {
+          parsedItems = parseGroqCrosswordWords(parsed, prompt)
+          tooFewError = 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic words, phrases, or clues that give the word away were kept.'
+        } else if (wantHangman) {
+          parsedItems = parseGroqHangmanWords(parsed, prompt)
+          tooFewError = 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic words, phrases, or hints that give the word away were kept.'
+        } else if (wantMissingWord) {
+          parsedItems = parseGroqMissingWordSentences(parsed, prompt)
+          tooFewError = 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic or unclear missing-word sentences were kept.'
+        } else if (wantFillBlank) {
+          parsedItems = parseGroqFillBlankSentences(parsed, prompt)
+          tooFewError = 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic or unclear fill-in-the-blank sentences were kept.'
+        } else if (wantTrueFalse) {
+          parsedItems = parseGroqTrueFalseStatements(parsed, prompt)
+          tooFewError = 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic or one-sided statements were kept.'
+        } else {
+          parsedItems = parseGroqQuestions(parsed, prompt)
+          tooFewError = 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic or mismatched questions were kept.'
+        }
+        // Quiz path only: answer-consistency self-check (see
+        // verifyGroqAnswers). A failed or incomplete check falls back
+        // to the parsed items — it never invents questions and never
+        // drops the draft on its own failure.
+        if (!wantWordSearch && !wantCategorize && !wantCrossword && !wantHangman && !wantMissingWord && !wantFillBlank && !wantTrueFalse) {
+          const verified = parsedItems.length > 0
+            ? await verifyGroqAnswers(parsedItems, fetchImpl, config)
+            : null
+          parsedItems = verified ?? parsedItems
+        }
+        const enough = wantCategorize
+          ? parsedItems.length >= 4
+          : wantTrueFalse
+            ? parsedItems.length >= 2 &&
+              parsedItems.some((i) => i.answer === 'True') &&
+              parsedItems.some((i) => i.answer === 'False')
+            : parsedItems.length >= 2
+        if (enough) return { ok: true, model: config.model, items: parsedItems }
+        if (attempt === 0) continue
+        return { ok: false, status: 502, error: tooFewError }
+      } finally {
+        clearTimeout(timer)
       }
-      return { ok: true, model: config.model, items: parsedItems }
     }
-    if (wantCategorize) {
-      // Groups path: no question-framed self-check applies, and
-      // convertDraftItems passes categorize items through, validated.
-      const parsedItems = parseGroqCategorizeGroups(parsed, prompt)
-      if (parsedItems.length < 4) {
-        return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic items, one-item groups, or items that belong in two groups were kept.' }
-      }
-      return { ok: true, model: config.model, items: parsedItems }
-    }
-    if (wantCrossword) {
-      // Words path: no question-framed self-check applies, and
-      // convertDraftItems passes crossword items through, validated.
-      // The route then checks the survivors interlock into a grid.
-      const parsedItems = parseGroqCrosswordWords(parsed, prompt)
-      if (parsedItems.length < 2) {
-        return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic words, phrases, or clues that give the word away were kept.' }
-      }
-      return { ok: true, model: config.model, items: parsedItems }
-    }
-    if (wantHangman) {
-      // Words path: no question-framed self-check applies, and
-      // convertDraftItems passes hangman items through, validated.
-      const parsedItems = parseGroqHangmanWords(parsed, prompt)
-      if (parsedItems.length < 2) {
-        return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic words, phrases, or hints that give the word away were kept.' }
-      }
-      return { ok: true, model: config.model, items: parsedItems }
-    }
-    if (wantMissingWord) {
-      // Sentences path: no question-framed self-check applies, and
-      // convertDraftItems passes missing-word items through, validated.
-      const parsedItems = parseGroqMissingWordSentences(parsed, prompt)
-      if (parsedItems.length < 2) {
-        return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic or unclear missing-word sentences were kept.' }
-      }
-      return { ok: true, model: config.model, items: parsedItems }
-    }
-    if (wantFillBlank) {
-      // Sentences path: no question-framed self-check applies, and
-      // convertDraftItems passes fill-blank items through, validated.
-      const parsedItems = parseGroqFillBlankSentences(parsed, prompt)
-      if (parsedItems.length < 2) {
-        return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic or unclear fill-in-the-blank sentences were kept.' }
-      }
-      return { ok: true, model: config.model, items: parsedItems }
-    }
-    if (wantTrueFalse) {
-      // Statements path: no question-framed self-check applies, and
-      // convertDraftItems passes true/false items through unchanged.
-      const parsedItems = parseGroqTrueFalseStatements(parsed, prompt)
-      const hasTrue = parsedItems.some((i) => i.answer === 'True')
-      const hasFalse = parsedItems.some((i) => i.answer === 'False')
-      if (parsedItems.length < 2 || !hasTrue || !hasFalse) {
-        return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic or one-sided statements were kept.' }
-      }
-      return { ok: true, model: config.model, items: parsedItems }
-    }
-    const parsedItems = parseGroqQuestions(parsed, prompt)
-    // Answer-consistency self-check (see verifyGroqAnswers). A failed
-    // or incomplete check falls back to the parsed items — it never
-    // invents questions and never drops the draft on its own failure.
-    const verified = parsedItems.length > 0
-      ? await verifyGroqAnswers(parsedItems, fetchImpl, config)
-      : null
-    const items = verified ?? parsedItems
-    if (items.length < 2) {
-      return { ok: false, status: 502, error: 'Groq returned a draft that did not pass the topic and answer checks. Try again — no off-topic or mismatched questions were kept.' }
-    }
-    return { ok: true, model: config.model, items }
+    // Unreachable: every path inside the loop returns.
+    return { ok: false, status: 502, error: 'Groq did not answer. Try again in a moment — no questions were invented.' }
   } catch (err) {
     if (err instanceof Error && err.name === 'AbortError') {
       return { ok: false, status: 502, error: 'Groq took too long to answer. Try again in a moment — no questions were invented.' }
     }
     return { ok: false, status: 502, error: 'Groq did not answer. Try again in a moment — no questions were invented.' }
-  } finally {
-    clearTimeout(timer)
   }
 }

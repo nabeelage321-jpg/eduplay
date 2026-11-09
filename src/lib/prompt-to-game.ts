@@ -77,6 +77,22 @@ export function sanitizePrompt(raw: unknown): string {
   return raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200)
 }
 
+/**
+ * GUIDED TAPS-ONLY PROMPT (2026-11-09): a kid must be able to make
+ * a draft with taps only — tap a topic chip, tap a game type, tap
+ * Make draft — never type. The chip's prompt IS the complete
+ * working prompt (e.g. "make game for a table of 3", "Animals for
+ * Grade 5"), so when the prompt box is empty in Guided mode the
+ * tapped chip's prompt is used instead of failing. A typed prompt
+ * always wins over the chip: editing the box means the creator
+ * meant their own words.
+ */
+export function buildGuidedPrompt(prompt: string, pickedChipPrompt: string | null): string {
+  const typed = prompt.trim()
+  if (typed) return typed
+  return (pickedChipPrompt ?? '').trim()
+}
+
 export function decodeHtmlEntities(text: string): string {
   return text
     .replace(/&quot;/g, '"')
