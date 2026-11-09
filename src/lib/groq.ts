@@ -162,15 +162,54 @@ function asNonEmptyString(v: unknown, max: number): string | null {
   return s
 }
 
+/**
+ * Answer dedupe (owner order 2026-11-09): one draft must never carry
+ * two answers that are the same thing in different words — live game
+ * 114777 shipped both "African elephant" and "Elephant".
+ *
+ * Two answers collide when one's words are a whole-word run inside
+ * the other's: "elephant" inside "african elephant" collides, but
+ * "sun" inside "sunflower" does NOT — different tokens, so a real
+ * word is never dropped for sharing letters with another. Pure
+ * numbers are exempt: in arithmetic the same number legitimately
+ * answers different sums ("2 + 3" and "1 + 4" are both 5), and
+ * dropping one would make addition drafts unmakable.
+ */
+function answerTokens(answer: string): string[] {
+  return answer
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+}
+
+function isTokenSubsequence(short: string[], long: string[]): boolean {
+  if (short.length === 0 || short.length > long.length) return false
+  for (let i = 0; i + short.length <= long.length; i++) {
+    if (long.slice(i, i + short.length).every((t, j) => t === short[j])) return true
+  }
+  return false
+}
+
+/** True when two answers are the same answer in different words. */
+function answersCollide(a: string, b: string): boolean {
+  const ta = answerTokens(a)
+  const tb = answerTokens(b)
+  if (ta.length === 0 || tb.length === 0) return false
+  if ((ta.length === 1 && /^\d+$/.test(ta[0])) || (tb.length === 1 && /^\d+$/.test(tb[0]))) return false
+  return isTokenSubsequence(ta, tb) || isTokenSubsequence(tb, ta)
+}
+
 /** Parse + validate Groq JSON into quiz-shaped items, dropping any
  *  off-topic, duplicate, or malformed question. Returns only the
- *  surviving items — the caller rejects the draft if fewer than 2. */
+ *  surviving items — the caller rejects the draft if fewer than 10. */
 export function parseGroqQuestions(raw: unknown, prompt: string): ActivityItem[] {
   if (typeof raw !== 'object' || raw === null) return []
   const questions = (raw as { questions?: unknown }).questions
   if (!Array.isArray(questions)) return []
   const keywords = topicKeywords(prompt)
   const seen = new Set<string>()
+  const keptAnswers: string[] = []
   const items: ActivityItem[] = []
   for (const [i, q] of questions.entries()) {
     const r = q as RawGroqQuestion
@@ -192,7 +231,13 @@ export function parseGroqQuestions(raw: unknown, prompt: string): ActivityItem[]
     const key = question.toLowerCase()
     if (seen.has(key)) continue
     if (!isOnTopic(question, correct, keywords)) continue
+    // Near-duplicate answers ("Elephant" vs "African elephant")
+    // play as the same answer twice — keep the first, drop the
+    // later one. The drop counts toward the 10-item shortfall, so
+    // the caller's retry replaces it instead of leaving a gap.
+    if (keptAnswers.some((kept) => answersCollide(kept, correct))) continue
     seen.add(key)
+    keptAnswers.push(correct)
     const options = [...incorrect]
     options.splice(i % (options.length + 1), 0, correct)
     items.push({ prompt: question, answer: correct, answers: options } as ActivityItem)
@@ -898,7 +943,7 @@ export async function buildGroqDraft(
           content: wantWordSearch
             ? 'You write single words with hints ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
               'Return ONLY a JSON object, no markdown, no extra text: {"words": [{"word": "Mars", "hint": "The Red Planet"}]}. ' +
-              'Up to 10 words. Each word must be ONE single word of letters only, 2 to 12 letters long — never a phrase, never a number, never a word with a hyphen or an apostrophe, and never longer than 12 letters, or it cannot fit the 12×12 letter grid it will be hidden in. ' +
+              'Exactly 10 words. Each word must be ONE single word of letters only, 2 to 12 letters long — never a phrase, never a number, never a word with a hyphen or an apostrophe, and never longer than 12 letters, or it cannot fit the 12×12 letter grid it will be hidden in. ' +
               'The hint must describe the word without naming it: it must never contain the word itself, or the player would not have to hunt for it. ' +
               'Every word must be a word you are sure belongs to that topic — never invent facts; leave a word out instead. ' +
               'Do not repeat the same word twice.' +
@@ -921,7 +966,7 @@ export async function buildGroqDraft(
             : wantCrossword
             ? 'You write single words with crossword clues ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
               'Return ONLY a JSON object, no markdown, no extra text: {"words": [{"word": "Mars", "clue": "The Red Planet"}]}. ' +
-              'Up to 10 words. Each word must be ONE single word of letters only, 3 to 12 letters long — never a phrase, never a number, never a word with a hyphen or an apostrophe. ' +
+              'Exactly 10 words. Each word must be ONE single word of letters only, 3 to 12 letters long — never a phrase, never a number, never a word with a hyphen or an apostrophe. ' +
               'The clue must describe the word without naming it: it must never contain the word itself, or the player would not have to solve anything. ' +
               'Each clue should name the topic it belongs to, so the clue is clearly about that topic and nothing else. ' +
               'Pick words that share letters with each other, so they can cross in a crossword grid — words with no letter in common cannot cross. ' +
@@ -934,7 +979,7 @@ export async function buildGroqDraft(
             : wantHangman
             ? 'You write single words with hints ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
               'Return ONLY a JSON object, no markdown, no extra text: {"words": [{"word": "Mars", "hint": "The Red Planet"}]}. ' +
-              'Up to 10 words. Each word must be ONE single word of letters only, 3 to 12 letters long — never a phrase, never a number, never a word with a hyphen or an apostrophe. ' +
+              'Exactly 10 words. Each word must be ONE single word of letters only, 3 to 12 letters long — never a phrase, never a number, never a word with a hyphen or an apostrophe. ' +
               'The hint must describe the word without naming it: it must never contain the word itself, or the player would not have to guess. ' +
               'Every word must be a word you are sure belongs to that topic — never invent facts; leave a word out instead. ' +
               'Do not repeat the same word twice.' +
@@ -945,7 +990,7 @@ export async function buildGroqDraft(
             : wantMissingWord
             ? 'You write short sentences ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
               'Return ONLY a JSON object, no markdown, no extra text: {"sentences": [{"sentence": "Jupiter is the largest planet.", "answer": "Jupiter"}]}. ' +
-              'Up to 10 sentences. Each sentence must be ONE clear fact about that topic, written as a plain sentence — never a question, never a blank. ' +
+              'Exactly 10 sentences. Each sentence must be ONE clear fact about that topic, written as a plain sentence — never a question, never a blank. ' +
               'The answer must be ONE single word that appears in the sentence as a whole word, exactly once — that word is the missing word the player will guess. ' +
               'Every sentence must state a fact you are sure of — never invent dates, statistics, names, or facts you are unsure of; leave such a sentence out instead. ' +
               'Do not repeat the same fact or the same answer twice.' +
@@ -956,7 +1001,7 @@ export async function buildGroqDraft(
             : wantFillBlank
             ? 'You write short fill-in-the-blank sentences ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
               'Return ONLY a JSON object, no markdown, no extra text: {"sentences": [{"sentence": "The capital of France is ___.", "answer": "Paris"}]}. ' +
-              'Up to 10 sentences. Each sentence must be ONE clear fact about that topic, with exactly ONE blank written as ___ where a single word or short phrase belongs — never a question, never two blanks. ' +
+              'Exactly 10 sentences. Each sentence must be ONE clear fact about that topic, with exactly ONE blank written as ___ where a single word or short phrase belongs — never a question, never two blanks. ' +
               'The answer must be the single word or short phrase that fills the blank, and the sentence must read naturally with the blank filled in. ' +
               'Every sentence must state a fact you are sure of — never invent dates, statistics, names, or facts you are unsure of; leave such a sentence out instead. ' +
               'Do not repeat the same fact or the same answer twice.' +
@@ -967,7 +1012,7 @@ export async function buildGroqDraft(
             : wantTrueFalse
             ? 'You write short true-or-false statements ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
               'Return ONLY a JSON object, no markdown, no extra text: {"statements": [{"statement": "...", "correct": true}]}. ' +
-              'Up to 10 statements. Mix true and false statements — about half of each. ' +
+              'Exactly 10 statements. Mix true and false statements — about half of each. ' +
               'Each statement must be ONE clear fact about that topic, written as a plain sentence a young child can judge true or false — never a question, never a fill-in-the-blank. ' +
               'Every TRUE statement must be a fact you are sure of; every FALSE statement must be clearly wrong but believable, changing only one fact (a number, a name, or a place) from a true fact about the same topic. ' +
               'Never invent dates, statistics, names, or facts you are unsure of — leave such a statement out instead. ' +
@@ -978,7 +1023,7 @@ export async function buildGroqDraft(
                 : '')
             : 'You write short school quiz questions ONLY about the exact topic in the user prompt, at the school level the prompt implies. ' +
             'Return ONLY a JSON object, no markdown, no extra text: {"questions": [{"question": "...", "correct": "...", "incorrect": ["...", "...", "..."]}]}. ' +
-            'Up to 10 questions. Each question must be about that topic and nothing else. ' +
+            'Exactly 10 questions. Each question must be about that topic and nothing else. ' +
             'CRITICAL — the correct answer must DIRECTLY answer its own question. Before returning each question, read it back and check: if a teacher read only the question and this answer, would they mark it correct? ' +
             'For example, a question asking which part produces flowers must be answered with the flower-producing part, never with a part that does something else; ' +
             'a question asking which part is usually green must be answered with the green part, never with a part that grows underground. ' +
@@ -1002,13 +1047,16 @@ export async function buildGroqDraft(
     if (config.model.startsWith('openai/gpt-oss')) {
       body.reasoning_effort = 'low'
     }
-    // FLAKY-DRAFT RETRY (owner case 2026-11-09): Groq's reply varies
-    // run to run — the same animals prompt failed once and passed on
-    // retry — so a reply that parses to too few usable items gets ONE
-    // fresh attempt before the error is shown. Provider errors below
-    // (rate limit, bad key, bad model, empty, unreadable) return
-    // immediately and are never retried.
-    for (let attempt = 0; attempt < 2; attempt++) {
+    // FLAKY-DRAFT RETRY (owner case 2026-11-09), now EXACTLY-10
+    // (owner order 2026-11-09): Groq's reply varies run to run —
+    // the same animals prompt failed once and passed on retry — and
+    // a draft must have 10 usable items (live game 114777 shipped
+    // with only 3). A reply that parses to fewer than 10 usable
+    // items gets up to TWO fresh attempts (three tries total) before
+    // the error is shown. Provider errors below (rate limit, bad
+    // key, bad model, empty, unreadable) return immediately and are
+    // never retried.
+    for (let attempt = 0; attempt < 3; attempt++) {
       const controller = new AbortController()
       const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS)
       try {
@@ -1084,15 +1132,21 @@ export async function buildGroqDraft(
             : null
           parsedItems = verified ?? parsedItems
         }
+        // EXACTLY-10 (owner order 2026-11-09): a draft must have 10
+        // usable items — a 3-question game feels empty (live game
+        // 114777). The parsers cap at 10, so ">= 10" here means
+        // exactly 10. Categorize keeps its own rule: its grouped
+        // shape (3–4 categories of 3–4 items) cannot promise 10
+        // without breaking a basket, so it stays at >= 4.
         const enough = wantCategorize
           ? parsedItems.length >= 4
           : wantTrueFalse
-            ? parsedItems.length >= 2 &&
+            ? parsedItems.length >= 10 &&
               parsedItems.some((i) => i.answer === 'True') &&
               parsedItems.some((i) => i.answer === 'False')
-            : parsedItems.length >= 2
+            : parsedItems.length >= 10
         if (enough) return { ok: true, model: config.model, items: parsedItems }
-        if (attempt === 0) continue
+        if (attempt < 2) continue
         return { ok: false, status: 502, error: tooFewError }
       } finally {
         clearTimeout(timer)

@@ -119,6 +119,13 @@ function crosswordUsable(items: ActivityItem[]): boolean {
 const CROSSWORD_TOO_FEW =
   'Could not turn enough of these questions into words with clean clues that cross each other in a grid. Try a simpler topic with words that share letters, or make the game manually — no half-finished draft was kept.'
 
+/** A Groq draft that comes back short AFTER conversion (the
+ *  per-type converter drops items the Groq parsers kept): never
+ *  shipped as if it were complete — the route retries once, then
+ *  errors honestly. */
+const GROQ_TOO_FEW_AFTER_CONVERSION =
+  'Groq returned a draft with fewer than 10 usable questions after checking. Try again — no short or half-finished draft was kept.'
+
 interface OpenTdbQuestion {
   question?: string
   correct_answer?: string
@@ -138,8 +145,10 @@ interface OpenTdbQuestion {
  *   Only when NO Groq key is configured does it fall back to free
  *   Open Trivia Database questions (CC BY-SA 4.0), clearly labelled
  *   as general knowledge, not about the exact prompt.
- * No Anthropic. If no source yields at least 2 real, on-topic items,
- * this returns an error instead of inventing any.
+ * No Anthropic. A Groq draft must have exactly 10 usable items
+ * after conversion — a short draft retries once, then errors.
+ * If no source yields at least 2 real, on-topic items, this
+ * returns an error instead of inventing any.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -251,9 +260,23 @@ export async function POST(req: NextRequest) {
     if (getGroqConfig()) {
       const groqType: 'true-false' | 'fill-blank' | 'missing-word' | 'hangman' | 'wordsearch' | 'categorize' | 'crossword' | undefined =
         type === 'crossword' || type === 'categorize' || type === 'hangman' || type === 'wordsearch' || type === 'missing-word' || type === 'fill-blank' || type === 'true-false' ? type : undefined
-      const groq = await buildGroqDraft(prompt, fetch, syllabusContext, groqType)
-      if (groq.ok) {
+      // EXACTLY-10 (owner order 2026-11-09): buildGroqDraft already
+      // retries internally until 10 usable items survive, but the
+      // per-type converter below can still drop items — so one fresh
+      // attempt runs here when conversion leaves fewer than 10.
+      // Categorize is exempt: its grouped shape cannot promise 10
+      // without breaking a basket. A provider error returns at once
+      // and is never retried here either.
+      for (let groqAttempt = 0; groqAttempt < 2; groqAttempt++) {
+        const groq = await buildGroqDraft(prompt, fetch, syllabusContext, groqType)
+        if (!groq.ok) {
+          return NextResponse.json({ error: groq.error }, { status: groq.status })
+        }
         const groqItems = convertDraftItems(groq.items, type)
+        if (type !== 'categorize' && groqItems.length < 10) {
+          if (groqAttempt === 0) continue
+          return NextResponse.json({ error: GROQ_TOO_FEW_AFTER_CONVERSION }, { status: 502 })
+        }
         if (type === 'true-false' && !trueFalseUsable(groqItems)) {
           return NextResponse.json({ error: TRUE_FALSE_TOO_FEW }, { status: 502 })
         }
@@ -283,7 +306,7 @@ export async function POST(req: NextRequest) {
         }
         return NextResponse.json({ draft })
       }
-      return NextResponse.json({ error: groq.error }, { status: groq.status })
+      return NextResponse.json({ error: GROQ_TOO_FEW_AFTER_CONVERSION }, { status: 502 })
     }
 
     // No Groq key configured: free content, Open Trivia Database,
