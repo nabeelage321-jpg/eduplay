@@ -5,7 +5,7 @@ import { normalizeSubjectFilter, normalizeGradeFilter, normalizeTypeFilter } fro
 import { needsApproval } from '@/lib/approval'
 import { planImageGate, submitPendingImages } from '@/lib/image-approval'
 import { resolveCurriculumTag } from '@/lib/curricula'
-import { PUBLIC_LIST_CACHE } from '@/lib/http-cache'
+import { PUBLIC_LIST_CACHE, publicCacheHeaders } from '@/lib/http-cache'
 
 // Rate limiting (simple in-memory — replace with Upstash Redis in production)
 const rateLimitMap = new Map<string, { count: number; reset: number }>()
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       activities: data ?? [],
       pagination: { page, offset, limit, total: count ?? 0, pages: Math.ceil((count ?? 0) / limit) },
-    }, { headers: { 'Cache-Control': PUBLIC_LIST_CACHE } })
+    }, { headers: publicCacheHeaders(PUBLIC_LIST_CACHE) })
   } catch (err) {
     console.error('[GET /api/activities]', err)
     return NextResponse.json({ error: 'Failed to fetch activities' }, { status: 500 })

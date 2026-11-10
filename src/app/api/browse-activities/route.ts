@@ -1,6 +1,6 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { PUBLIC_LIST_CACHE } from '@/lib/http-cache'
+import { PUBLIC_LIST_CACHE, publicCacheHeaders } from '@/lib/http-cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       data: data || [],
       count: count || 0,
       success: true,
-    }, { headers: { 'Cache-Control': PUBLIC_LIST_CACHE } })
+    }, { headers: publicCacheHeaders(PUBLIC_LIST_CACHE) })
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json(

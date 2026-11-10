@@ -11,6 +11,23 @@ import {
 // re-running the function; audience-checked and session-scoped GETs
 // must NOT send one (a cached 200 could leak a private game, a
 // cached 404 could hide it from its owner).
+//
+// FOLLOW-UP 2026-11-10: Vercel strips s-maxage /
+// stale-while-revalidate from the Cache-Control it forwards to the
+// browser UNLESS a CDN-Cache-Control header is also set, so every
+// cached route must send BOTH headers with the same value. And live
+// edge verification must use GET — HEAD (curl -sI) is never served
+// from Vercel's edge cache and always reports MISS.
+
+function expectCached(res: Response, value: string) {
+  expect(res.headers.get('Cache-Control')).toBe(value)
+  expect(res.headers.get('CDN-Cache-Control')).toBe(value)
+}
+
+function expectUncached(res: Response) {
+  expect(res.headers.get('Cache-Control')).toBeNull()
+  expect(res.headers.get('CDN-Cache-Control')).toBeNull()
+}
 
 const publicRow = {
   id: 'act-1',
@@ -99,7 +116,7 @@ describe('CDN cache headers — public read-only GETs', () => {
     const { GET } = await import('@/app/api/activities/route')
     const res = await GET(req('http://localhost:3000/api/activities?type=quiz&limit=1'))
     expect(res.status).toBe(200)
-    expect(res.headers.get('Cache-Control')).toBe(PUBLIC_LIST_CACHE)
+    expectCached(res, PUBLIC_LIST_CACHE)
     const data = await res.json()
     expect(data).toHaveProperty('activities')
   })
@@ -108,7 +125,7 @@ describe('CDN cache headers — public read-only GETs', () => {
     const { GET } = await import('@/app/api/activities/by-type/route')
     const res = await GET(req('http://localhost:3000/api/activities/by-type'))
     expect(res.status).toBe(200)
-    expect(res.headers.get('Cache-Control')).toBe(PUBLIC_LIST_CACHE)
+    expectCached(res, PUBLIC_LIST_CACHE)
     const data = await res.json()
     expect(data).toHaveProperty('byType')
   })
@@ -117,7 +134,7 @@ describe('CDN cache headers — public read-only GETs', () => {
     const { GET } = await import('@/app/api/browse-activities/route')
     const res = await GET(req('http://localhost:3000/api/browse-activities'))
     expect(res.status).toBe(200)
-    expect(res.headers.get('Cache-Control')).toBe(PUBLIC_LIST_CACHE)
+    expectCached(res, PUBLIC_LIST_CACHE)
     const data = await res.json()
     expect(data.success).toBe(true)
   })
@@ -126,7 +143,7 @@ describe('CDN cache headers — public read-only GETs', () => {
     const { GET } = await import('@/app/api/leaderboard/route')
     const res = await GET(req('http://localhost:3000/api/leaderboard?activity_id=act-1'))
     expect(res.status).toBe(200)
-    expect(res.headers.get('Cache-Control')).toBe(LEADERBOARD_CACHE)
+    expectCached(res, LEADERBOARD_CACHE)
     const data = await res.json()
     expect(data.success).toBe(true)
   })
@@ -135,7 +152,7 @@ describe('CDN cache headers — public read-only GETs', () => {
     const { GET } = await import('@/app/api/leaderboard/route')
     const res = await GET(req('http://localhost:3000/api/leaderboard'))
     expect(res.status).toBe(400)
-    expect(res.headers.get('Cache-Control')).toBeNull()
+    expectUncached(res)
   })
 
   it('GET /sitemap.xml sends the sitemap cache header', async () => {
@@ -143,7 +160,7 @@ describe('CDN cache headers — public read-only GETs', () => {
     const res = await GET()
     expect(res.status).toBe(200)
     expect(res.headers.get('Content-Type')).toContain('application/xml')
-    expect(res.headers.get('Cache-Control')).toBe(SITEMAP_CACHE)
+    expectCached(res, SITEMAP_CACHE)
     expect(await res.text()).toContain('<sitemapindex')
   })
 
@@ -160,14 +177,14 @@ describe('CDN cache headers — deliberately NOT cached', () => {
       params: { id: 'act-1' },
     })
     expect(res.status).toBe(200)
-    expect(res.headers.get('Cache-Control')).toBeNull()
+    expectUncached(res)
   })
 
   it('GET /api/game-number (isOwner varies by signer) sends no cache header', async () => {
     const { GET } = await import('@/app/api/game-number/route')
     const res = await GET(req('http://localhost:3000/api/game-number?number=100083'))
     expect(res.status).toBe(200)
-    expect(res.headers.get('Cache-Control')).toBeNull()
+    expectUncached(res)
     const data = await res.json()
     expect(data.setupReady).toBe(true)
     expect(data.isOwner).toBe(false)
@@ -179,6 +196,6 @@ describe('CDN cache headers — deliberately NOT cached', () => {
       params: { id: 'sess-1' },
     })
     expect(res.status).toBe(200)
-    expect(res.headers.get('Cache-Control')).toBeNull()
+    expectUncached(res)
   })
 })

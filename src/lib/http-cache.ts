@@ -29,3 +29,25 @@ export const SITEMAP_CACHE =
 // five-minute stale window behind it.
 export const LEADERBOARD_CACHE =
   'public, s-maxage=60, stale-while-revalidate=300'
+
+// FOLLOW-UP 2026-11-10 — why round 1 did not reach the live edge:
+//
+// (1) Vercel strips `s-maxage` and `stale-while-revalidate` from the
+//     `Cache-Control` it forwards to the browser UNLESS a
+//     `CDN-Cache-Control` header is also set (Vercel CDN Cache docs:
+//     "If you set Cache-Control without a CDN-Cache-Control, the
+//     Vercel CDN strips s-maxage and stale-while-revalidate from the
+//     response before sending it to the browser"). That is why live
+//     showed bare `Cache-Control: public` even though the origin
+//     sent the full value (proven locally: plain `next start`
+//     returns the full header). Send BOTH headers with the same
+//     value: the edge caches per `CDN-Cache-Control`, and the
+//     browser then sees the full `Cache-Control`. Browsers ignore
+//     `s-maxage`, so browser caching behaviour does not change.
+// (2) `curl -sI` (HEAD) never returns a cache HIT from Vercel's
+//     edge — repeat HEADs stay MISS with Age: 0 even while repeat
+//     GETs of the same URL return HIT. Live verification of edge
+//     caching MUST use GET, never HEAD.
+export function publicCacheHeaders(value: string): Record<string, string> {
+  return { 'Cache-Control': value, 'CDN-Cache-Control': value }
+}

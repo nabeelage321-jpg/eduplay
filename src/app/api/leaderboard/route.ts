@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-import { LEADERBOARD_CACHE } from '@/lib/http-cache'
+import { LEADERBOARD_CACHE, publicCacheHeaders } from '@/lib/http-cache'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -40,7 +40,7 @@ async function GET(request: NextRequest) {
     // data. The window is short (60s) on purpose — scores move
     // whenever a kid finishes a game and live rooms watch them.
     // Errors are never cached.
-    return NextResponse.json({ data, success: true }, { headers: { 'Cache-Control': LEADERBOARD_CACHE } })
+    return NextResponse.json({ data, success: true }, { headers: publicCacheHeaders(LEADERBOARD_CACHE) })
   } catch (error) {
     console.error('Error in leaderboard GET:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
