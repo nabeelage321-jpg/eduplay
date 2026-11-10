@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { normalizeSubjectFilter, normalizeGradeFilter, FILTER_TYPES } from '@/lib/filters'
+import { PUBLIC_LIST_CACHE } from '@/lib/http-cache'
 
 // GET /api/activities/by-type — newest public game per game type.
 // Added 2026-11-07 (40-type play grid, owner order, launch day):
@@ -80,7 +81,12 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ byType })
+    // CDN CACHE 2026-11-10: public list only (is_public = true, no
+    // user-specific data) — the play-games grid asks for this on
+    // every load and sidebar pick; repeats are served from the edge
+    // instead of re-running this function. Errors and 429s are never
+    // cached.
+    return NextResponse.json({ byType }, { headers: { 'Cache-Control': PUBLIC_LIST_CACHE } })
   } catch (error) {
     console.error('by-type route failed:', error)
     return NextResponse.json({ error: 'Failed to load games' }, { status: 500 })

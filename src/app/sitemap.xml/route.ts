@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getBaseUrl } from '@/lib/seo/base-url'
 import { getSitemapChunkCount } from '@/lib/seo/sitemap-entries'
+import { SITEMAP_CACHE } from '@/lib/http-cache'
 
 /**
  * Sitemap index (Batch 2). Next.js 14.2's `generateSitemaps` only
@@ -20,7 +21,10 @@ export async function GET() {
     `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     entries +
     `\n</sitemapindex>\n`
+  // CDN CACHE 2026-11-10: the index changes only when the programme
+  // grid changes (a deploy) — crawlers ask for it constantly, so
+  // serve repeats from the edge instead of re-running this route.
   return new NextResponse(xml, {
-    headers: { 'Content-Type': 'application/xml' },
+    headers: { 'Content-Type': 'application/xml', 'Cache-Control': SITEMAP_CACHE },
   })
 }

@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { PUBLIC_LIST_CACHE } from '@/lib/http-cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,11 +47,14 @@ export async function GET(request: NextRequest) {
       }, { status: 500 })
     }
 
+    // CDN CACHE 2026-11-10: public list only (is_public = true, no
+    // user-specific data) — repeats are served from the edge instead
+    // of re-running this function. Errors are never cached.
     return NextResponse.json({
       data: data || [],
       count: count || 0,
       success: true,
-    })
+    }, { headers: { 'Cache-Control': PUBLIC_LIST_CACHE } })
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json(

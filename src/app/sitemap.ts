@@ -16,6 +16,11 @@ import {
  */
 export { SITEMAP_CHUNK_SIZE }
 
+// CDN CACHE 2026-11-10: the chunk files are built from the static
+// programme grid (no DB), so regenerate at most once a day — the
+// edge serves repeats instead of re-running the build per crawl.
+export const revalidate = 86400
+
 export async function generateSitemaps() {
   const total = buildAllSitemapEntries().length
   const chunks = Math.ceil(total / SITEMAP_CHUNK_SIZE)
