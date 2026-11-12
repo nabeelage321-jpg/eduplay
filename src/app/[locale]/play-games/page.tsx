@@ -6,7 +6,7 @@ import Breadcrumb from '@/components/seo/Breadcrumb'
 import { fetchFreeEducationalGamesActivities, isIndexable } from '@/lib/seo/programmatic'
 import { PlayGamesClient } from './PlayGamesClient'
 
-export const revalidate = 86400
+export const revalidate = 604800
 
 // ─── 40-TYPE PLAY GRID (owner order 2026-11-07 07:27 PKT, launch day) ────────
 // When a kid clicks Play Games he must reach ALL the game types as

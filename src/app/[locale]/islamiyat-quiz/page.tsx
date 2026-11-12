@@ -35,7 +35,7 @@ import { ACTIVITY_TYPES_SEED, getActivityTypeLabel } from '@/lib/supabase/seed/a
 // subject=Islamiyat, ALL public — 23 per grade × 14 grades = 322
 // programme games + 20 older pre-k games. POPULATED from day one.
 
-export const revalidate = 86400
+export const revalidate = 604800
 
 const HUB_TITLE = 'Islamiyat Quiz — Turn Islamiyat Revision Into Free Games'
 const HUB_TITLE_TAG = `${HUB_TITLE} | EduPlay`

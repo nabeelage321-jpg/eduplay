@@ -31,7 +31,7 @@ import { ACTIVITY_TYPES_SEED, getActivityTypeLabel } from '@/lib/supabase/seed/a
 // free games. All copy is in English — no Urdu wording is used
 // anywhere on this page, because no Urdu translation was verified.
 
-export const revalidate = 86400
+export const revalidate = 604800
 
 const HUB_TITLE = 'Urdu Games for Kids — Turn Urdu Learning Into Free Games'
 const HUB_TITLE_TAG = `${HUB_TITLE} | EduPlay`

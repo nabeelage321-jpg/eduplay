@@ -61,7 +61,7 @@ import { ACTIVITY_TYPES_SEED, getActivityTypeLabel } from '@/lib/supabase/seed/a
 //   feature exists — teacher announcements only is the stated
 //   phase-2 model, never open user-to-user chat).
 
-export const revalidate = 86400
+export const revalidate = 604800
 
 const HUB_TITLE = 'Free Educational Games for Kids — Play, Learn, No Ads'
 const HUB_TITLE_TAG = `${HUB_TITLE} | EduPlay`

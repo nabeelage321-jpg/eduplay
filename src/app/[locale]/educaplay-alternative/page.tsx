@@ -77,7 +77,7 @@ import { ACTIVITY_TYPES_SEED } from '@/lib/supabase/seed/activity-types'
 //   "Froggy Jumps" appear only as factual product/type names.
 //   The page carries a fair "where Educaplay is ahead" section.
 
-export const revalidate = 86400
+export const revalidate = 604800
 
 const PAGE_TITLE = 'Educaplay Alternative — Free, Ad-Free Learning Games'
 const PAGE_TITLE_TAG = `${PAGE_TITLE} | EduPlay`

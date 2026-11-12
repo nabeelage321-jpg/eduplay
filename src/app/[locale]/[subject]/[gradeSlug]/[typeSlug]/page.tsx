@@ -30,7 +30,7 @@ export async function generateStaticParams() {
 }
 
 export const dynamicParams = true
-export const revalidate = 86400
+export const revalidate = 604800
 
 export async function generateMetadata({
   params,

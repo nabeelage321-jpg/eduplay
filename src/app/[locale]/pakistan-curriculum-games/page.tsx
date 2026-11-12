@@ -29,7 +29,7 @@ import { ACTIVITY_TYPES_SEED, getActivityTypeLabel } from '@/lib/supabase/seed/a
 // No strong direct rival targets this exact keyword — the page is
 // winnable, and its games list is real-or-empty, never invented.
 
-export const revalidate = 86400
+export const revalidate = 604800
 
 const HUB_TITLE = 'Pakistan Curriculum Games — Turn School Lessons Into Free Games'
 const HUB_TITLE_TAG = `${HUB_TITLE} | EduPlay`
