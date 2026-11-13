@@ -14,6 +14,7 @@ export default function robots(): MetadataRoute.Robots {
           '*/play',         // Game screens — thin, non-indexable
           '/create',        // Creator tool
           '/_next/',        // Next.js internals
+          '/*/*/*/',        // TEMPORARY 2026-11-13: block game pages (/{locale}/{subject}/{grade}/{type}) — emergency brake, Vercel Fluid CPU 3h53m/4h. REMOVE after Hostinger move.
         ],
       },
       {
